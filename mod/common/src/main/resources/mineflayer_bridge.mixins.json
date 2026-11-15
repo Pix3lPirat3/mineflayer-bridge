@@ -1,0 +1,28 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "io.github.pix3lpirat3.mfbridge.common.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "AbstractContainerScreenAccessor",
+    "ArmorStandInvoker",
+    "BossHealthOverlayAccessor",
+    "ClientPacketListenerMixin",
+    "CommandSuggestionsMixin",
+    "ConnectionMixin",
+    "CreeperAccessor",
+    "EntityTypeAccessor",
+    "KeyboardHandlerMixin",
+    "LevelExtractorMixin",
+    "LevelRendererMixin",
+    "MinecraftMixin",
+    "MouseHandlerMixin",
+    "ScreenClickMixin",
+    "ScreenMixin",
+    "SoundBufferLibraryMixin",
+    "ToastManagerAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@mineflayer-bridge/interop",
+  "private": true,
+  "type": "module",
+  "description": "Node side of the Java interop tests: a fake bot that runs the published plugin against a real core.",
+  "dependencies": { "mineflayer-bridge": "workspace:*" }
+}

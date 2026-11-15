@@ -1,0 +1,141 @@
+plugins {
+    id 'bridge-multiloader-common'
+    id 'net.neoforged.moddev'
+}
+
+description = 'Vanilla-only Minecraft 26.x code shared by the Fabric and NeoForge loader modules.'
+
+neoForge {
+    neoFormVersion = neo_form_version
+    accessTransformers.from(file('src/main/at/accesstransformer.cfg').absolutePath)
+    addModdingDependenciesTo(sourceSets.test)
+}
+
+sourceSets {
+    seam
+    clientApi {
+        compileClasspath += seam.output
+    }
+    main {
+        compileClasspath += seam.output + clientApi.output
+        runtimeClasspath += seam.output + clientApi.output
+    }
+    test {
+        compileClasspath += seam.output + clientApi.output
+        runtimeClasspath += seam.output + clientApi.output
+    }
+}
+
+neoForge {
+    addModdingDependenciesTo(sourceSets.clientApi)
+}
+
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Fabric'
+                url = uri('https://maven.fabricmc.net')
+            }
+        }
+        filter {
+            includeGroup('net.fabricmc')
+        }
+    }
+}
+
+dependencies {
+    seamCompileOnly("org.jspecify:jspecify:${jspecify_version}")
+    clientApiCompileOnly("org.jspecify:jspecify:${jspecify_version}")
+    clientApiCompileOnly(project(':api'))
+    compileOnly("net.fabricmc:sponge-mixin:${sponge_mixin_version}") {
+        transitive = false
+    }
+    bridgeSharedModules.each { path ->
+        compileOnly(project(path))
+        testImplementation(project(path))
+    }
+    testImplementation(platform("org.junit:junit-bom:${junit_version}"))
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testImplementation("com.google.code.gson:gson:${gson_version}")
+    testImplementation("it.unimi.dsi:fastutil:${fastutil_version}")
+    testCompileOnly("org.jspecify:jspecify:${jspecify_version}")
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    testLogging {
+        events 'failed'
+        exceptionFormat 'full'
+    }
+}
+
+tasks.register('seamJar', Jar) {
+    archiveClassifier = 'seam'
+    from(sourceSets.seam.output)
+}
+
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    seamElements {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+artifacts {
+    [sourceSets.main, sourceSets.seam, sourceSets.clientApi].each { set ->
+        set.java.srcDirs.each { dir -> add('commonJava', dir) }
+        set.resources.srcDirs.each { dir -> add('commonResources', dir) }
+    }
+    seamElements(tasks.named('seamJar'))
+}
+
+jar {
+    from(sourceSets.seam.output)
+    from(sourceSets.clientApi.output)
+}
+
+tasks.named('sourcesJar', Jar) {
+    from(sourceSets.seam.allSource)
+    from(sourceSets.clientApi.allSource)
+}
+
+tasks.register('clientApiJavadoc', Javadoc) {
+    description = 'Generates the API reference of the client extension API.'
+    group = 'documentation'
+    source = sourceSets.clientApi.allJava
+    classpath = sourceSets.clientApi.compileClasspath
+    destinationDir = layout.buildDirectory.dir('docs').get().dir('clientApi').asFile
+    title = "mineflayer-bridge ${project.version}: client extension API"
+    options.encoding = 'UTF-8'
+    options.addStringOption('Xdoclint:all,-missing', '-quiet')
+    options.addBooleanOption('Werror', true)
+    options.bottom = '<a href="https://pix3lpirat3.github.io/mineflayer-bridge/">API home</a> | <a href="https://github.com/Pix3lPirat3/mineflayer-bridge">GitHub</a>'
+}
+
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements'].each { variant ->
+    configurations.named(variant) {
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant ->
+        configurations.named(variant) {
+            attributes {
+                attribute(loaderAttribute, 'common')
+            }
+        }
+    }
+}

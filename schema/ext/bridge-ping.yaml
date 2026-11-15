@@ -1,0 +1,15 @@
+namespace: bridge
+extension: ping
+java: io.github.pix3lpirat3.mfbridge.common.ext.ping.wire
+protocol: { major: 1, minor: 0 }
+
+messages:
+  bridge:ping.mark:
+    from: mod
+    delivery: reliable
+    fields:
+      target: Target           # block (with face and the hit point in pos) or entity
+      world: WorldKey?
+      entityType: string?      # for an entity, such as minecraft:zombie
+      entityName: string?      # its custom or player name
+      block: string?           # for a block, its state, such as minecraft:chest[facing=north]

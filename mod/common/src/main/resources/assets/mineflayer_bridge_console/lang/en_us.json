@@ -1,0 +1,21 @@
+{
+  "mineflayer_bridge_console.button": "Console",
+  "mineflayer_bridge_console.title": "%s console",
+  "mineflayer_bridge_console.search": "Search",
+  "mineflayer_bridge_console.level": "Level",
+  "mineflayer_bridge_console.level.all": "All",
+  "mineflayer_bridge_console.level.info": "Info+",
+  "mineflayer_bridge_console.level.warn": "Warn+",
+  "mineflayer_bridge_console.level.error": "Errors",
+  "mineflayer_bridge_console.clear": "Clear",
+  "mineflayer_bridge_console.unmark": "Unmark",
+  "mineflayer_bridge_console.input": "Send to the bot",
+  "mineflayer_bridge_console.input.hint": "Type to the bot, Enter sends",
+  "mineflayer_bridge_console.not_sent": "Not sent: %s",
+  "mineflayer_bridge_console.not_sent.offline": "the bot is not connected",
+  "mineflayer_bridge_console.not_sent.unsupported": "the bot does not take console input",
+  "mineflayer_bridge_console.empty": "No lines yet",
+  "mineflayer_bridge_console.no_match": "No match",
+  "mineflayer_bridge_console.toast": "Console",
+  "mineflayer_bridge_console.marked": "Marked %s"
+}

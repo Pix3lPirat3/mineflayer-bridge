@@ -1,0 +1,15 @@
+{
+  "key.mineflayer_bridge.pause_all_tasks": "Pause or resume every bot's tasks",
+  "mineflayer_bridge_tasks.tab": "Tasks",
+  "mineflayer_bridge_tasks.empty": "No bot is running a task.",
+  "mineflayer_bridge_tasks.pause": "Pause",
+  "mineflayer_bridge_tasks.resume": "Resume",
+  "mineflayer_bridge_tasks.cancel": "Cancel",
+  "mineflayer_bridge_tasks.toast": "Tasks",
+  "mineflayer_bridge_tasks.none": "No task to pause or resume",
+  "mineflayer_bridge_tasks.paused": "Paused %s",
+  "mineflayer_bridge_tasks.resumed": "Resumed %s",
+  "mineflayer_bridge_tasks.count.one": "%s task",
+  "mineflayer_bridge_tasks.count.other": "%s tasks",
+  "mineflayer_bridge_tasks.refused": "%s cannot take task controls: %s"
+}

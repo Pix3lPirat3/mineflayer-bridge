@@ -1,0 +1,11 @@
+node_modules/
+.gradle/
+build/
+out/
+run/
+*.log
+.idea/
+.vscode/
+dist/
+*.tsbuildinfo
+runs/

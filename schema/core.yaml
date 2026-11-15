@@ -1,0 +1,1569 @@
+namespace: core
+protocol: { major: 1, minor: 0 }
+
+enums:
+  SessionKind: [bot, controller]
+  Lifetime: [session, persistent]
+  Scope: [world, global]
+  Detail: [full, reduced]
+  AuthMethod: [local, device, pair]
+  DepthMode: [test, xray, both]
+  RegistrySpace: [message, kind]
+  PickKind: [point, block, region, polygon, entity, path, direction, item]
+  PromptKind: [confirm, choice, text, number, lines, pages]
+  SlotClick: [left, right, middle, shift_left, shift_right, double, drop, drop_all, number]
+  ElementInput: [hover_enter, hover_leave, primary, secondary, middle, scroll, key, drag_start, drag, drag_end]
+  ArgType: [string, greedy, int, float, bool, choice, block_pos, vec3, block_id, item_id, entity, player, bot, zone, point, entity_list]
+  KeyActivation: [press, release, both]
+  ToolInput: [primary, secondary, middle, scroll, key]
+  FieldType: [text, number, slider, toggle, select, multi_select, item, block_pos, zone]
+  HudAnchor: [top_left, top_center, top_right, middle_left, middle_right, bottom_left, bottom_right]
+
+structs:
+  Vec3d: { x: f64, y: f64, z: f64 }
+  Color: { argb: u32 }         # all colours on the wire are packed 0xAARRGGBB
+
+  WorldKey:
+    server: string
+    backend: string?
+    dimension: string
+
+  BotIdentity:
+    username: string
+    uuid: string?
+    server: string?
+
+  ErrorInfo:
+    code: string
+    message: string
+    retryable: bool = false
+    details: any?
+
+  RegistryEntry:
+    name: string
+    id: u32
+    space: RegistrySpace
+
+  ExtensionRef:
+    id: string
+    version: string
+
+  Limits:
+    maxFrameBytes: u32
+    maxObjects: u32
+    maxBlobBytes: u32
+    resumeWindowMs: u32
+    heartbeatMs: u32
+    maxDisplays: u32 = 4096
+    maxEntityDisplays: u32 = 256
+    maxEmitters: u32 = 32
+    maxInteractive: u32 = 1024
+    effectsPerSecond: u32 = 40
+    blobInFlightBytes: u32 = 134217728
+    maxSoundEmitters: u32 = 16
+
+  Budget:
+    messagesPerSecond: u32
+    bytesPerSecond: u32
+    streamBytesInFlight: u32
+
+  LayerVisibility:
+    owner: string
+    extension: string
+    layer: string
+    visible: bool
+
+  ObjectFull:
+    key: string
+    kind: u32
+    rev: u64
+    layer: string?
+    lifetime: Lifetime = session
+    scope: Scope = global
+    world: WorldKey?
+    ttlMs: u32?
+    data: bytes
+    traits: ObjectTraits?
+
+  ObjectPatch:
+    key: string
+    rev: u64
+    fields: bytes            # MessagePack map: field index -> new value
+    ttlMs: u32?
+    traits: ObjectTraits?     # replaces the traits when present
+
+  SharedCreate: { object: ObjectFull }
+  SharedUpdate: { key: string, expectRev: u64, fields: bytes }
+  SharedRemove: { key: string, expectRev: u64 }
+
+  Vec3i: { x: i32, y: i32, z: i32 }
+
+  PickPoint: { pos: Vec3d }
+  PickBlock:
+    pos: Vec3i
+    face: string            # down | up | north | south | west | east
+    hit: Vec3d
+    state: string           # block state, e.g. minecraft:chest[facing=north]
+  PickRegion: { min: Vec3i, max: Vec3i }
+  PickPolygon:
+    vertices: list<Vec3i>
+    minY: i32
+    maxY: i32
+  PickEntity:
+    id: i32
+    uuid: string?
+    type: string
+    pos: Vec3d
+  PickPath: { points: list<Vec3d> }
+  PickDirection:
+    yaw: f32
+    pitch: f32
+    cardinal: string
+  PickItem:
+    id: string
+    count: u32
+    components: any?
+
+  Target:
+    type: string            # block | entity | item | bot | zone | point | waypoint | element | air
+    block: Vec3i?
+    face: string?
+    entity: i32?
+    pos: Vec3d?
+    item: string?
+    objectKey: string?      # bot session owner prefix, zone, point, waypoint or element key
+
+  QueriedEntity:
+    id: i32                 # client entity id, as core:entity-tag takes it
+    type: string            # entity type id, such as minecraft:zombie
+    pos: Vec3d
+    name: string?           # player name or custom name
+    player: bool = false
+
+  TargetSpec:
+    type: string
+    ids: list<string>?      # registry ids or entity types; any when absent
+    tags: list<string>?     # block, item or entity tags; any when absent
+
+  CommandArg:
+    name: string
+    type: ArgType
+    optional: bool = false
+    defaultValue: any?
+    min: f64?
+    max: f64?
+    choices: list<string>?
+    description: string?
+    completion: CompletionSpec?
+
+  CompletionSpec:
+    source: string           # choices | entities | blocks | block_ids | item_ids | sounds | particles | enchantments | players | bots | zones | points | waypoints | dynamic
+    near: string = player    # player | bot
+    radius: f32?
+    filter: TargetSpec?
+    limit: u32 = 20
+
+  CommandNode:
+    name: string
+    aliases: list<string>?
+    description: string?
+    args: list<CommandArg>
+    children: list<CommandNode>?
+    runnable: bool = true    # false for grouping nodes that only list their children
+
+  Suggestion:
+    text: string
+    display: string?
+    tooltip: string?
+
+  FormField:
+    id: string
+    type: FieldType
+    label: string?
+    defaultValue: any?
+    min: f64?
+    max: f64?
+    step: f64?
+    options: list<string>?
+    required: bool = false
+
+  CrewGroup:
+    name: string
+    members: list<string>   # bot display names
+
+  FormButton:
+    id: string
+    label: string
+    icon: string?           # an item id, or a Bridge icon: mineflayer_bridge:trash
+    danger: bool = false    # drawn red: removing or resetting something
+
+  KvEntry:
+    key: string
+    value: string
+    color: u32?
+
+  SettingDef:
+    key: string
+    type: string            # bool | int | float | string | color | choice
+    label: string?
+    description: string?
+    defaultValue: any?
+    min: f64?
+    max: f64?
+    options: list<string>?
+
+  ScreenItem:
+    kind: string              # heading | text | button | toggle | cycle | item | spacer
+    id: string?               # names interactive items in screen.event
+    text: string?             # heading or text body, control label, item caption
+    tooltip: string?
+    icon: string?             # item id: a button's icon, or the item of an item row
+    color: u32?
+    value: any?               # toggle: bool; cycle: index of the chosen option
+    options: list<string>?    # cycle choices
+    width: u32?               # GUI pixels; absent shares the row evenly
+    enabled: bool = true
+    open: string?             # object key of a core:screen of the same owner to open as a child
+    sound: string?            # sound event the mod plays when the player uses the item
+
+  ScreenRow:
+    items: list<ScreenItem>
+
+  ScreenTab:
+    id: string
+    label: string
+    rows: list<ScreenRow>
+
+  SlotItem:
+    id: string
+    count: u32 = 1
+    name: string?
+    lore: list<string>?
+    glint: bool = false
+    customModel: string?
+    components: any?
+    countText: string?        # overrides the rendered count, e.g. 1.2k
+    bar: f32?                 # 0..1 durability-style bar used as a progress indicator
+    barColor: u32?
+    head: string?             # player head skin: player name, UUID or bot identity
+    color: u32?               # leather dye, potion or map colour
+    frames: list<SlotItem>?   # animated item, cycled on the client
+    frameMs: u32 = 500
+    hideTooltip: bool = false
+    clickSound: string?
+    nameSpans: list<ChatSpan>?
+    loreLines: list<LoreLine>?
+
+  LoreLine: { spans: list<ChatSpan> }
+
+  SlotEntry:
+    slot: u32
+    item: SlotItem
+    policy: string = button   # button | locked | take | place | free | ask | source
+    accepts: TargetSpec?      # place filter for storage slots
+    maxStack: u32?
+
+  NotifyButton:
+    label: string
+    action: string          # full object key of a core:action of the sender
+
+  ChatClick:
+    action: string          # run_action | run_command | suggest | copy | open_url
+    value: string
+
+  ChatSpan:
+    text: string
+    color: u32?
+    bold: bool = false
+    italic: bool = false
+    click: ChatClick?
+    hover: string?
+
+  DisplayTransform:
+    rotation: f32[]?          # quaternion x, y, z, w applied after translation
+    scale: Vec3d?
+    offset: Vec3d?            # translation relative to pos
+
+  HoverStyle:
+    scale: f32?
+    glow: u32?
+    text: string?            # replaces display text while hovered
+
+  Interactive:
+    inputs: list<ElementInput>
+    tooltip: string?
+    keys: list<string>?       # vanilla key names delivered while hovering
+    maxDistance: f32?
+    hitbox: Vec3d?            # size of a custom box centred on the element; derived from the visual when absent
+    tags: list<string>?       # matched by element context actions
+
+  ArmorStandProps:
+    small: bool = false
+    showArms: bool = false
+    noBasePlate: bool = false
+    marker: bool = false
+    headPose: f32[]?          # x, y, z rotation in degrees
+    bodyPose: f32[]?
+    leftArmPose: f32[]?
+    rightArmPose: f32[]?
+    leftLegPose: f32[]?
+    rightLegPose: f32[]?
+
+  MerchantOffer:
+    id: string
+    cost: SlotItem
+    cost2: SlotItem?
+    result: SlotItem
+    disabled: bool = false
+    uses: u32?
+    maxUses: u32?
+
+  WorldMenuEntry:
+    id: string
+    label: string?
+    item: SlotItem?
+    block: string?
+    entity: string?
+    text: string?
+
+  EffectSound:
+    id: string
+    at: Vec3d?
+    volume: f32 = 1
+    pitch: f32 = 1
+    category: string?         # vanilla sound category; default neutral, or ui when not positional
+  EffectParticles:
+    type: string
+    at: Vec3d
+    count: u32 = 1
+    spread: Vec3d?
+    speed: f32 = 0
+    options: any?
+  EffectTitle:
+    title: string?
+    subtitle: string?
+    fadeIn: u32 = 10          # ticks
+    stay: u32 = 70
+    fadeOut: u32 = 20
+  EffectActionBar: { text: string }
+
+  VolumeSection:
+    x: i32                    # section coordinates (block coordinate >> 4)
+    y: i32
+    z: i32
+    palette: list<string>     # block states; index 0 is unset (no ghost)
+    indices: u16[]            # 4096 palette indices in y, z, x order (index = (y * 16 + z) * 16 + x)
+
+  VolumeBlob:
+    sections: list<VolumeSection>
+
+  HeatmapBlob:
+    cells: i32[]              # x, y, z triples in blocks
+    values: f32[]             # one value per cell
+
+  HighlightBlob:
+    positions: i32[]          # x, y, z triples in blocks
+
+  ZoneBox:
+    min: Vec3i
+    max: Vec3i                # inclusive
+    op: string = add          # add | subtract | intersect, applied in list order
+
+  RouteNode:
+    pos: Vec3d
+    data: any?                # per-node overrides, e.g. { block, radius, wait }
+
+  EditableField:
+    field: string             # data field name in the kind schema
+    editor: string?           # text | anvil | gizmo | color | cycle | number | toggle; chosen from the field type when absent
+    label: string?
+
+  Visibility:
+    minDistance: f32?
+    maxDistance: f32?
+    focusedOnly: bool = false # only while the owning bot is focused
+    lookedAt: bool = false    # only while under the crosshair
+
+  ObjectTraits:
+    interactive: Interactive?
+    hover: HoverStyle?
+    editable: list<EditableField>?
+    actions: list<string>?    # keys of core:action declarations bound to this object
+    visibleWhen: Visibility?
+
+unions:
+  ObjectWrite: { full: ObjectFull, patch: ObjectPatch }
+  EffectBody:
+    sound: EffectSound
+    particles: EffectParticles
+    title: EffectTitle
+    actionbar: EffectActionBar
+  PickResult:
+    point: PickPoint
+    block: PickBlock
+    region: PickRegion
+    polygon: PickPolygon
+    entity: PickEntity
+    path: PickPath
+    direction: PickDirection
+    item: PickItem
+  SharedOpBody: { create: SharedCreate, update: SharedUpdate, remove: SharedRemove }
+
+kinds:
+  core:vars:
+    id: 3
+    fields:
+      values: map<string, any>  # one object per owner and extension
+
+  core:layer:
+    id: 1
+    fields:
+      category: string?
+      defaultVisible: bool = true
+
+  core:style:
+    id: 2
+    fields:
+      color: u32 = 0xFFFFFFFF
+      fill: f32 = 0
+      lineWidth: f32 = 2
+      depth: DepthMode = test
+      xrayAlpha: f32 = 0.35
+      pulse: bool = false
+
+  core:box:
+    id: 16
+    fields:
+      min: Vec3d
+      size: Vec3d
+      style: string?
+
+  core:line:
+    id: 17
+    fields:
+      from: Vec3d
+      to: Vec3d
+      arrow: bool = false
+      style: string?
+
+  core:ghost-blocks:
+    id: 22
+    fields:
+      blob: bytes               # SHA-256 of the VolumeBlob payload
+      size: u64                 # payload size in bytes
+      origin: Vec3i?            # added to every position; lets one blob be placed anywhere
+      alpha: f32 = 0.5
+      diffAgainstWorld: bool = false
+      hideMatching: bool = true # with diffAgainstWorld, blocks already correct are not drawn
+      style: string?
+
+  core:heatmap:
+    id: 23
+    fields:
+      blob: bytes               # SHA-256 of the HeatmapBlob payload
+      size: u64
+      min: f32?                 # value range; computed from the data when absent
+      max: f32?
+      colormap: string = viridis  # viridis | magma | turbo | diverging | grey
+      cellSize: f32 = 1
+      alpha: f32 = 0.4
+      depth: DepthMode = test
+
+  core:block-highlight:
+    id: 24
+    fields:
+      positions: i32[]?         # inline x, y, z triples for small sets
+      blob: bytes?              # SHA-256 of a HighlightBlob for large sets
+      size: u64?
+      mode: string = outline    # outline | faces | both
+      style: string?
+
+  core:zone:
+    id: 25
+    fields:
+      name: string
+      boxes: list<ZoneBox>?     # box set; or a polygon prism below
+      polygon: list<Vec3i>?     # vertices (x, z used) of a prism between minY and maxY
+      minY: i32?
+      maxY: i32?
+      tags: list<string>?
+      color: u32 = 0xFF3B82F6
+      fill: f32 = 0.08
+      showLabel: bool = true
+      editable: bool = true     # the player may edit it with gizmos (proposals for bot-owned zones)
+
+  core:point:
+    id: 26
+    fields:
+      name: string
+      pos: Vec3d
+      yaw: f32?
+      tags: list<string>?
+      color: u32 = 0xFFF59E0B
+      icon: string?             # item id shown above the point
+      editable: bool = true
+      pitch: f32?               # degrees, Minecraft convention: -90 up, 90 down
+
+  core:route:
+    id: 27
+    fields:
+      name: string
+      nodes: list<RouteNode>
+      looped: bool = false
+      interpolation: string = linear   # linear | bresenham | catmull_rom | bezier
+      tags: list<string>?
+      color: u32 = 0xFF22C55E
+      width: f32 = 2
+      editable: bool = true
+
+  core:path:
+    id: 18
+    fields:
+      points: f64[]            # x, y, z triples
+      classes: u16[]?          # one class per segment
+      classStyles: map<string, string>?
+      style: string?
+
+  core:label:
+    id: 19
+    fields:
+      pos: Vec3d
+      text: string
+      scale: f32 = 1
+      background: u32 = 0x40000000
+      maxDistance: f32 = 64
+      style: string?
+
+  core:entity-tag:
+    id: 20
+    fields:
+      entity: i32
+      text: string?
+      outline: u32?
+      style: string?
+      tracer: bool = false     # a line from the crosshair to the entity
+
+  core:waypoint:
+    id: 21
+    fields:
+      pos: Vec3d
+      name: string
+      beam: bool = false
+      edgePin: bool = true
+      style: string?
+      tracer: bool = false     # a line from the crosshair to the waypoint
+
+  core:command:
+    id: 32
+    fields:
+      name: string
+      description: string?
+      args: list<CommandArg>
+      aliases: list<string>?
+      children: list<CommandNode>?
+      runnable: bool = true
+      orders: bool = false     # an order for the session's crew: typed after @<bot>, @<group> or @all, not after its own name
+
+  core:crew:
+    id: 39
+    fields:
+      bots: list<string>       # display names of the bots this session gives orders to
+      groups: list<CrewGroup>? # named sets of them, each addressed as @<name>
+
+  core:action:
+    id: 33
+    fields:
+      label: string
+      icon: string?
+      target: TargetSpec
+      order: i32 = 0
+
+  core:keybind:
+    id: 34
+    fields:
+      label: string
+      keys: list<string>      # vanilla key names, e.g. key.keyboard.g; chords in order
+      context: string = ingame
+      activation: KeyActivation = press
+      priority: i32 = 0
+      consumes: bool = true
+
+  core:tool:
+    id: 35
+    fields:
+      label: string
+      icon: string?
+      targets: list<string>   # target types the tool resolves under the crosshair
+      inputs: list<ToolInput>
+
+  core:intercept:
+    id: 37
+    fields:
+      target: TargetSpec
+      input: string = secondary  # primary | secondary
+      mode: string = observe     # observe | cancel
+      modifier: string?          # shift | control | alt
+      priority: string = normal  # lowest | low | normal | high | highest | monitor
+
+  core:screen:
+    id: 38
+    fields:
+      title: string
+      tabs: list<ScreenTab>
+      home: string = none        # none | tab | menu
+      order: i32 = 0
+
+  core:settings:
+    id: 36
+    fields:
+      title: string?
+      settings: list<SettingDef>
+
+  core:hud.panel:
+    id: 48
+    fields:
+      title: string?
+      anchor: HudAnchor = top_right
+      order: i32 = 0
+      collapsed: bool = false
+
+  core:hud.text:
+    id: 49
+    fields:
+      panel: string
+      order: i32 = 0
+      text: string
+      maxLines: u32?
+      color: u32?
+
+  core:hud.kv:
+    id: 50
+    fields:
+      panel: string
+      order: i32 = 0
+      entries: list<KvEntry>
+
+  core:hud.bar:
+    id: 51
+    fields:
+      panel: string
+      order: i32 = 0
+      label: string?
+      value: f64
+      min: f64 = 0
+      max: f64 = 1
+      color: u32?
+
+  core:hud.list:
+    id: 52
+    fields:
+      panel: string
+      order: i32 = 0
+      items: list<string>
+      selected: i32?
+      maxRows: u32?
+
+  core:hud.badge:
+    id: 53
+    fields:
+      panel: string
+      order: i32 = 0
+      text: string
+      color: u32 = 0xFF3B82F6
+
+  core:hud.sparkline:
+    id: 54
+    fields:
+      panel: string
+      order: i32 = 0
+      values: f32[]
+      min: f32?
+      max: f32?
+      color: u32?
+
+  core:hud.item:
+    id: 55
+    fields:
+      panel: string
+      order: i32 = 0
+      item: string
+      count: u32 = 1
+      label: string?
+
+  core:container-view:
+    id: 64
+    fields:
+      title: string
+      layout: string = chest:3    # chest:<1-6> | hopper | dispenser | player_inventory | grid:<cols>x<rows> | furnace | brewing | lectern
+      slots: list<SlotEntry>
+      closeOnClick: bool = false
+      filler: SlotItem?
+      progress: f32?            # furnace and brewing arrows, 0..1
+      fuel: f32?                # furnace flame, 0..1
+      pages: list<string>?      # lectern book pages
+      reopenParent: string?     # view key to open when this one closes
+      requireAnswer: bool = false
+
+  core:display.text:
+    id: 80
+    fields:
+      pos: Vec3d
+      text: string
+      lineWidth: u32 = 200
+      background: u32 = 0x40000000
+      shadow: bool = false
+      seeThrough: bool = false
+      align: string = center   # left | center | right
+      scale: f32 = 1
+      group: string?          # shape id of a core:group in the same layer; pos is then relative to it
+      transform: DisplayTransform?
+      billboard: string = fixed  # fixed | vertical | horizontal | center
+      interpolateMs: u32 = 0
+      animate: string?        # bob | spin | pulse | sway
+      animateAmplitude: f32 = 0.1
+      animatePeriodMs: u32 = 2000
+      brightness: i32?        # 0-15 fixed light, world light when absent
+      glow: u32?
+      hover: HoverStyle?
+      interactive: Interactive?
+      maxDistance: f32 = 64
+
+  core:display.item:
+    id: 81
+    fields:
+      pos: Vec3d
+      item: SlotItem
+      mode: string = ground    # ground | fixed | head | gui
+      scale: f32 = 1
+      group: string?          # shape id of a core:group in the same layer; pos is then relative to it
+      transform: DisplayTransform?
+      billboard: string = fixed  # fixed | vertical | horizontal | center
+      interpolateMs: u32 = 0
+      animate: string?        # bob | spin | pulse | sway
+      animateAmplitude: f32 = 0.1
+      animatePeriodMs: u32 = 2000
+      brightness: i32?        # 0-15 fixed light, world light when absent
+      glow: u32?
+      hover: HoverStyle?
+      interactive: Interactive?
+      maxDistance: f32 = 64
+
+  core:display.block:
+    id: 82
+    fields:
+      pos: Vec3d
+      state: string
+      scale: f32 = 1
+      group: string?          # shape id of a core:group in the same layer; pos is then relative to it
+      transform: DisplayTransform?
+      billboard: string = fixed  # fixed | vertical | horizontal | center
+      interpolateMs: u32 = 0
+      animate: string?        # bob | spin | pulse | sway
+      animateAmplitude: f32 = 0.1
+      animatePeriodMs: u32 = 2000
+      brightness: i32?        # 0-15 fixed light, world light when absent
+      glow: u32?
+      hover: HoverStyle?
+      interactive: Interactive?
+      maxDistance: f32 = 64
+
+  core:display.entity:
+    id: 83
+    fields:
+      pos: Vec3d
+      type: string
+      yaw: f32 = 0
+      pitch: f32 = 0
+      headYaw: f32?
+      pose: string?
+      name: string?
+      nameVisible: bool = false
+      baby: bool = false
+      skin: string?           # player name or UUID, for player models
+      equipment: map<string, SlotItem>?   # head | chest | legs | feet | mainhand | offhand
+      scale: f32 = 1
+      group: string?          # shape id of a core:group in the same layer; pos is then relative to it
+      transform: DisplayTransform?
+      billboard: string = fixed  # fixed | vertical | horizontal | center
+      interpolateMs: u32 = 0
+      animate: string?        # bob | spin | pulse | sway
+      animateAmplitude: f32 = 0.1
+      animatePeriodMs: u32 = 2000
+      brightness: i32?        # 0-15 fixed light, world light when absent
+      glow: u32?
+      hover: HoverStyle?
+      interactive: Interactive?
+      maxDistance: f32 = 64
+      invisible: bool = false
+      onFire: bool = false
+      frozen: bool = false      # powder-snow shake
+      variant: string?          # cat, wolf, horse, frog, axolotl, villager type and similar variants
+      color: string?            # sheep wool, collar, llama carpet, shulker colour
+      profession: string?       # villager profession
+      charged: bool = false     # creeper
+      saddled: bool = false
+      armorStand: ArmorStandProps?
+      effects: list<string>?    # status effects whose particles swirl around the entity, e.g. minecraft:speed
+      data: string?             # SNBT entity data applied client-side like /summon, for anything not covered above
+
+  core:group:
+    id: 84
+    fields:
+      pos: Vec3d
+      followEntity: i32?
+      followSelf: bool = false  # follow the owning bot entity
+      billboard: string = fixed
+      interpolateMs: u32 = 0
+      transform: DisplayTransform?
+
+  core:particle-emitter:
+    id: 85
+    fields:
+      pos: Vec3d
+      particle: string
+      rate: f32 = 4            # bursts per second
+      count: u32 = 1
+      spread: Vec3d?
+      speed: f32 = 0
+      options: any?
+      group: string?           # shape id of a core:group in the same layer; pos is then relative to it
+
+  core:sound-emitter:
+    id: 86
+    fields:
+      pos: Vec3d
+      sound: string?           # sound event id; or blob for an Ogg Vorbis file
+      blob: bytes?             # SHA-256 of an Ogg Vorbis file
+      size: u64?
+      group: string?
+      positional: bool = true  # false plays at the listener
+      volume: f32 = 1
+      pitch: f32 = 1
+      loop: bool = true        # false plays once per revision
+      intervalMs: u32 = 0      # with loop: pause between plays instead of a seamless loop
+      category: string = neutral
+      plays: u32 = 0           # bumped by the bot to play a non-looping sound again
+
+  core:bossbar:
+    id: 56
+    fields:
+      text: string
+      progress: f32 = 0
+      color: string = white  # pink | blue | red | green | yellow | purple | white
+      overlay: string = progress  # progress | notched_6 | notched_10 | notched_12 | notched_20
+
+messages:
+  hello:
+    id: 0x01
+    from: node
+    delivery: control
+    fields:
+      protocolMajor: u32
+      protocolMinor: u32
+      pluginVersion: string
+      deviceName: string
+      messages: list<string>
+      kinds: list<string>
+
+  auth.challenge:
+    id: 0x02
+    from: mod
+    delivery: control
+    fields:
+      connectionId: u64
+      nonce: bytes
+      methods: list<AuthMethod>
+
+  auth.response:
+    id: 0x03
+    from: node
+    delivery: control
+    fields:
+      method: AuthMethod
+      deviceId: string
+      proof: bytes
+      nonce: bytes?            # the plugin's own nonce; welcome.proof answers it
+
+  pair.result:
+    id: 0x04
+    from: mod
+    delivery: control
+    fields:
+      deviceId: string
+      secret: bytes
+      fingerprint: string
+
+  welcome:
+    id: 0x05
+    from: mod
+    delivery: control
+    fields:
+      protocolMajor: u32
+      protocolMinor: u32
+      modVersion: string
+      gameVersion: string
+      loader: string
+      registry: list<RegistryEntry>
+      extensions: list<ExtensionRef>
+      limits: Limits
+      budget: Budget
+      permissions: list<string>?   # granted permissions for this device
+      proof: bytes?            # the mod's proof over auth.response.nonce, made with the secret the plugin used
+
+  ping:
+    id: 0x06
+    from: both
+    delivery: control
+    fields: { time: u64 }
+
+  pong:
+    id: 0x07
+    from: both
+    delivery: control
+    fields: { time: u64 }
+
+  budget.update:
+    id: 0x08
+    from: mod
+    delivery: latest
+    fields: { budget: Budget }
+
+  goodbye:
+    id: 0x09
+    from: both
+    delivery: control
+    fields:
+      reason: string
+      message: string
+      retry: bool
+
+  error:
+    id: 0x0A
+    from: both
+    delivery: control
+    fields:
+      error: ErrorInfo
+      relatesTo: u32?
+
+  permissions:
+    id: 0x0C
+    from: mod
+    delivery: control
+    fields:
+      granted: list<string>     # the full set after a change
+
+  ack:
+    id: 0x0B
+    from: both
+    delivery: control
+    fields: {}
+
+  session.open:
+    id: 0x10
+    from: node
+    delivery: control
+    response: session.opened
+    timeoutMs: 15000
+    fields:
+      kind: SessionKind
+      name: string
+      identity: BotIdentity?
+      extensions: list<ExtensionRef>
+
+  session.opened:
+    id: 0x11
+    from: mod
+    delivery: control
+    fields:
+      sessionId: u32
+      resumeToken: bytes
+
+  session.resume:
+    id: 0x12
+    from: node
+    delivery: control
+    response: session.resumed
+    timeoutMs: 15000
+    fields:
+      resumeToken: bytes
+      lastApplied: u64
+
+  session.resumed:
+    id: 0x13
+    from: mod
+    delivery: control
+    fields:
+      sessionId: u32
+      lastApplied: u64
+
+  session.close:
+    id: 0x14
+    from: both
+    delivery: control
+    fields: { reason: string }
+
+  world.report:
+    id: 0x15
+    from: node
+    delivery: latest
+    fields:
+      world: WorldKey?
+      position: Vec3d?
+
+  player.context:
+    id: 0x16
+    from: mod
+    delivery: latest
+    fields:
+      inWorld: bool
+      world: WorldKey?
+      attached: bool
+      name: string?             # the player's profile name, so bots know who gives orders
+      uuid: string?             # the player's profile id, dashed; names can be faked in server chat, this cannot
+      alive: bool = true        # false while the player's death screen shows
+      away: bool = false        # no input from the player for the time set in the mod
+      windowFocused: bool = true  # the game window has focus
+
+  interest:
+    id: 0x17
+    from: mod
+    delivery: latest
+    fields:
+      attached: bool
+      worldMatched: bool
+      detail: Detail
+      layers: list<LayerVisibility>
+      focused: bool = false     # whether this bot is the focused one
+
+  presence.status:
+    id: 0x18
+    from: node
+    delivery: latest
+    fields: { status: any }
+
+  obj.snapshot.begin:
+    id: 0x40
+    from: node
+    delivery: reliable
+    fields: {}
+
+  obj.snapshot.end:
+    id: 0x41
+    from: node
+    delivery: reliable
+    fields: {}
+
+  obj.upsert:
+    id: 0x42
+    from: both
+    delivery: reliable
+    fields: { writes: list<ObjectWrite> }
+
+  obj.remove:
+    id: 0x43
+    from: both
+    delivery: reliable
+    fields:
+      keys: list<string>
+      prefixes: list<string>
+
+  obj.edit.propose:
+    id: 0x44
+    from: mod
+    delivery: reliable
+    response: obj.edit.result
+    timeoutMs: 10000
+    fields:
+      key: string
+      baseRev: u64
+      fields: bytes
+
+  obj.edit.result:
+    id: 0x45
+    from: node
+    delivery: reliable
+    fields:
+      accepted: bool
+      reason: string?
+
+  shared.op:
+    id: 0x46
+    from: node
+    delivery: reliable
+    response: shared.op.result
+    timeoutMs: 10000
+    fields: { op: SharedOpBody }
+
+  shared.op.result:
+    id: 0x47
+    from: mod
+    delivery: reliable
+    fields:
+      key: string
+      rev: u64
+
+  shared.subscribe:
+    id: 0x48
+    from: node
+    delivery: reliable
+    fields:
+      kinds: list<string>
+      extensions: list<string>
+
+  stream.offer:
+    id: 0x50
+    from: both
+    delivery: reliable
+    fields:
+      streamId: u32
+      hash: bytes
+      size: u64
+      codec: string
+
+  stream.accept:
+    id: 0x51
+    from: both
+    delivery: reliable
+    fields: { streamId: u32, window: u32 }
+
+  stream.have:
+    id: 0x52
+    from: both
+    delivery: reliable
+    fields: { streamId: u32 }
+
+  stream.chunk:
+    id: 0x53
+    from: both
+    delivery: reliable
+    fields:
+      streamId: u32
+      offset: u64
+      data: bytes
+
+  stream.window:
+    id: 0x54
+    from: both
+    delivery: reliable
+    fields: { streamId: u32, window: u32 }
+
+  stream.end:
+    id: 0x55
+    from: both
+    delivery: reliable
+    fields: { streamId: u32 }
+
+  stream.reject:
+    id: 0x56
+    from: both
+    delivery: reliable
+    fields: { streamId: u32, reason: string }
+
+  notify:
+    id: 0x80
+    from: node
+    delivery: reliable
+    fields:
+      text: string
+      level: string = info
+      icon: string?
+      buttons: list<NotifyButton>?  # shown in chat, so they can be clicked
+      sound: string?                # sound event played with it, such as block.note_block.bell
+
+  pick.request:
+    id: 0x60
+    from: node
+    delivery: reliable
+    response: pick.result
+    timeoutMs: 600000
+    fields:
+      kind: PickKind
+      prompt: string?
+      timeoutMs: u32 = 60000
+      maxDistance: f32?
+      maxVolume: u32?
+      filter: TargetSpec?
+      urgent: bool = false
+
+  pick.result:
+    id: 0x61
+    from: mod
+    delivery: reliable
+    fields: { result: PickResult }
+
+  pick.cancel:
+    id: 0x62
+    from: node
+    delivery: reliable
+    fields: { request: u32 }
+
+  prompt.request:
+    id: 0x63
+    from: node
+    delivery: reliable
+    response: prompt.result
+    timeoutMs: 600000
+    fields:
+      kind: PromptKind
+      text: string
+      choices: list<string>?
+      defaultValue: any?
+      timeoutMs: u32 = 30000
+      placement: string = hud   # hud | world
+      at: Vec3d?
+      surface: string = hud     # hud | dialog | anvil | sign | book | chat | world | stonecutter | enchanting | merchant | crafting
+      item: string?             # anvil: item shown in the input slot
+      wood: string?             # sign: wood type, e.g. spruce
+      min: f64?                 # number prompts
+      max: f64?
+      maxLength: u32?           # text, lines and pages prompts
+      options: list<WorldMenuEntry>?   # stonecutter and enchanting choices
+      offers: list<MerchantOffer>?     # merchant surface
+
+  prompt.result:
+    id: 0x64
+    from: mod
+    delivery: reliable
+    fields:
+      value: any?
+      timedOut: bool = false
+      surface: string?         # surface that answered, after any fallback
+
+  prompt.cancel:
+    id: 0x65
+    from: node
+    delivery: reliable
+    fields: { request: u32 }
+
+  form.open:
+    id: 0x66
+    from: node
+    delivery: reliable
+    response: form.result
+    timeoutMs: 3600000
+    fields:
+      title: string
+      fields: list<FormField>
+      submitLabel: string?
+      surface: string = screen  # screen | dialog
+      timeoutMs: u32 = 3600000
+      buttons: list<FormButton>?  # actions besides submit, in their own row; they close the form
+
+  form.result:
+    id: 0x67
+    from: mod
+    delivery: reliable
+    fields:
+      values: map<string, any>
+      button: string?         # id of the extra button pressed instead of submit; values are then empty
+
+  form.close:
+    id: 0x68
+    from: node
+    delivery: reliable
+    fields: { request: u32 }
+
+  action.invoked:
+    id: 0x69
+    from: mod
+    delivery: reliable
+    fields:
+      action: string          # object key of the core:action
+      invocation: u32
+      target: Target
+      source: string?         # how the player ran it: chat | command | palette | menu | screen | map
+      bots: list<string>?     # names of the bots the player had selected when running it, such as on the map
+
+  command.invoked:
+    id: 0x6A
+    from: mod
+    delivery: reliable
+    fields:
+      command: string         # object key of the core:command
+      invocation: u32
+      args: map<string, any>
+      path: list<string>?     # subcommand names below the root, e.g. [start]
+      source: string?         # how the player ran it: chat | command | palette | menu | screen | map
+      bots: list<string>?     # for an order: the crew bots it was addressed to
+
+  invocation.result:
+    id: 0x6B
+    from: node
+    delivery: reliable
+    fields:
+      invocation: u32
+      ok: bool
+      message: string?
+      quiet: bool?            # the player cancelled what the handler waited on (a form); show nothing
+
+  keybind.event:
+    id: 0x6C
+    from: mod
+    delivery: reliable
+    fields:
+      keybind: string         # object key of the core:keybind
+      pressed: bool
+
+  tool.event:
+    id: 0x6D
+    from: mod
+    delivery: reliable
+    fields:
+      tool: string            # object key of the core:tool
+      input: ToolInput
+      delta: f32?
+      key: string?
+      target: Target?
+
+  tool.state:
+    id: 0x6E
+    from: mod
+    delivery: latest
+    fields:
+      active: string?         # object key of the active tool, if it belongs to this session
+
+  settings.values:
+    id: 0x81
+    from: mod
+    delivery: latest
+    fields:
+      settings: string        # object key of the core:settings
+      values: map<string, any>
+
+  container.open:
+    id: 0x70
+    from: both
+    delivery: reliable
+    fields: { view: string }   # object key of the core:container-view
+
+  container.close:
+    id: 0x71
+    from: both
+    delivery: reliable
+    fields:
+      view: string
+      lost: bool = false       # from the mod: the view lapsed (bot detached, left the world, open timed out), the player did not close it
+
+  container.input:
+    id: 0x72
+    from: mod
+    delivery: reliable
+    fields:
+      view: string
+      slot: i32                # -999 for clicks outside the grid
+      click: SlotClick
+      hotbar: i32?             # number-key target for click = number
+      input: u32               # mod-assigned id, echoed by container.ack
+      moved: SlotItem?         # for ask slots: the stack the player is moving
+      fromSlot: i32?           # for ask slots: where the stack came from, -1 for the cursor
+
+  container.ack:
+    id: 0x73
+    from: node
+    delivery: reliable
+    fields:
+      view: string
+      input: u32
+      ok: bool
+      message: string?
+
+  chat.message:
+    id: 0x78
+    from: mod
+    delivery: reliable
+    fields:
+      text: string             # text after the bot name, prefix removed
+      raw: string              # the full line the player typed
+      broadcast: bool = false  # addressed to all rather than to this bot by name
+
+  chat.print:
+    id: 0x79
+    from: node
+    delivery: reliable
+    fields:
+      spans: list<ChatSpan>
+
+  element.event:
+    id: 0x7A
+    from: mod
+    delivery: reliable
+    fields:
+      element: string          # object key of the display or shape
+      input: ElementInput
+      delta: f32?
+      key: string?
+      local: Vec3d?            # hit point relative to the element position
+      modifiers: u32 = 0       # bit 0 shift, bit 1 control, bit 2 alt
+
+  world-menu.request:
+    id: 0x7B
+    from: node
+    delivery: reliable
+    response: world-menu.result
+    timeoutMs: 600000
+    fields:
+      at: Vec3d
+      entries: list<WorldMenuEntry>
+      layout: string = ring    # row | column | ring | grid
+      radius: f32 = 1.5
+      prompt: string?
+      timeoutMs: u32 = 60000
+
+  world-menu.result:
+    id: 0x7C
+    from: mod
+    delivery: reliable
+    fields: { entry: string }
+
+  world-menu.cancel:
+    id: 0x7D
+    from: node
+    delivery: reliable
+    fields: { request: u32 }
+
+  effect.play:
+    id: 0x82
+    from: node
+    delivery: unreliable
+    fields: { effect: EffectBody }
+
+  container.storage:
+    id: 0x74
+    from: mod
+    delivery: reliable
+    fields:
+      view: string
+      slots: list<SlotEntry>   # storage slots only, after the change
+
+  intercept.event:
+    id: 0x7E
+    from: mod
+    delivery: reliable
+    fields:
+      intercept: string        # object key of the core:intercept
+      invocation: u32          # answered with invocation.result when mode is cancel
+      target: Target
+      cancelled: bool          # true when an earlier rule cancelled the interaction
+
+  command.complete:
+    id: 0x75
+    from: mod
+    delivery: reliable
+    response: command.suggestions
+    timeoutMs: 300
+    fields:
+      command: string          # object key of the core:command
+      path: list<string>       # subcommand names below the root
+      arg: string              # name of the argument being completed
+      input: string            # what the player typed for that argument so far
+      args: map<string, any>   # earlier arguments, already parsed
+
+  command.suggestions:
+    id: 0x76
+    from: node
+    delivery: reliable
+    fields:
+      suggestions: list<Suggestion>
+
+  sample.request:
+    id: 0x83
+    from: node
+    delivery: latest
+    fields:
+      rateHz: f32 = 4           # capped by the player setting, at most 20
+      position: bool = false    # needs client.sample.position
+      target: bool = false      # needs client.sample.target
+      heldItem: bool = false    # needs client.sample.inventory
+
+  client.sample:
+    id: 0x84
+    from: mod
+    delivery: latest
+    fields:
+      position: Vec3d?
+      yaw: f32?
+      pitch: f32?
+      target: Target?
+      heldItem: SlotItem?
+
+  obj.begin:
+    id: 0x49
+    from: both
+    delivery: reliable
+    fields: { tx: u32 }
+
+  obj.commit:
+    id: 0x4A
+    from: both
+    delivery: reliable
+    fields: { tx: u32 }
+
+  focus.request:
+    id: 0x85
+    from: node
+    delivery: latest
+    fields:
+      reason: string?
+
+  screen.event:
+    id: 0x86
+    from: mod
+    delivery: reliable
+    fields:
+      screen: string           # object key of the core:screen
+      item: string
+      invocation: u32          # answered with invocation.result
+      value: any?              # the new value of a toggle or cycle
+
+  screen.open:
+    id: 0x87
+    from: both
+    delivery: reliable
+    fields: { screen: string }
+
+  screen.close:
+    id: 0x88
+    from: both
+    delivery: reliable
+    fields: { screen: string }
+
+  query.entities:
+    id: 0x89
+    from: node
+    delivery: reliable
+    response: query.entities.result
+    timeoutMs: 10000
+    fields:
+      center: Vec3d?            # the player's position when absent
+      radius: f32 = 32          # blocks, at most 128
+      types: list<string>?      # entity type ids; every type when absent
+      limit: u32 = 256          # at most 1024, nearest first
+
+  query.entities.result:
+    id: 0x8A
+    from: mod
+    delivery: reliable
+    fields:
+      entities: list<QueriedEntity>
+
+  query.blocks:
+    id: 0x8B
+    from: node
+    delivery: reliable
+    response: query.blocks.result
+    timeoutMs: 10000
+    fields:
+      min: Vec3i
+      max: Vec3i                # inclusive; at most 65536 blocks
+      blocks: list<string>?     # block ids to report; every non-air block when absent
+      limit: u32 = 4096         # at most 65536
+
+  query.blocks.result:
+    id: 0x8C
+    from: mod
+    delivery: reliable
+    fields:
+      positions: i32[]          # x, y, z triples
+      palette: list<string>     # block ids
+      ids: u16[]                # one palette index per position
+      complete: bool            # false when part of the box is not loaded or the limit cut it

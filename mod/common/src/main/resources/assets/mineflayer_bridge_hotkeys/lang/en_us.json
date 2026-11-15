@@ -1,0 +1,20 @@
+{
+  "mineflayer_bridge_hotkeys.tab": "Hotkeys",
+  "mineflayer_bridge_hotkeys.help": "Keys that run a line for your bots in game, as if you typed it in chat.",
+  "mineflayer_bridge_hotkeys.none": "No hotkeys yet.",
+  "mineflayer_bridge_hotkeys.add": "Add hotkey",
+  "mineflayer_bridge_hotkeys.edit": "Edit hotkey",
+  "mineflayer_bridge_hotkeys.edit.button": "Edit",
+  "mineflayer_bridge_hotkeys.line": "Line",
+  "mineflayer_bridge_hotkeys.line.hint": "@farmers stop",
+  "mineflayer_bridge_hotkeys.key.label": "Key",
+  "mineflayer_bridge_hotkeys.key": "Key: %s",
+  "mineflayer_bridge_hotkeys.key.none": "Click, then press a key",
+  "mineflayer_bridge_hotkeys.press": "Press a key (Esc to cancel)",
+  "mineflayer_bridge_hotkeys.save": "Save",
+  "mineflayer_bridge_hotkeys.remove": "Remove",
+  "mineflayer_bridge_hotkeys.need_key": "Choose a key first",
+  "mineflayer_bridge_hotkeys.need_line": "Type the line it runs",
+  "mineflayer_bridge_hotkeys.need_prefix": "The line must start with %s, as a chat line for bots does",
+  "mineflayer_bridge_hotkeys.nobody": "Nobody to send %s to; it was not sent"
+}

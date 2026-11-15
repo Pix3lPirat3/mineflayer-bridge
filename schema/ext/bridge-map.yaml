@@ -1,0 +1,16 @@
+namespace: bridge
+extension: map
+java: io.github.pix3lpirat3.mfbridge.common.ext.map.wire
+protocol: { major: 1, minor: 0 }
+
+enums:
+  MapOrderType: [move, stop]
+
+messages:
+  bridge:map.order:
+    from: mod
+    delivery: reliable
+    fields:
+      type: MapOrderType
+      pos: Vec3d?              # move: the target, the top of the clicked column
+      queue: bool = false      # Shift held: after the current orders instead of replacing them

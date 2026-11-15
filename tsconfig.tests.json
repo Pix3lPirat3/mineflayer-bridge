@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "rootDir": "."
+  },
+  "include": [
+    "node/packages/*/test/**/*.ts",
+    "tools/**/*.ts",
+    "examples/test/**/*.ts",
+    "node/packages/plugin/scripts/*.ts"
+  ]
+}

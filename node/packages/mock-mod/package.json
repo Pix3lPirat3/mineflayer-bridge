@@ -1,0 +1,51 @@
+{
+  "name": "@mineflayer-bridge/mock-mod",
+  "version": "0.1.0-alpha.10",
+  "private": true,
+  "description": "Headless implementation of the mineflayer-bridge mod side, for testing bots and extensions without Minecraft.",
+  "keywords": [
+    "mineflayer",
+    "minecraft",
+    "mock",
+    "testing"
+  ],
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "author": "Pix3lPirat3 and mineflayer-bridge contributors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pix3lPirat3/mineflayer-bridge.git",
+    "directory": "node/packages/mock-mod"
+  },
+  "homepage": "https://github.com/Pix3lPirat3/mineflayer-bridge#readme",
+  "bugs": {
+    "url": "https://github.com/Pix3lPirat3/mineflayer-bridge/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@mineflayer-bridge/protocol": "workspace:*",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.12"
+  }
+}

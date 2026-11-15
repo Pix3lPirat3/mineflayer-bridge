@@ -1,0 +1,41 @@
+plugins {
+    id 'bridge-java'
+}
+
+description = 'Pure Java bridge core: transport, auth, sessions, object store, world context and persistence.'
+
+def provided = [
+        "io.netty:netty-buffer:${netty_version}",
+        "io.netty:netty-common:${netty_version}",
+        "io.netty:netty-transport:${netty_version}",
+        "io.netty:netty-handler:${netty_version}",
+        "io.netty:netty-codec-base:${netty_version}",
+        "io.netty:netty-codec-http:${netty_version}",
+        "com.google.code.gson:gson:${gson_version}",
+        "it.unimi.dsi:fastutil:${fastutil_version}",
+        "org.slf4j:slf4j-api:${slf4j_version}",
+]
+
+dependencies {
+    api(project(':api'))
+    implementation("io.airlift:aircompressor:${aircompressor_version}")
+    provided.each {
+        compileOnly(it)
+        testImplementation(it)
+    }
+    testRuntimeOnly("org.slf4j:slf4j-simple:${slf4j_version}")
+}
+
+tasks.register('conformanceClasspath') {
+    description = 'Writes the test runtime classpath of the conformance server to build/conformance/classpath.txt.'
+    dependsOn tasks.named('testClasses')
+    def out = layout.buildDirectory.file('conformance/classpath.txt')
+    def cp = sourceSets.test.runtimeClasspath
+    inputs.files(cp)
+    outputs.file(out)
+    doLast {
+        def f = out.get().asFile
+        f.parentFile.mkdirs()
+        f.text = cp.asPath
+    }
+}

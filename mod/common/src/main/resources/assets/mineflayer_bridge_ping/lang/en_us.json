@@ -1,0 +1,8 @@
+{
+  "key.mineflayer_bridge.ping": "Ping what you look at",
+  "mineflayer_bridge_ping.toast": "Ping",
+  "mineflayer_bridge_ping.nothing": "Nothing in reach to ping",
+  "mineflayer_bridge_ping.nobody": "No bot listens for pings",
+  "mineflayer_bridge_ping.label": "Ping",
+  "mineflayer_bridge_ping.label.entity": "Ping: %s"
+}

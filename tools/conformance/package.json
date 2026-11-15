@@ -1,0 +1,11 @@
+{
+  "name": "@mineflayer-bridge/conformance",
+  "private": true,
+  "type": "module",
+  "description": "One protocol suite, two targets: the real plugin against the mock mod and against the Java core.",
+  "dependencies": {
+    "@mineflayer-bridge/mock-mod": "workspace:*",
+    "@mineflayer-bridge/protocol": "workspace:*",
+    "mineflayer-bridge": "workspace:*"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "mineflayer-bridge",
+  "entryPoints": [
+    "node/packages/plugin/src/index.ts"
+  ],
+  "entryPointStrategy": "resolve",
+  "tsconfig": "tsconfig.docs.json",
+  "out": "build/api-docs/node",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "readme": "none",
+  "skipErrorChecking": true,
+  "sourceLinkTemplate": "https://github.com/Pix3lPirat3/mineflayer-bridge/blob/{gitRevision}/{path}#L{line}",
+  "treatWarningsAsErrors": true,
+  "intentionallyNotExported": [
+    "HasValue",
+    "MiniValue",
+    "OptionalKeys",
+    "PlatformInfo",
+    "GoalLike"
+  ],
+  "includeVersion": true,
+  "navigationLinks": {
+    "API home": "https://pix3lpirat3.github.io/mineflayer-bridge/",
+    "GitHub": "https://github.com/Pix3lPirat3/mineflayer-bridge"
+  }
+}

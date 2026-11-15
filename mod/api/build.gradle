@@ -1,0 +1,15 @@
+plugins {
+    id 'bridge-java'
+}
+
+description = 'Public mod-side extension API: extensions, registrar, event bus and thread annotations.'
+
+dependencies {
+    api(project(':protocol'))
+    testImplementation("io.netty:netty-buffer:${netty_version}")
+}
+
+tasks.named('javadoc', Javadoc) {
+    title = "mineflayer-bridge ${project.version}: mod extension API"
+    options.bottom = '<a href="https://pix3lpirat3.github.io/mineflayer-bridge/">API home</a> | <a href="https://github.com/Pix3lPirat3/mineflayer-bridge">GitHub</a>'
+}

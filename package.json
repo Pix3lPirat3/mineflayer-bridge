@@ -1,0 +1,26 @@
+{
+  "name": "mineflayer-bridge-workspace",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "packageManager": "pnpm@10.18.0",
+  "scripts": {
+    "gen": "node tools/codegen/src/main.ts",
+    "gen:check": "node tools/codegen/src/main.ts --check",
+    "fixtures": "node tools/codegen/src/fixtures.ts",
+    "build": "pnpm -r --filter \"./node/packages/*\" run build",
+    "pack": "node node/packages/plugin/scripts/pack.ts",
+    "version:set": "node tools/version/set.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -b node/packages/protocol node/packages/plugin node/packages/mock-mod && tsc -p tsconfig.tests.json",
+    "docs:api": "pnpm dlx typedoc@0.28.5 && cd mod && ./gradlew :api:javadoc :protocol:javadoc :core:javadoc :common:clientApiJavadoc"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0",
+    "yaml": "^2.8.0"
+  }
+}

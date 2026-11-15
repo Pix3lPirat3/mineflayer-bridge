@@ -1,0 +1,9 @@
+{
+  "key.mineflayer_bridge.stop_spectating": "Stop spectating a bot",
+  "mineflayer_bridge_spectate.button": "Spectate",
+  "mineflayer_bridge_spectate.button.stop": "Stop spectating",
+  "mineflayer_bridge_spectate.hud": "Spectating %s (Sneak to stop)",
+  "mineflayer_bridge_spectate.toast": "Spectate",
+  "mineflayer_bridge_spectate.not_in_view": "%s is not in view",
+  "mineflayer_bridge_spectate.left_view": "%s left the view"
+}

@@ -1,0 +1,45 @@
+{
+  "name": "@mineflayer-bridge/protocol",
+  "version": "0.1.0-alpha.10",
+  "private": true,
+  "description": "Wire protocol of mineflayer-bridge: MessagePack reader and writer, envelope, pairing helpers and the message and object codecs generated from the schema.",
+  "keywords": [
+    "mineflayer",
+    "minecraft",
+    "protocol",
+    "messagepack",
+    "codec"
+  ],
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "author": "Pix3lPirat3 and mineflayer-bridge contributors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pix3lPirat3/mineflayer-bridge.git",
+    "directory": "node/packages/protocol"
+  },
+  "homepage": "https://github.com/Pix3lPirat3/mineflayer-bridge#readme",
+  "bugs": {
+    "url": "https://github.com/Pix3lPirat3/mineflayer-bridge/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

@@ -1,0 +1,29 @@
+namespace: bridge
+extension: tasks
+java: io.github.pix3lpirat3.mfbridge.common.ext.tasks.wire
+protocol: { major: 1, minor: 0 }
+
+enums:
+  TaskState: [running, paused, done, failed, cancelled]
+  TaskAction: [pause, resume, cancel]
+
+kinds:
+  bridge:task:
+    fields:
+      name: string
+      state: TaskState
+      status: string?
+      current: f64?
+      total: f64?              # absent while progress is indeterminate
+      parent: string?          # id of the parent task, for subtasks
+      pausable: bool = true
+      cancellable: bool = true
+      startedAt: u64?          # epoch ms, the bot's clock
+
+messages:
+  bridge:task.control:
+    from: mod
+    delivery: reliable
+    fields:
+      task: string             # the task id
+      action: TaskAction

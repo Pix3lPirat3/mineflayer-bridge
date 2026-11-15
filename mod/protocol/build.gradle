@@ -1,0 +1,10 @@
+plugins {
+    id 'bridge-java'
+}
+
+description = 'Wire protocol: MessagePack codecs, envelope and generated core messages.'
+
+dependencies {
+    compileOnlyApi("io.netty:netty-buffer:${netty_version}")
+    testImplementation("io.netty:netty-buffer:${netty_version}")
+}

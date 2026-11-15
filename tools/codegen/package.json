@@ -1,0 +1,6 @@
+{
+  "name": "@mineflayer-bridge/codegen",
+  "private": true,
+  "type": "module",
+  "dependencies": { "yaml": "^2.8.0" }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "mineflayer-bridge-examples",
+  "version": "0.1.0-alpha.10",
+  "private": true,
+  "description": "Runnable examples for mineflayer-bridge. Each script explains in its header how to run it.",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "engines": { "node": ">=22.12" },
+  "scripts": {
+    "basic": "node basic.mjs",
+    "swarm": "node swarm.mjs",
+    "menus": "node menus.mjs",
+    "commands": "node commands.mjs",
+    "crew": "node crew.mjs",
+    "pathfinder": "node pathfinder.mjs"
+  },
+  "dependencies": {
+    "mineflayer-bridge": "workspace:*"
+  },
+  "peerDependencies": {
+    "mineflayer": ">=4"
+  },
+  "peerDependenciesMeta": {
+    "mineflayer": { "optional": true }
+  }
+}

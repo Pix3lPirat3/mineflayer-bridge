@@ -1,0 +1,27 @@
+namespace: bridge
+extension: console
+java: io.github.pix3lpirat3.mfbridge.common.ext.console.wire
+protocol: { major: 1, minor: 0 }
+
+enums:
+  ConsoleLevel: [debug, info, warn, error]
+
+structs:
+  ConsoleLine:
+    time: u64                # epoch ms, the bot's clock
+    level: ConsoleLevel
+    text: string
+    pos: Vec3d?              # a position the line is about; the console can mark it
+
+messages:
+  bridge:console.lines:
+    from: node
+    delivery: reliable
+    fields:
+      lines: list<ConsoleLine>
+
+  bridge:console.input:
+    from: mod
+    delivery: reliable
+    fields:
+      text: string

@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Generated code is current
+        run: pnpm gen:check
+      - name: Fixtures are current
+        run: node tools/codegen/src/fixtures.ts --check
+      - name: Versions agree
+        run: pnpm version:set --check
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  mod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Build Node packages for the interop test
+        run: pnpm install --frozen-lockfile && pnpm build
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build and test both loaders
+        working-directory: mod
+        run: ./gradlew build --console=plain
+      - name: Conformance suite against the Java core
+        run: |
+          (cd mod && ./gradlew :core:conformanceClasspath --console=plain)
+          CONFORMANCE_JAVA=required pnpm vitest run tools/conformance
+
+  api-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile && pnpm build
+      - name: TypeDoc
+        run: pnpm dlx typedoc@0.28.5
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Javadoc
+        working-directory: mod
+        run: ./gradlew :api:javadoc :protocol:javadoc :core:javadoc :common:clientApiJavadoc --console=plain
+      - name: Collect
+        run: |
+          for m in api protocol core; do mkdir -p build/api-docs/java/$m && cp -r mod/$m/build/docs/javadoc/. build/api-docs/java/$m/; done
+          mkdir -p build/api-docs/java/client && cp -r mod/common/build/docs/clientApi/. build/api-docs/java/client/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-reference
+          path: build/api-docs
