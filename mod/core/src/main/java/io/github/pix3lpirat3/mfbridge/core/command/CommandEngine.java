@@ -442,14 +442,14 @@ public final class CommandEngine {
     /** What an address suggestion says about the name. */
     private static String tooltip(Addressee a) {
         return switch (a.kind()) {
-            case ALL -> "Every attached bot";
+            case ALL -> "Every bot";
             case GROUP -> "Group: " + String.join(", ", a.members());
             case BOT, CONTROLLER -> {
                 int n = 0;
                 for (BotCommands b : a.commands()) {
                     n += b.commands().size();
                 }
-                yield n == 1 ? "1 command" : n + " commands";
+                yield (n == 1 ? "1 command" : n + " commands") + (a.elsewhere() ? ", in another world" : "");
             }
         };
     }

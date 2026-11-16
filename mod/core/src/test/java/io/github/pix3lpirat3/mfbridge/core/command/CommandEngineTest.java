@@ -276,8 +276,8 @@ class CommandEngineTest {
     void addressedLinesCompleteBotsThenCommands() {
         CommandEngine e = new CommandEngine(Map.of(), DynamicCompleter.NONE);
         BotCommands miner = miner();
-        List<Addressee> book = List.of(new Addressee("all", Addressee.Kind.ALL, List.of(miner), List.of("Miner"), List.of(miner.owner())),
-                new Addressee("Miner", Addressee.Kind.BOT, List.of(miner), List.of("Miner"), List.of(miner.owner())));
+        List<Addressee> book = List.of(new Addressee("all", Addressee.Kind.ALL, List.of(miner), List.of("Miner"), List.of(miner.owner()), false),
+                new Addressee("Miner", Addressee.Kind.BOT, List.of(miner), List.of("Miner"), List.of(miner.owner()), false));
         Completion names = e.completeAddressed(book, "mi", 2, CTX).join();
         assertEquals(List.of("Miner"), texts(names));
         Completion all = e.completeAddressed(book, "a", 1, CTX).join();

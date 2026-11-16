@@ -8,6 +8,7 @@ import io.github.pix3lpirat3.mfbridge.core.input.InvocationResult;
 import io.github.pix3lpirat3.mfbridge.core.store.ObjectKeys;
 import io.github.pix3lpirat3.mfbridge.core.store.ObjectStore;
 import io.github.pix3lpirat3.mfbridge.core.store.StoredObject;
+import io.github.pix3lpirat3.mfbridge.protocol.core.Scope;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ActionData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ActionInvoked;
 import io.github.pix3lpirat3.mfbridge.protocol.core.CommandData;
@@ -71,6 +72,23 @@ final class Interactions implements InteractionControls {
             throw new BridgeException("disconnected", "no session owns " + o.key());
         }
         host.requireVisible(s, o);
+        return s;
+    }
+
+    /**
+     * The live session that owns a command: a bot in any world can be given orders, so only a
+     * world-scoped command outside the player's world is refused.
+     *
+     * @throws BridgeException {@code disconnected} or {@code world_mismatch}
+     */
+    Session commandOwner(StoredObject o) {
+        Session s = host.writer(o.parts().owner());
+        if (s == null || s.superseded) {
+            throw new BridgeException("disconnected", "no session owns " + o.key());
+        }
+        if (o.state().scope() == Scope.WORLD && !host.worldVisible(o.state().world())) {
+            throw new BridgeException("world_mismatch", "the player is not in the world of " + o.key());
+        }
         return s;
     }
 
@@ -156,7 +174,7 @@ final class Interactions implements InteractionControls {
         }
         Session s;
         try {
-            s = reachableOwner(o);
+            s = commandOwner(o);
         } catch (BridgeException e) {
             return CompletableFuture.failedFuture(e);
         }

@@ -156,9 +156,9 @@ class ChatBridgeTest {
 
             h.core.attach().setChoice(IDENTITY, false);
             h.tick();
-            assertEquals(new ChatRoute.Unknown("Miner is not in your world, or is not shown here"), chat.route("@miner hi"),
-                    "a detached bot is kept from the server chat");
-            assertEquals(List.of("Farmer"), assertInstanceOf(ChatRoute.CapturedMessage.class, chat.route("@all hi"))
+            assertEquals(new ChatRoute.CapturedMessage(List.of("Miner"), null), chat.route("@miner hi"),
+                    "a detached bot, one in another world, still gets the line");
+            assertEquals(List.of("Farmer", "Miner"), assertInstanceOf(ChatRoute.CapturedMessage.class, chat.route("@all hi"))
                     .recipients());
         }
     }
@@ -261,8 +261,9 @@ class ChatBridgeTest {
             p.reliable(s, CoreMessages.CHAT_PRINT, new io.github.pix3lpirat3.mfbridge.protocol.core.ChatPrint(spans));
             p.sync();
             assertEquals(1, printed.size(), "detached bots do not print");
-            assertEquals("not_attached", InputTestSupport.failure(
-                    h.core.chat().runCommandLine(InputTestSupport.OWNER, "mine minecraft:stone")).code());
+            // Its commands still run from Bridge home: the world decides what a bot does, not who may order it.
+            h.core.chat().runCommandLine(InputTestSupport.OWNER, "mine minecraft:stone 2");
+            assertEquals(2L, p.await(CoreMessages.COMMAND_INVOKED, s).args().get("count"));
             h.core.attach().setChoice(IDENTITY, true);
             h.tick();
             h.core.chat().runCommandLine(InputTestSupport.OWNER, "mine minecraft:stone 5");

@@ -88,11 +88,14 @@ describe('chat capture', () => {
     expect(got[0]).toEqual(['what should I build?', { raw: '@ALICE what should I build?', broadcast: false }]);
   });
 
-  it('keeps a line for a detached bot from the server chat, and runs nothing', async () => {
+  it('reaches a detached bot, one in another world, and still passes other names on', async () => {
     const b = await attached();
+    const got = inbox(b);
     e.mod.setAttached('alice@play.example.net:25565', false);
     await until(() => !b.state.attached);
-    expect(await e.mod.sendChat('@alice come')).toEqual({ captured: true, broadcast: false, deliveries: [], unknown: 'Alice is not in your world, or is not shown here' });
+    expect(await e.mod.sendChat('@alice come')).toMatchObject({ captured: true, broadcast: false, deliveries: [{ routed: 'message' }] });
+    await until(() => got.length === 1);
+    expect(got[0]![0]).toBe('come');
     expect(await e.mod.sendChat('@steve hi')).toEqual({ captured: false, text: '@steve hi' });
   });
 
@@ -140,7 +143,7 @@ describe('chat capture', () => {
     expect(got.map((g) => g[0])).toEqual(['mine iron_ore many', 'mine iron_ore 0', 'mine', 'goto 1 2', 'mine a 1 extra', 'mining is fun']);
   });
 
-  it('broadcasts @all: bots that have the command run it, otherwise every attached bot gets the text', async () => {
+  it('broadcasts @all: bots that have the command run it, otherwise every bot gets the text, in any world', async () => {
     const h = hub();
     const alice = await attached('Alice', h);
     const bob = await attached('Bob', h);
@@ -163,7 +166,9 @@ describe('chat capture', () => {
     await until(() => toBob.length === 1 && toAlice.length === 1);
     expect(toAlice[0]).toEqual(['hello', { raw: '@all hello', broadcast: true }]);
     expect(toBob[0]).toEqual(['hello', { raw: '@all hello', broadcast: true }]);
-    expect(toCarol).toEqual([]);
+    // Carol is detached, so in another world as far as the player is concerned; she still hears it.
+    await until(() => toCarol.length === 1);
+    expect(toCarol[0]).toEqual(['hello', { raw: '@all hello', broadcast: true }]);
   });
 
   it('runs commands of a controller addressed by name, but leaves controllers out of @all', async () => {

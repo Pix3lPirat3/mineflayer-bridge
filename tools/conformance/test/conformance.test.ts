@@ -257,13 +257,16 @@ describe.each(targets)('conformance against $name', ({ start, features }) => {
       expect(heard).toEqual([]);
     });
 
-    it('keeps a known bot from the server when it cannot be reached', async () => {
+    it('keeps an offline crew bot from the server, and reaches a bot in another world', async () => {
       boss.crew.set({ bots: ['Alice', 'Bob', 'Carol'], groups: { miners: ['Bob'], night: ['Carol'] } });
       await until(async () => (await mod.chat('@carol dig')).route === 'unknown', 'the crew with Carol');
-      expect(await mod.chat('@night dig')).toMatchObject({ route: 'unknown' });
-      await mod.setAttached(`bot:bob@${SERVER}`, false);
-      await until(async () => (await mod.chat('@bob dig')).route === 'unknown', 'Bob detached');
+      expect(await mod.chat('@carol dig')).toEqual({ route: 'unknown', message: 'Carol is offline' });
+      expect(await mod.chat('@night dig')).toEqual({ route: 'unknown', message: 'None of night is online' });
       expect(digs).toEqual([]);
+      await mod.setAttached(`bot:bob@${SERVER}`, false);
+      await until(async () => (await mod.chat('@miners dig')).route === 'command', 'Bob detached and still reached');
+      expect(await mod.chat('@bob dig')).toEqual({ route: 'command', results: [{ ok: true, message: 'digging with Bob' }] });
+      expect(digs.at(-1)).toEqual(['Bob']);
     });
 
     it('passes other names and the doubled prefix on to the server', async () => {

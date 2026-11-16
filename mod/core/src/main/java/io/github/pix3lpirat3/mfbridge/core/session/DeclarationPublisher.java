@@ -155,7 +155,7 @@ final class DeclarationPublisher {
         List<CrewDecl> crews = new ArrayList<>();
         Set<String> shown = new HashSet<>();
         for (Session s : writers) {
-            if (s.ended || s.superseded || !sight.attachedNow(s)) {
+            if (s.ended || s.superseded) {
                 continue;
             }
             shown.add(s.owner);
@@ -165,6 +165,10 @@ final class DeclarationPublisher {
                 built.put(s.owner, d);
             }
             commands.addAll(d.commands);
+            // A bot in another world can still be given orders; what it shows waits until it is attached.
+            if (!sight.attachedNow(s)) {
+                continue;
+            }
             actions.addAll(d.actions);
             keybinds.addAll(d.keybinds);
             tools.addAll(d.tools);

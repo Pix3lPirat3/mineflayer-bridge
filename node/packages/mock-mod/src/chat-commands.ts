@@ -290,26 +290,24 @@ export class ChatCommands {
   /** Why a bot or group the bridge knows reaches nobody now, as the real mod says it; undefined for other names. */
   private unreachable(name: string): string | undefined {
     const lower = name.toLowerCase();
-    const live = [...this.core.sessions.values()].filter((s) => s.conn !== null && isLive(s) && s.kind === 'bot');
-    const bot = live.find((s) => (s.identity?.username ?? s.name).toLowerCase() === lower);
-    if (bot !== undefined) return `${bot.identity?.username ?? bot.name} is not in your world, or is not shown here`;
     for (const c of this.core.store.declarations('core:crew', '~crew/')) {
       const crewBot = c.data.bots.find((b) => b.toLowerCase() === lower);
-      if (crewBot !== undefined) return `${crewBot} is not here: it is offline or in another world`;
+      if (crewBot !== undefined) return `${crewBot} is offline`;
       const group = (c.data.groups ?? []).find((g) => g.name.toLowerCase() === lower);
-      if (group !== undefined) return `None of ${group.name} is here: they are offline or in another world`;
+      if (group !== undefined) return `None of ${group.name} is online`;
     }
     return undefined;
   }
 
   /**
    * Every name the player may address, as the real mod builds it: `all` while a bot is attached,
-   * attached bots (their own commands, then the orders of each crew they are in), live controllers
+   * live bots in any world (their own commands, then the orders of each crew they are in), live controllers
    * (their own commands), then crew groups not named like any of those.
    */
   addressees(): Addressee[] {
     const live = [...this.core.sessions.values()].filter((s) => s.conn !== null && isLive(s));
-    const bots = live.filter((s) => s.kind === 'bot' && this.core.player.attachState(s).attached);
+    // Every live bot, in any world, as the real mod builds it: the world decides what an order does, not who may give it.
+    const bots = live.filter((s) => s.kind === 'bot');
     const nameOf = (s: Session): string => (s.kind === 'bot' ? (s.identity?.username ?? s.name) : s.name);
     const byName = new Map(bots.map((b) => [nameOf(b).toLowerCase(), b] as const));
     const commands = this.core.store.declarations('core:command', '~cmd/');

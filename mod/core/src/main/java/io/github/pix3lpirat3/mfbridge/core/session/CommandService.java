@@ -96,7 +96,7 @@ final class CommandService implements CommandControls {
     public List<BotCommands> bots() {
         Map<String, List<CommandDecl>> byOwner = new LinkedHashMap<>();
         Map<String, String> names = new HashMap<>();
-        for (Session s : host.attachedBots()) {
+        for (Session s : host.liveBots()) {
             byOwner.put(s.owner, new ArrayList<>());
             names.put(s.owner, s.displayName);
         }
@@ -121,21 +121,16 @@ final class CommandService implements CommandControls {
 
     @Override
     public @Nullable String unreachable(String name) {
-        for (Session s : host.liveBots()) {
-            if (s.displayName.equalsIgnoreCase(name)) {
-                return s.displayName + " is not in your world, or is not shown here";
-            }
-        }
         for (CrewDecl crew : host.declarations().crews()) {
             for (String bot : crew.data().bots()) {
                 if (bot.equalsIgnoreCase(name)) {
-                    return bot + " is not here: it is offline or in another world";
+                    return bot + " is offline";
                 }
             }
             List<CrewGroup> groups = crew.data().groups();
             for (CrewGroup g : groups == null ? List.<CrewGroup>of() : groups) {
                 if (g.name().equalsIgnoreCase(name)) {
-                    return "None of " + g.name() + " is here: they are offline or in another world";
+                    return "None of " + g.name() + " is online";
                 }
             }
         }
@@ -159,8 +154,9 @@ final class CommandService implements CommandControls {
         for (BotCommands b : bots()) {
             own.put(b.owner(), b);
         }
+        // Every live bot is addressable, in any world: the world decides what an order does, not who may give it.
         Map<String, Session> attached = new LinkedHashMap<>();
-        for (Session s : host.attachedBots()) {
+        for (Session s : host.liveBots()) {
             attached.putIfAbsent(s.displayName.toLowerCase(Locale.ROOT), s);
         }
         List<Addressee> out = new ArrayList<>();
@@ -181,7 +177,7 @@ final class CommandService implements CommandControls {
                     sets.add(new BotCommands(crew.ownerName(), crew.owner(), null, list, names(crewBots)));
                 }
             }
-            out.add(new Addressee(CommandEngine.ALL, Addressee.Kind.ALL, sets, members, owners));
+            out.add(new Addressee(CommandEngine.ALL, Addressee.Kind.ALL, sets, members, owners, false));
             taken.add(CommandEngine.ALL);
         }
         List<Session> bots = new ArrayList<>(attached.values());
@@ -195,14 +191,14 @@ final class CommandService implements CommandControls {
                     sets.add(new BotCommands(s.displayName, crew.owner(), s.position, list, List.of(s.displayName)));
                 }
             }
-            out.add(new Addressee(s.displayName, Addressee.Kind.BOT, sets, List.of(s.displayName), List.of(s.owner)));
+            out.add(new Addressee(s.displayName, Addressee.Kind.BOT, sets, List.of(s.displayName), List.of(s.owner), !host.attachedNow(s)));
             taken.add(s.displayName.toLowerCase(Locale.ROOT));
         }
         for (Session s : host.liveControllers()) {
             if (taken.add(s.displayName.toLowerCase(Locale.ROOT))) {
                 BotCommands set = own.get(s.owner);
                 out.add(new Addressee(s.displayName, Addressee.Kind.CONTROLLER,
-                        List.of(set != null ? set : new BotCommands(s.displayName, s.owner, null, List.of())), List.of(), List.of(s.owner)));
+                        List.of(set != null ? set : new BotCommands(s.displayName, s.owner, null, List.of())), List.of(), List.of(s.owner), false));
             }
         }
         Map<String, GroupParts> groups = new LinkedHashMap<>();
@@ -232,7 +228,7 @@ final class CommandService implements CommandControls {
             }
         }
         for (GroupParts g : groups.values()) {
-            out.add(new Addressee(g.name, Addressee.Kind.GROUP, g.sets, g.members, g.owners));
+            out.add(new Addressee(g.name, Addressee.Kind.GROUP, g.sets, g.members, g.owners, false));
         }
         return List.copyOf(out);
     }
@@ -374,7 +370,7 @@ final class CommandService implements CommandControls {
         StoredObject o = interactions.declaration(w.message().command(), CommandData.class);
         Session s;
         try {
-            s = o == null ? null : interactions.reachableOwner(o);
+            s = o == null ? null : interactions.commandOwner(o);
         } catch (BridgeException e) {
             s = null;
         }

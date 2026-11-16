@@ -118,7 +118,7 @@ final class ChatRouter implements ChatControls {
                 owners.add(o);
             }
         }
-        return new Addressee(to.name(), to.kind(), sets, to.members(), owners);
+        return new Addressee(to.name(), to.kind(), sets, to.members(), owners, to.elsewhere());
     }
 
     private boolean chatAllowed(String owner) {
@@ -300,13 +300,13 @@ final class ChatRouter implements ChatControls {
     @Override
     public CompletableFuture<InvocationResult> runCommandLine(String owner, String line) {
         Session target = null;
-        for (Session s : host.attachedBots()) {
+        for (Session s : host.liveBots()) {
             if (s.owner.equals(owner)) {
                 target = s;
             }
         }
         if (target == null) {
-            return CompletableFuture.failedFuture(new BridgeException("not_attached", owner + " is not an attached bot"));
+            return CompletableFuture.failedFuture(new BridgeException("not_attached", owner + " is not a connected bot"));
         }
         BotCommands bot = commands.of(target);
         return switch (CommandEngine.parse(bot, line.strip(), commands.context())) {

@@ -136,7 +136,8 @@ class DeclarationsTest {
                             new ToolData("Nether", null, List.of(), List.of())));
             p.sync();
             h.tick();
-            assertTrue(h.core.declarations().commands().isEmpty(), "detached under AUTO on the title screen");
+            assertEquals(1, h.core.declarations().commands().size(), "a detached bot can still be given orders");
+            assertTrue(h.core.declarations().actions().isEmpty(), "but shows nothing while detached on the title screen");
 
             h.core.setPlayerContext(PLAYER_WORLD);
             h.tick();
@@ -156,7 +157,8 @@ class DeclarationsTest {
             DeclarationSnapshot detached = h.core.declarations();
             assertNotSame(a, detached);
             assertTrue(detached.version() > a.version());
-            assertTrue(detached.commands().isEmpty() && detached.actions().isEmpty());
+            assertEquals(1, detached.commands().size(), "its global command stays");
+            assertTrue(detached.actions().isEmpty());
 
             h.core.attach().setChoice(IDENTITY, true);
             h.core.setPlayerContext(NETHER);
