@@ -1,6 +1,6 @@
 {
   "name": "mineflayer-bridge",
-  "version": "0.1.0-alpha.14",
+  "version": "0.1.0-alpha.15",
   "description": "Mineflayer plugin that connects bots to the mineflayer-bridge client mod: world-space shapes, HUD, menus, commands, shared objects and extensions, drawn in the player's own client.",
   "keywords": [
     "mineflayer",

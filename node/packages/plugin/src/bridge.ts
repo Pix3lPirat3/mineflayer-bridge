@@ -1122,6 +1122,10 @@ export class BotBridgeImpl extends SessionImpl implements BotBridge {
     return this.botWorld;
   }
 
+  get world(): WorldKey | undefined {
+    return this.botWorld;
+  }
+
   private resolveIdentity(): void {
     if (this.core.identity !== undefined) return;
     const username = this.bot.username ?? this.botOptions?.username;
@@ -1145,8 +1149,10 @@ export class BotBridgeImpl extends SessionImpl implements BotBridge {
     if (dimension === undefined) return;
     const world: WorldKey = { server: this.server, dimension };
     if (this.botWorld !== undefined && this.botWorld.dimension === world.dimension && this.botWorld.server === world.server) return;
+    const previous = this.botWorld;
     this.botWorld = world;
     this.sendReport();
+    this.events.emit('world', world, previous);
   }
 
   private sendReport(): void {

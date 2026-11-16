@@ -884,6 +884,8 @@ export interface BridgeEvents {
   refused: [refusal: SurfaceRefusal];
   /** A linked player joined or left a world, died, respawned, went away, came back, or their game window gained or lost focus. */
   player: [change: PlayerChange, player: BridgePlayer];
+  /** Bots only: the bot arrived in a world (it spawned, changed dimension, or a proxy moved it to another server); see {@link BotBridge.world}. */
+  world: [world: WorldKey, previous: WorldKey | undefined];
 }
 
 /**
@@ -990,6 +992,12 @@ export interface BridgeSession extends InputAndHud, ScopeApi {
 /** `bot.bridge`. */
 export interface BotBridge extends BridgeSession {
   readonly bot: BotLike;
+  /**
+   * The world the bot is in: its server (`host:port`, as it connected) and the world's own name,
+   * such as `minecraft:overworld`, or `minecraft:creative` on a server behind a proxy that names its
+   * worlds. `undefined` before the bot spawns. The `world` event fires when it changes.
+   */
+  readonly world: WorldKey | undefined;
 }
 
 /** A controller session from {@link BridgeHub.controller}. */

@@ -281,10 +281,16 @@ describe('world, attach and interest', () => {
     load(hub().plugin(), bot);
     await until(() => e.mod.session(ALICE)?.world);
     expect(e.mod.session(ALICE)?.world).toEqual(OVERWORLD);
+    const b = bot.b;
+    expect(b.world).toEqual(OVERWORLD);
+    const moves: [unknown, unknown][] = [];
+    b.on('world', (w, before) => void moves.push([w, before]));
     // A proxy moved the bot to its creative server: mineflayer still says overworld.
     client.emit('respawn', { worldState: { name: 'minecraft:creative', dimension: 0 } });
     bot.emit('respawn');
     await until(() => e.mod.session(ALICE)?.world?.dimension === 'minecraft:creative');
+    expect(b.world).toEqual({ ...OVERWORLD, dimension: 'minecraft:creative' });
+    expect(moves).toEqual([[{ ...OVERWORLD, dimension: 'minecraft:creative' }, OVERWORLD]]);
     // Older protocols name it worldName.
     client.emit('login', { worldName: 'skyblock' });
     await until(() => e.mod.session(ALICE)?.world?.dimension === 'minecraft:skyblock');

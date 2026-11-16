@@ -11,11 +11,11 @@ the mod works on any server and gives the player no advantage there.
 
 ## Status
 
-Pre-release, version 0.1.0-alpha.14, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
+Pre-release, version 0.1.0-alpha.15, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
 [GitHub Releases](https://github.com/Pix3lPirat3/mineflayer-bridge/releases) only: the Fabric and
 NeoForge jars and the plugin tarball.
 
-API reference for 0.1.0-alpha.14: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
+API reference for 0.1.0-alpha.15: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
 [mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/) and
 [client extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/client/).
 
@@ -43,12 +43,12 @@ connect. Turn on "Ask before allowing local bots" in the settings to approve eac
 Node 22.12 or newer. Install the plugin from the release tarball:
 
 ```sh
-npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.14/mineflayer-bridge-0.1.0-alpha.14.tgz
+npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.15/mineflayer-bridge-0.1.0-alpha.15.tgz
 ```
 
 npm 12 refuses tarball URLs unless `allow-remote` permits them, so later installs of the same
 project need it too: put `allow-remote=all` in the project's `.npmrc`. Or download the tarball and
-`npm install ./mineflayer-bridge-0.1.0-alpha.14.tgz`, which needs no setting.
+`npm install ./mineflayer-bridge-0.1.0-alpha.15.tgz`, which needs no setting.
 
 The package is ESM; CommonJS code can `require()` it on Node 22.12+. TypeScript users get
 `bot.bridge` on mineflayer's `Bot` type with:
@@ -138,7 +138,8 @@ orders reach it in any world or on any server, so you can steer a bot that is el
   with `id`, `count`, `name`, `lore`, `glint` and other presentation fields.
 - **State and events.** `bot.bridge.state` holds `connected`, `attached`, `worldMatched` and more;
   `bot.bridge.on(event, fn)` returns a remover and reports `connected`, `attached`, `detached`, `worldMatched`, `focus`,
-  `permissions`, `player`, `refused`, `error` and others. `bot.bridge.players` lists the linked
+  `permissions`, `player`, `refused`, `error` and others. `bot.bridge.world` is the world the bot is in
+  (server and the world's own name), and the `world` event fires with it and the previous one on each change. `bot.bridge.players` lists the linked
   players with their `name` and `uuid`; handlers get the one who acted as `ctx.player`.
 - **Errors.** Every failure is a `BridgeError` with a stable `code`, such as `cancelled`, `timeout`,
   `cooldown`, `conflict`, `permission_denied`, `quota_exceeded` or `invalid_message`. What no caller
@@ -866,7 +867,7 @@ const frames = readRecording(readFileSync('./runs/today.mfbrec'))   // [{ direct
 ## API reference
 
 Every option, handle and event is documented in the reference generated from the code. It describes
-the latest release, 0.1.0-alpha.14; older versions are not kept.
+the latest release, 0.1.0-alpha.15; older versions are not kept.
 
 - [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/): the `mineflayer-bridge` package.
 - [Mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/): for mods that
