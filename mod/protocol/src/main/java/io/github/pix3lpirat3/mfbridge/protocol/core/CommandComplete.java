@@ -3,6 +3,7 @@ package io.github.pix3lpirat3.mfbridge.protocol.core;
 
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireCodec;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireCodecs;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireException;
@@ -17,18 +18,24 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  * @param arg Name of the argument being completed.
  * @param input What the player typed for that argument so far.
  * @param args Earlier arguments, already parsed.
+ * @param bots For an order: the crew bots it is addressed to, so completion can offer what they have.
  */
-public record CommandComplete(String command, List<String> path, String arg, String input, Map<String, Object> args) {
+public record CommandComplete(String command, List<String> path, String arg, String input, Map<String, Object> args, @Nullable List<String> bots) {
     /** Wire codec for this record. */
     public static final WireCodec<CommandComplete> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, CommandComplete v) {
-            w.writeArrayHeader(5);
+            w.writeArrayHeader(6);
             w.writeString(v.command());
             WireCodecs.list(WireCodecs.STRING).write(w, v.path());
             w.writeString(v.arg());
             w.writeString(v.input());
             WireCodecs.map(WireCodecs.ANY).write(w, v.args());
+            if (v.bots() == null) {
+                w.writeNil();
+            } else {
+                WireCodecs.list(WireCodecs.STRING).write(w, v.bots());
+            }
         }
 
         @Override
@@ -42,8 +49,19 @@ public record CommandComplete(String command, List<String> path, String arg, Str
             String arg = r.readString();
             String input = r.readString();
             Map<String, Object> args = WireCodecs.map(WireCodecs.ANY).read(r);
-            r.skipValues(n - 5);
-            return new CommandComplete(command, path, arg, input, args);
+            @Nullable List<String> bots = n > 5 && !r.tryReadNil() ? WireCodecs.list(WireCodecs.STRING).read(r) : null;
+            r.skipValues(n - 6);
+            return new CommandComplete(command, path, arg, input, args, bots);
         }
     };
+
+    /** Creates a value from the required fields; later fields take null or their schema default. */
+    public CommandComplete(String command, List<String> path, String arg, String input, Map<String, Object> args) {
+        this(command, path, arg, input, args, null);
+    }
+
+    /** Returns a copy with {@code bots} replaced. */
+    public CommandComplete withBots(@Nullable List<String> bots) {
+        return new CommandComplete(command, path, arg, input, args, bots);
+    }
 }

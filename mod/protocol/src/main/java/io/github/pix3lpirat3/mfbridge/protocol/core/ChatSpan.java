@@ -12,13 +12,16 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  *
  * @param bold Default {@code false}.
  * @param italic Default {@code false}.
+ * @param underlined Default {@code false}.
+ * @param strikethrough Default {@code false}.
+ * @param obfuscated Default {@code false}.
  */
-public record ChatSpan(String text, @Nullable Integer color, boolean bold, boolean italic, @Nullable ChatClick click, @Nullable String hover) {
+public record ChatSpan(String text, @Nullable Integer color, boolean bold, boolean italic, @Nullable ChatClick click, @Nullable String hover, boolean underlined, boolean strikethrough, boolean obfuscated) {
     /** Wire codec for this record. */
     public static final WireCodec<ChatSpan> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, ChatSpan v) {
-            w.writeArrayHeader(6);
+            w.writeArrayHeader(9);
             w.writeString(v.text());
             if (v.color() == null) {
                 w.writeNil();
@@ -37,6 +40,9 @@ public record ChatSpan(String text, @Nullable Integer color, boolean bold, boole
             } else {
                 w.writeString(v.hover());
             }
+            w.writeBool(v.underlined());
+            w.writeBool(v.strikethrough());
+            w.writeBool(v.obfuscated());
         }
 
         @Override
@@ -51,38 +57,56 @@ public record ChatSpan(String text, @Nullable Integer color, boolean bold, boole
             boolean italic = n > 3 && !r.tryReadNil() ? r.readBool() : false;
             @Nullable ChatClick click = n > 4 && !r.tryReadNil() ? ChatClick.CODEC.read(r) : null;
             @Nullable String hover = n > 5 && !r.tryReadNil() ? r.readString() : null;
-            r.skipValues(n - 6);
-            return new ChatSpan(text, color, bold, italic, click, hover);
+            boolean underlined = n > 6 && !r.tryReadNil() ? r.readBool() : false;
+            boolean strikethrough = n > 7 && !r.tryReadNil() ? r.readBool() : false;
+            boolean obfuscated = n > 8 && !r.tryReadNil() ? r.readBool() : false;
+            r.skipValues(n - 9);
+            return new ChatSpan(text, color, bold, italic, click, hover, underlined, strikethrough, obfuscated);
         }
     };
 
     /** Creates a value from the required fields; later fields take null or their schema default. */
     public ChatSpan(String text) {
-        this(text, null, false, false, null, null);
+        this(text, null, false, false, null, null, false, false, false);
     }
 
     /** Returns a copy with {@code color} replaced. */
     public ChatSpan withColor(@Nullable Integer color) {
-        return new ChatSpan(text, color, bold, italic, click, hover);
+        return new ChatSpan(text, color, bold, italic, click, hover, underlined, strikethrough, obfuscated);
     }
 
     /** Returns a copy with {@code bold} replaced. */
     public ChatSpan withBold(boolean bold) {
-        return new ChatSpan(text, color, bold, italic, click, hover);
+        return new ChatSpan(text, color, bold, italic, click, hover, underlined, strikethrough, obfuscated);
     }
 
     /** Returns a copy with {@code italic} replaced. */
     public ChatSpan withItalic(boolean italic) {
-        return new ChatSpan(text, color, bold, italic, click, hover);
+        return new ChatSpan(text, color, bold, italic, click, hover, underlined, strikethrough, obfuscated);
     }
 
     /** Returns a copy with {@code click} replaced. */
     public ChatSpan withClick(@Nullable ChatClick click) {
-        return new ChatSpan(text, color, bold, italic, click, hover);
+        return new ChatSpan(text, color, bold, italic, click, hover, underlined, strikethrough, obfuscated);
     }
 
     /** Returns a copy with {@code hover} replaced. */
     public ChatSpan withHover(@Nullable String hover) {
-        return new ChatSpan(text, color, bold, italic, click, hover);
+        return new ChatSpan(text, color, bold, italic, click, hover, underlined, strikethrough, obfuscated);
+    }
+
+    /** Returns a copy with {@code underlined} replaced. */
+    public ChatSpan withUnderlined(boolean underlined) {
+        return new ChatSpan(text, color, bold, italic, click, hover, underlined, strikethrough, obfuscated);
+    }
+
+    /** Returns a copy with {@code strikethrough} replaced. */
+    public ChatSpan withStrikethrough(boolean strikethrough) {
+        return new ChatSpan(text, color, bold, italic, click, hover, underlined, strikethrough, obfuscated);
+    }
+
+    /** Returns a copy with {@code obfuscated} replaced. */
+    public ChatSpan withObfuscated(boolean obfuscated) {
+        return new ChatSpan(text, color, bold, italic, click, hover, underlined, strikethrough, obfuscated);
     }
 }

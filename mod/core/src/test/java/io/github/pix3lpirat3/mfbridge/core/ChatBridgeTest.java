@@ -249,8 +249,8 @@ class ChatBridgeTest {
             int s = declare(h, p);
             List<ChatPrint> printed = new ArrayList<>();
             h.core.events().subscribe(ChatPrint.TYPE, printed::add);
-            List<ChatSpan> spans = List.of(new ChatSpan("Done mining. ", null, false, false, null, null),
-                    new ChatSpan("[Again]", 0xFF22C55E, true, false, new ChatClick("run_command", "mine"), "Mine again"));
+            List<ChatSpan> spans = List.of(new ChatSpan("Done mining. ", null, false, false, null, null, false, false, false),
+                    new ChatSpan("[Again]", 0xFF22C55E, true, false, new ChatClick("run_command", "mine"), "Mine again", false, false, false));
             p.reliable(s, CoreMessages.CHAT_PRINT, new io.github.pix3lpirat3.mfbridge.protocol.core.ChatPrint(spans));
             p.sync();
             assertEquals(List.of(new ChatPrint("Miner", IDENTITY, InputTestSupport.OWNER, spans)), printed);

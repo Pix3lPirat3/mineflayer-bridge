@@ -6,13 +6,16 @@ export { tickEnd, type TickEndBotLike } from './compat.ts';
 export {
   clickArgs,
   layoutFor,
+  headTexture,
   plainText,
+  styledText,
   windowItem,
   windowMirror,
   type WindowApi,
   type WindowBotLike,
   type WindowItemLike,
   type WindowLike,
+  type TextStyle,
   type WindowTarget,
 } from './window.ts';
 export {

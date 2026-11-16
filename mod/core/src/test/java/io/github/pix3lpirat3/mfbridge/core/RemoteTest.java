@@ -341,7 +341,7 @@ class RemoteTest {
             try (FakePlugin p = tls(h, "remote-1")) {
                 pair(h, p, session.code());
                 int s = p.openBot("Farmer", "example.com").sessionId();
-                List<ChatSpan> spans = List.of(new ChatSpan("hi", null, false, false, null, null));
+                List<ChatSpan> spans = List.of(new ChatSpan("hi", null, false, false, null, null, false, false, false));
                 p.reliable(s, CoreMessages.CHAT_PRINT, new io.github.pix3lpirat3.mfbridge.protocol.core.ChatPrint(spans));
                 ErrorMessage e = p.await(CoreMessages.ERROR, s);
                 assertEquals("permission_denied", e.error().code());
@@ -394,7 +394,7 @@ class RemoteTest {
             assertEquals(Permission.values().length, h.core.devices().get("dev").permissions().granted().size());
             h.core.devices().setPermission("dev", Permission.CHAT, false);
             int s = p.openBot("Farmer", "example.com").sessionId();
-            List<ChatSpan> spans = List.of(new ChatSpan("hi", null, false, false, null, null));
+            List<ChatSpan> spans = List.of(new ChatSpan("hi", null, false, false, null, null, false, false, false));
             p.reliable(s, CoreMessages.CHAT_PRINT, new io.github.pix3lpirat3.mfbridge.protocol.core.ChatPrint(spans));
             assertEquals("permission_denied", p.await(CoreMessages.ERROR, s).error().code(), "the player's toggle still applies");
             h.clock.advanceMs(DeviceControls.PROMPT_COLLECT_MS);

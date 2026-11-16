@@ -202,6 +202,8 @@ describe('chat capture', () => {
     const seen: { where: unknown; bots: readonly string[] | undefined; source: string | undefined }[] = [];
     ctl.orders.register('go', { args: [{ name: 'where', type: 'string' }], run: ({ where }, ctx) => (seen.push({ where, bots: ctx.bots, source: ctx.source }), `going ${String(where)}`) });
     ctl.commands.register('status', { run: () => 'all good' });
+    // Completion of an order hears who it is for, as running it does.
+    ctl.orders.register('hold', { args: [{ name: 'item', type: 'string', complete: (_i, ctx) => (ctx.bots ?? ['nobody']).map((b) => `${b.toLowerCase()}_sword`) }], run: () => 'ok' });
     ctl.crew.set({ bots: ['Alice', 'Bob', 'Carol'], groups: { pair: ['alice', 'Bob'], solo: ['Bob'] } });
     expect(ctl.crew.get()).toEqual({ bots: ['Alice', 'Bob', 'Carol'], groups: { pair: ['alice', 'Bob'], solo: ['Bob'] } });
     await until(() => e.mod.addresses().some((a) => a.name === 'pair'), 5000, 'crew');
@@ -212,6 +214,8 @@ describe('chat capture', () => {
     const all = await e.mod.sendChat('@all go mine');
     expect(all.captured && all.deliveries).toHaveLength(1);
     expect(seen.map((x) => x.bots)).toEqual([['Alice'], ['Alice', 'Bob'], ['Alice', 'Bob']]);
+    expect((await e.mod.complete('alice', 'hold ')).suggestions.map((x) => x.text)).toEqual(['alice_sword']);
+    expect((await e.mod.complete('pair', 'hold ')).suggestions.map((x) => x.text)).toEqual(['alice_sword', 'bob_sword']);
     expect(seen[0]!.source).toBe('chat');
     expect(await e.mod.sendChat('@eco status')).toMatchObject({ deliveries: [{ routed: 'command', result: { message: 'all good' } }] });
     expect(await e.mod.sendChat('@eco go home')).toMatchObject({ deliveries: [{ owner: ctl.session.owner, routed: 'message', text: 'go home' }] });

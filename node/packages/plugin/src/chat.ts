@@ -26,6 +26,9 @@ export function styledSpan(input: string | ChatSpanInput): ChatSpan {
   if (input.color !== undefined) span.color = toColor(input.color);
   if (input.bold === true) span.bold = true;
   if (input.italic === true) span.italic = true;
+  if (input.underlined === true) span.underlined = true;
+  if (input.strikethrough === true) span.strikethrough = true;
+  if (input.obfuscated === true) span.obfuscated = true;
   if (input.hover !== undefined) span.hover = String(input.hover);
   return span;
 }

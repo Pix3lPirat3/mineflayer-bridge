@@ -251,7 +251,8 @@ public final class ChatBridgeClient {
     }
 
     private Style style(final ChatPrint p, final ChatSpan span) {
-        Style s = Style.EMPTY.withBold(span.bold()).withItalic(span.italic());
+        Style s = Style.EMPTY.withBold(span.bold()).withItalic(span.italic()).withUnderlined(span.underlined())
+                .withStrikethrough(span.strikethrough()).withObfuscated(span.obfuscated());
         if (span.color() != null) {
             s = s.withColor(span.color() & 0xFFFFFF);
         }

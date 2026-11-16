@@ -281,7 +281,7 @@ export async function completeArgument(root: CompiledNode, key: string, p: Messa
   if (fn === undefined) return [];
   const label = `completion of ${node.label} ${p.arg}`;
   try {
-    const out: unknown = await fn(p.input, { args: { ...p.args }, path, arg: p.arg, key });
+    const out: unknown = await fn(p.input, { args: { ...p.args }, path, arg: p.arg, key, ...(p.bots === undefined || p.bots === null ? {} : { bots: [...p.bots] }) });
     if (!Array.isArray(out)) invalid(`${label} must return a list of suggestions`);
     return out.slice(0, MAX_SUGGESTIONS).map((v: unknown) => toSuggestion(label, v));
   } catch (e) {

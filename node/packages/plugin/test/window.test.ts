@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { describe, expect, it } from 'vitest';
-import { clickArgs, layoutFor, plainText, windowItem, windowMirror, type BotBridge, type ContainerClick, type WindowApi } from '../src/index.ts';
+import { clickArgs, headTexture, layoutFor, plainText, styledText, windowItem, windowMirror, type BotBridge, type ContainerClick, type WindowApi } from '../src/index.ts';
 import { textReader, type ChatLoader } from '../src/window.ts';
 import { ALICE, FakeBot, fixture, load, rejection, sleep, until, type Env } from './helpers.ts';
 
@@ -155,10 +155,40 @@ describe('bridge:window helpers', () => {
     expect(windowItem(item('compass', 1, 5, { customName: '{"text":"Server selector"}', customLore: ['{"text":"Click to join"}', '', 'plain'], enchants: [{ name: 'unbreaking', lvl: 1 }] }))).toEqual({
       id: 'minecraft:compass',
       count: 1,
-      name: 'Server selector',
-      lore: ['Click to join', 'plain'],
+      // Vanilla's defaults when a component says nothing: italic names, purple italic lore.
+      name: [{ text: 'Server selector', italic: true }],
+      lore: [[{ text: 'Click to join', color: 0xaa00aa, italic: true }], '', [{ text: 'plain', color: 0xaa00aa, italic: true }]],
       glint: true,
     });
+  });
+
+  it('keeps colours and styles of NBT components, legacy codes and spacer lines, and a head skin', () => {
+    // As a 26.x server menu sends it, through prismarine-nbt: typed tags, booleans as bytes.
+    const tag = (type: string, value: unknown) => ({ type, value });
+    const part = (text: string, color: string, bold: number) =>
+      ({ text: tag('string', text), color: tag('string', color), bold: tag('byte', bold), italic: tag('byte', 0), underlined: tag('byte', 0) });
+    const line = (...parts: ReturnType<typeof part>[]) => tag('compound', { text: tag('string', ''), extra: tag('list', tag('compound', parts)) });
+    const texture = 'eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZGZhIn19fQ==';
+    const head = {
+      ...item('player_head', 1, 0),
+      customName: line(part('Pixelmon Installation', 'yellow', 1)),
+      customLore: [line(part('View the guide', 'gray', 0)), line(), line(part('[CLICK] ', 'green', 1), part('for links', 'gray', 0))],
+      components: [{ type: 'custom_data', data: {} }, { type: 'profile', data: { type: 'partial', uuid: 'd2c46104-03a5-4ce2-b72e-25b207b05487', properties: [{ name: 'textures', value: texture }] } }],
+    };
+    expect(windowItem(head)).toEqual({
+      id: 'minecraft:player_head',
+      count: 1,
+      name: [{ text: 'Pixelmon Installation', color: 0xffff55, bold: true }],
+      lore: [[{ text: 'View the guide', color: 0xaaaaaa }], '', [{ text: '[CLICK] ', color: 0x55ff55, bold: true }, { text: 'for links', color: 0xaaaaaa }]],
+      headTexture: texture,
+    });
+    expect(styledText('\u00a76Gold \u00a7lbold\u00a7r plain')).toEqual([{ text: 'Gold ', color: 0xffaa00 }, { text: 'bold', color: 0xffaa00, bold: true }, ' plain']);
+    expect(styledText('{"text":"A","color":"#123456","underlined":true,"extra":[{"text":"B","strikethrough":true}]}')).toEqual([
+      { text: 'A', color: 0x123456, underlined: true },
+      { text: 'B', color: 0x123456, underlined: true, strikethrough: true },
+    ]);
+    expect(styledText(null)).toBeUndefined();
+    expect(headTexture({ ...item('player_head', 1, 0), nbt: { SkullOwner: { Properties: { textures: [{ Value: 'abc' }] } } } })).toBe('abc');
   });
 });
 

@@ -302,14 +302,15 @@ final class CommandService implements CommandControls {
 
     @Override
     public CompletableFuture<List<Suggestion>> completeDynamic(String commandKey, List<String> path, String arg,
-            String input, Map<String, Object> args) {
+            String input, Map<String, Object> args, List<String> bots) {
         StoredObject o = interactions.declaration(commandKey, CommandData.class);
         if (o == null) {
             return CompletableFuture.completedFuture(List.of());
         }
         long rev = o.state().rev();
         String slot = commandKey + '\u0000' + String.join(" ", path) + '\u0000' + arg;
-        String prefixKey = slot + '\u0000' + new TreeMap<>(args) + '\u0000';
+        // The answer depends on who the order is for, such as the items those bots carry.
+        String prefixKey = slot + '\u0000' + new TreeMap<>(args) + '\u0000' + String.join(",", bots) + '\u0000';
         Cached hit = cache.get(prefixKey + input);
         if (hit != null && hit.rev() == rev) {
             return CompletableFuture.completedFuture(hit.suggestions());
@@ -322,7 +323,7 @@ final class CommandService implements CommandControls {
             previous.future().complete(fallback(previous));
         }
         CompletableFuture<List<Suggestion>> future = new CompletableFuture<>();
-        CommandComplete message = new CommandComplete(commandKey, List.copyOf(path), arg, input, Map.copyOf(args));
+        CommandComplete message = new CommandComplete(commandKey, List.copyOf(path), arg, input, Map.copyOf(args), bots.isEmpty() ? null : List.copyOf(bots));
         waiting.put(slot, new Waiting(slot, prefixKey, input, rev, message, future, host.nowMs() + DEBOUNCE_MS));
         return future;
     }

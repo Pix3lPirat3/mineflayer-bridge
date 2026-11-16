@@ -1524,11 +1524,13 @@ export interface SlotItem {
   clickSound?: string | undefined;
   nameSpans?: ChatSpan[] | undefined;
   loreLines?: LoreLine[] | undefined;
+  /** Player head skin as servers' menus carry it: the base64 textures property value. */
+  headTexture?: string | undefined;
 }
 /** Wire codec for {@link SlotItem}. */
 export const SlotItemCodec: Codec<SlotItem> = {
   write(w, v) {
-    w.arrayHeader(18);
+    w.arrayHeader(19);
     w.str(v.id);
     w.uint(v.count ?? 1);
     if (v.name === undefined || v.name === null) w.nil(); else w.str(v.name);
@@ -1547,6 +1549,7 @@ export const SlotItemCodec: Codec<SlotItem> = {
     if (v.clickSound === undefined || v.clickSound === null) w.nil(); else w.str(v.clickSound);
     if (v.nameSpans === undefined || v.nameSpans === null) w.nil(); else writeList(w, v.nameSpans, (x) => ChatSpanCodec.write(w, x));
     if (v.loreLines === undefined || v.loreLines === null) w.nil(); else writeList(w, v.loreLines, (x) => LoreLineCodec.write(w, x));
+    if (v.headTexture === undefined || v.headTexture === null) w.nil(); else w.str(v.headTexture);
   },
   read(r) {
     const n = r.arrayHeader();
@@ -1569,8 +1572,9 @@ export const SlotItemCodec: Codec<SlotItem> = {
     const clickSound = n > 15 && !r.tryNil() ? r.str() : undefined;
     const nameSpans = n > 16 && !r.tryNil() ? readList(r, () => ChatSpanCodec.read(r)) : undefined;
     const loreLines = n > 17 && !r.tryNil() ? readList(r, () => LoreLineCodec.read(r)) : undefined;
-    for (let i = 18; i < n; i++) r.skip();
-    return { id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines };
+    const headTexture = n > 18 && !r.tryNil() ? r.str() : undefined;
+    for (let i = 19; i < n; i++) r.skip();
+    return { id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture };
   },
 };
 
@@ -1682,17 +1686,26 @@ export interface ChatSpan {
   italic?: boolean | undefined;
   click?: ChatClick | undefined;
   hover?: string | undefined;
+  /** Default `false`. */
+  underlined?: boolean | undefined;
+  /** Default `false`. */
+  strikethrough?: boolean | undefined;
+  /** Default `false`. */
+  obfuscated?: boolean | undefined;
 }
 /** Wire codec for {@link ChatSpan}. */
 export const ChatSpanCodec: Codec<ChatSpan> = {
   write(w, v) {
-    w.arrayHeader(6);
+    w.arrayHeader(9);
     w.str(v.text);
     if (v.color === undefined || v.color === null) w.nil(); else w.uint(v.color);
     w.bool(v.bold ?? false);
     w.bool(v.italic ?? false);
     if (v.click === undefined || v.click === null) w.nil(); else ChatClickCodec.write(w, v.click);
     if (v.hover === undefined || v.hover === null) w.nil(); else w.str(v.hover);
+    w.bool(v.underlined ?? false);
+    w.bool(v.strikethrough ?? false);
+    w.bool(v.obfuscated ?? false);
   },
   read(r) {
     const n = r.arrayHeader();
@@ -1703,8 +1716,11 @@ export const ChatSpanCodec: Codec<ChatSpan> = {
     const italic = n > 3 && !r.tryNil() ? r.bool() : false;
     const click = n > 4 && !r.tryNil() ? ChatClickCodec.read(r) : undefined;
     const hover = n > 5 && !r.tryNil() ? r.str() : undefined;
-    for (let i = 6; i < n; i++) r.skip();
-    return { text, color, bold, italic, click, hover };
+    const underlined = n > 6 && !r.tryNil() ? r.bool() : false;
+    const strikethrough = n > 7 && !r.tryNil() ? r.bool() : false;
+    const obfuscated = n > 8 && !r.tryNil() ? r.bool() : false;
+    for (let i = 9; i < n; i++) r.skip();
+    return { text, color, bold, italic, click, hover, underlined, strikethrough, obfuscated };
   },
 };
 
@@ -5752,16 +5768,19 @@ export interface CommandComplete {
   input: string;
   /** Earlier arguments, already parsed. */
   args: Record<string, unknown>;
+  /** For an order: the crew bots it is addressed to, so completion can offer what they have. */
+  bots?: string[] | undefined;
 }
 /** Wire codec for {@link CommandComplete}. */
 export const CommandCompleteCodec: Codec<CommandComplete> = {
   write(w, v) {
-    w.arrayHeader(5);
+    w.arrayHeader(6);
     w.str(v.command);
     writeList(w, v.path, (x) => w.str(x));
     w.str(v.arg);
     w.str(v.input);
     writeMap(w, v.args, (x) => w.any(x));
+    if (v.bots === undefined || v.bots === null) w.nil(); else writeList(w, v.bots, (x) => w.str(x));
   },
   read(r) {
     const n = r.arrayHeader();
@@ -5771,8 +5790,9 @@ export const CommandCompleteCodec: Codec<CommandComplete> = {
     const arg = r.str();
     const input = r.str();
     const args = readMap(r, () => r.any());
-    for (let i = 5; i < n; i++) r.skip();
-    return { command, path, arg, input, args };
+    const bots = n > 5 && !r.tryNil() ? readList(r, () => r.str()) : undefined;
+    for (let i = 6; i < n; i++) r.skip();
+    return { command, path, arg, input, args, bots };
   },
 };
 

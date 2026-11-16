@@ -565,6 +565,11 @@ export interface CompletionContext {
   readonly arg: string;
   /** Full object key of the command. */
   readonly key: string;
+  /**
+   * For an order (`@<bot>`, `@<group>`, `@all`): the crew bots it is addressed to, so completion can
+   * offer what they have, such as the items in their inventories. Unset for other commands.
+   */
+  readonly bots?: readonly string[];
 }
 
 /**
@@ -1134,6 +1139,11 @@ export interface ItemPresentation {
   readonly barColor?: ColorLike;
   /** Player head skin (for `minecraft:player_head`): a name, UUID, `'self'` or a bot. */
   readonly head?: HeadInput;
+  /**
+   * Player head skin as server menus carry it: the base64 value of the profile's `textures`
+   * property. It wins over {@link head}; the item shows as a player head either way.
+   */
+  readonly headTexture?: string;
   /** Leather dye, potion or map colour. */
   readonly color?: ColorLike;
   /** An animated item: these items are cycled on the client every {@link frameMs}. Frames cannot nest. */
@@ -1928,6 +1938,10 @@ export interface ChatSpanInput {
   color?: ColorLike;
   bold?: boolean;
   italic?: boolean;
+  underlined?: boolean;
+  strikethrough?: boolean;
+  /** Scrambled, as vanilla's obfuscated (`§k`) text. */
+  obfuscated?: boolean;
   /** Tooltip text. */
   hover?: string;
   click?: ChatClickAction;

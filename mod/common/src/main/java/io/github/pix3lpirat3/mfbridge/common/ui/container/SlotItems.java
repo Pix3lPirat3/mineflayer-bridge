@@ -81,7 +81,8 @@ public final class SlotItems {
     public static ItemStack stack(final SlotItem item) {
         final Item known = item(item.id());
         final String head = item.head();
-        final Item type = head != null ? Items.PLAYER_HEAD : known == null ? Items.BARRIER : known;
+        final String texture = item.headTexture();
+        final Item type = head != null || texture != null ? Items.PLAYER_HEAD : known == null ? Items.BARRIER : known;
         final ItemStack stack = new ItemStack(type, Math.clamp(Integer.toUnsignedLong(item.count()), 1, MAX_COUNT));
         final List<ChatSpan> nameSpans = item.nameSpans();
         if (nameSpans != null && !nameSpans.isEmpty()) {
@@ -104,7 +105,9 @@ public final class SlotItems {
                 stack.set(DataComponents.ITEM_MODEL, modelId);
             }
         }
-        if (head != null) {
+        if (texture != null) {
+            stack.set(DataComponents.PROFILE, textured(texture));
+        } else if (head != null) {
             stack.set(DataComponents.PROFILE, profile(head));
         }
         final Integer color = item.color();
@@ -151,13 +154,28 @@ public final class SlotItems {
     public static MutableComponent spans(final List<ChatSpan> spans) {
         final MutableComponent out = Component.empty().withStyle(s -> s.withItalic(false));
         for (final ChatSpan span : spans) {
-            Style style = Style.EMPTY.withBold(span.bold()).withItalic(span.italic());
+            Style style = Style.EMPTY.withBold(span.bold()).withItalic(span.italic()).withUnderlined(span.underlined())
+                    .withStrikethrough(span.strikethrough()).withObfuscated(span.obfuscated());
             if (span.color() != null) {
                 style = style.withColor(span.color() & 0xFFFFFF);
             }
             out.append(Component.literal(span.text()).withStyle(style));
         }
         return out;
+    }
+
+    /**
+     * Returns a profile that carries a skin texture as server menus send it, the base64 value of a
+     * {@code textures} property. The id comes from the texture, so equal skins share one cache entry.
+     *
+     * @param texture the base64 textures value
+     * @return the profile
+     */
+    public static ResolvableProfile textured(final String texture) {
+        final UUID id = UUID.nameUUIDFromBytes(texture.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        final com.mojang.authlib.properties.PropertyMap properties = new com.mojang.authlib.properties.PropertyMap(
+                com.google.common.collect.ImmutableMultimap.of("textures", new com.mojang.authlib.properties.Property("textures", texture)));
+        return ResolvableProfile.createResolved(new com.mojang.authlib.GameProfile(id, "head", properties));
     }
 
     /**

@@ -104,8 +104,24 @@ public interface CommandControls {
      * @param arg the argument name
      * @param input what the player typed for it so far
      * @param args earlier arguments, already parsed
+     * @param bots for an order, the crew bots it is addressed to; empty otherwise
      * @return the suggestions
      */
     CompletableFuture<List<Suggestion>> completeDynamic(String commandKey, List<String> path, String arg, String input,
-            Map<String, Object> args);
+            Map<String, Object> args, List<String> bots);
+
+    /**
+     * Asks for suggestions outside any order.
+     *
+     * @param commandKey the command's object key
+     * @param path subcommand names below the root
+     * @param arg the argument name
+     * @param input what the player typed for it so far
+     * @param args earlier arguments, already parsed
+     * @return the suggestions
+     */
+    default CompletableFuture<List<Suggestion>> completeDynamic(String commandKey, List<String> path, String arg, String input,
+            Map<String, Object> args) {
+        return completeDynamic(commandKey, path, arg, input, args, List.of());
+    }
 }

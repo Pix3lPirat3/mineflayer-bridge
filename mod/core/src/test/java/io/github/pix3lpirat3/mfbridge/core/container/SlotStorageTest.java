@@ -355,6 +355,6 @@ class SlotStorageTest {
     }
 
     static SlotItem named(String id, @Nullable String name) {
-        return new SlotItem(id, 1, name, null, false, null, null, null, null, null, null, null, null, 500, false, null, null, null);
+        return new SlotItem(id, 1, name, null, false, null, null, null, null, null, null, null, null, 500, false, null, null, null, null);
     }
 }

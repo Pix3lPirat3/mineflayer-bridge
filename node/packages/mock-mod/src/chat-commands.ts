@@ -135,7 +135,8 @@ export class ChatCommands {
       case 'words':
         return { start: plan.start, suggestions: plan.words, source: undefined, dynamic: undefined, error: undefined };
       case 'arg': {
-        const r = await this.argSuggestions(owner(plan.root.name)!.session, keyOf(plan.root.name), plan);
+        const set = owner(plan.root.name)!;
+        const r = await this.argSuggestions(set.session, keyOf(plan.root.name), plan, set.bots);
         return { start: plan.start, suggestions: [...plan.words, ...r.suggestions], source: r.source, dynamic: r.dynamic, error: undefined };
       }
     }
@@ -381,7 +382,7 @@ export class ChatCommands {
     };
   }
 
-  private async argSuggestions(s: Session, key: string, plan: Extract<CompletionPlan, { kind: 'arg' }>): Promise<ArgSuggestions> {
+  private async argSuggestions(s: Session, key: string, plan: Extract<CompletionPlan, { kind: 'arg' }>, bots: readonly string[] = []): Promise<ArgSuggestions> {
     const a = plan.arg;
     const spec = a.completion;
     const source = spec?.source ?? (a.type === 'choice' && a.choices !== undefined ? 'choices' : a.type === 'bool' ? 'bool' : a.type === 'bot' ? 'bots' : undefined);
@@ -398,10 +399,10 @@ export class ChatCommands {
         return done([...this.core.sessions.values()].filter((x) => x.kind === 'bot' && x.conn !== null && isLive(x)).map((x) => x.identity?.username ?? x.name));
       case 'dynamic': {
         const rev = this.core.store.get(key)?.rev ?? 0;
-        const cacheKey = JSON.stringify([s.owner, key, rev, plan.path, a.name, plan.args, plan.input]);
+        const cacheKey = JSON.stringify([s.owner, key, rev, plan.path, a.name, plan.args, plan.input, bots]);
         const hit = this.completionCache.get(cacheKey);
         if (hit !== undefined) return { suggestions: hit.slice(0, limit), source, dynamic: 'cached' };
-        const r = await this.requestCompletion(s, { command: key, path: plan.path, arg: a.name, input: plan.input, args: plan.args });
+        const r = await this.requestCompletion(s, { command: key, path: plan.path, arg: a.name, input: plan.input, args: plan.args, ...(bots.length === 0 ? {} : { bots: [...bots] }) });
         if (r.status === 'answered') this.completionCache.set(cacheKey, r.suggestions);
         return { suggestions: r.suggestions.slice(0, limit), source, dynamic: r.status };
       }

@@ -880,6 +880,6 @@ public final class SlotStorage {
         }
         return new SlotItem(item.id(), count, item.name(), item.lore(), item.glint(), item.customModel(), item.components(),
                 item.countText(), item.bar(), item.barColor(), item.head(), item.color(), item.frames(), item.frameMs(),
-                item.hideTooltip(), item.clickSound(), item.nameSpans(), item.loreLines());
+                item.hideTooltip(), item.clickSound(), item.nameSpans(), item.loreLines(), item.headTexture());
     }
 }

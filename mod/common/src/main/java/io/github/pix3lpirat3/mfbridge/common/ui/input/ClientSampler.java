@@ -64,6 +64,6 @@ public final class ClientSampler {
                 ? 1f - (float) stack.getDamageValue() / stack.getMaxDamage()
                 : null;
         return new SlotItem(id, stack.getCount(), custom == null ? null : custom.getString(), null, stack.hasFoil(), null, null,
-                null, bar, null, null, null, null, 0, false, null, null, null);
+                null, bar, null, null, null, null, 0, false, null, null, null, null);
     }
 }

@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
 @FunctionalInterface
 public interface DynamicCompleter {
     /** Never answers anything. */
-    DynamicCompleter NONE = (commandKey, path, arg, input, args) -> CompletableFuture.completedFuture(List.of());
+    DynamicCompleter NONE = (commandKey, path, arg, input, args, bots) -> CompletableFuture.completedFuture(List.of());
 
     /**
      * Requests suggestions.
@@ -22,8 +22,9 @@ public interface DynamicCompleter {
      * @param arg name of the argument being completed
      * @param input what the player typed for it so far
      * @param args earlier arguments, already parsed
+     * @param bots for an order, the crew bots it is addressed to; empty otherwise
      * @return completes with the suggestions; never fails
      */
     CompletableFuture<List<Suggestion>> complete(String commandKey, List<String> path, String arg, String input,
-            Map<String, Object> args);
+            Map<String, Object> args, List<String> bots);
 }

@@ -253,6 +253,7 @@ structs:
     clickSound: string?
     nameSpans: list<ChatSpan>?
     loreLines: list<LoreLine>?
+    headTexture: string?      # player head skin as servers' menus carry it: the base64 textures property value
 
   LoreLine: { spans: list<ChatSpan> }
 
@@ -278,6 +279,9 @@ structs:
     italic: bool = false
     click: ChatClick?
     hover: string?
+    underlined: bool = false
+    strikethrough: bool = false
+    obfuscated: bool = false
 
   DisplayTransform:
     rotation: f32[]?          # quaternion x, y, z, w applied after translation
@@ -1457,6 +1461,7 @@ messages:
       arg: string              # name of the argument being completed
       input: string            # what the player typed for that argument so far
       args: map<string, any>   # earlier arguments, already parsed
+      bots: list<string>?      # for an order: the crew bots it is addressed to, so completion can offer what they have
 
   command.suggestions:
     id: 0x76

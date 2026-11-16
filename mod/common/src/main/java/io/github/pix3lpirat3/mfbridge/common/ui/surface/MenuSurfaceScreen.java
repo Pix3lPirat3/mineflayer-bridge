@@ -113,7 +113,7 @@ abstract class MenuSurfaceScreen extends PromptScreen {
             return SlotVisual.of(new SlotItem(e.entity().toLowerCase(Locale.ROOT) + "_spawn_egg"));
         }
         return SlotVisual.of(new SlotItem("minecraft:paper", 1, optionLabel(e), null, false, null, null, null, null, null, null, null,
-                null, 500, false, null, null, null));
+                null, 500, false, null, null, null, null));
     }
 
     /** A block state such as {@code minecraft:chest[facing=north]} shows as the item of its block. */

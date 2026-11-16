@@ -54,7 +54,7 @@ class ContainerViewTest {
 
     static SlotItem named(String id, String name, @Nullable List<String> lore, boolean glint) {
         return new SlotItem(id, 1, name, lore, glint, null, null, null, null, null, null, null, null, 500, false, null, null,
-                null);
+                null, null);
     }
 
     static ContainerViewData inventory() {

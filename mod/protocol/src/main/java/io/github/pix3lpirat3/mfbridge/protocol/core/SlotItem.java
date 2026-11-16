@@ -21,13 +21,14 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  * @param frames Animated item, cycled on the client.
  * @param frameMs Default {@code 500}.
  * @param hideTooltip Default {@code false}.
+ * @param headTexture Player head skin as servers' menus carry it: the base64 textures property value.
  */
-public record SlotItem(String id, int count, @Nullable String name, @Nullable List<String> lore, boolean glint, @Nullable String customModel, @Nullable Object components, @Nullable String countText, @Nullable Float bar, @Nullable Integer barColor, @Nullable String head, @Nullable Integer color, @Nullable List<SlotItem> frames, int frameMs, boolean hideTooltip, @Nullable String clickSound, @Nullable List<ChatSpan> nameSpans, @Nullable List<LoreLine> loreLines) {
+public record SlotItem(String id, int count, @Nullable String name, @Nullable List<String> lore, boolean glint, @Nullable String customModel, @Nullable Object components, @Nullable String countText, @Nullable Float bar, @Nullable Integer barColor, @Nullable String head, @Nullable Integer color, @Nullable List<SlotItem> frames, int frameMs, boolean hideTooltip, @Nullable String clickSound, @Nullable List<ChatSpan> nameSpans, @Nullable List<LoreLine> loreLines, @Nullable String headTexture) {
     /** Wire codec for this record. */
     public static final WireCodec<SlotItem> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, SlotItem v) {
-            w.writeArrayHeader(18);
+            w.writeArrayHeader(19);
             w.writeString(v.id());
             w.writeUInt(Integer.toUnsignedLong(v.count()));
             if (v.name() == null) {
@@ -98,6 +99,11 @@ public record SlotItem(String id, int count, @Nullable String name, @Nullable Li
             } else {
                 WireCodecs.list(LoreLine.CODEC).write(w, v.loreLines());
             }
+            if (v.headTexture() == null) {
+                w.writeNil();
+            } else {
+                w.writeString(v.headTexture());
+            }
         }
 
         @Override
@@ -124,98 +130,104 @@ public record SlotItem(String id, int count, @Nullable String name, @Nullable Li
             @Nullable String clickSound = n > 15 && !r.tryReadNil() ? r.readString() : null;
             @Nullable List<ChatSpan> nameSpans = n > 16 && !r.tryReadNil() ? WireCodecs.list(ChatSpan.CODEC).read(r) : null;
             @Nullable List<LoreLine> loreLines = n > 17 && !r.tryReadNil() ? WireCodecs.list(LoreLine.CODEC).read(r) : null;
-            r.skipValues(n - 18);
-            return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+            @Nullable String headTexture = n > 18 && !r.tryReadNil() ? r.readString() : null;
+            r.skipValues(n - 19);
+            return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
         }
     };
 
     /** Creates a value from the required fields; later fields take null or their schema default. */
     public SlotItem(String id) {
-        this(id, 1, null, null, false, null, null, null, null, null, null, null, null, 500, false, null, null, null);
+        this(id, 1, null, null, false, null, null, null, null, null, null, null, null, 500, false, null, null, null, null);
     }
 
     /** Returns a copy with {@code count} replaced. */
     public SlotItem withCount(int count) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code name} replaced. */
     public SlotItem withName(@Nullable String name) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code lore} replaced. */
     public SlotItem withLore(@Nullable List<String> lore) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code glint} replaced. */
     public SlotItem withGlint(boolean glint) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code customModel} replaced. */
     public SlotItem withCustomModel(@Nullable String customModel) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code components} replaced. */
     public SlotItem withComponents(@Nullable Object components) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code countText} replaced. */
     public SlotItem withCountText(@Nullable String countText) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code bar} replaced. */
     public SlotItem withBar(@Nullable Float bar) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code barColor} replaced. */
     public SlotItem withBarColor(@Nullable Integer barColor) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code head} replaced. */
     public SlotItem withHead(@Nullable String head) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code color} replaced. */
     public SlotItem withColor(@Nullable Integer color) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code frames} replaced. */
     public SlotItem withFrames(@Nullable List<SlotItem> frames) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code frameMs} replaced. */
     public SlotItem withFrameMs(int frameMs) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code hideTooltip} replaced. */
     public SlotItem withHideTooltip(boolean hideTooltip) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code clickSound} replaced. */
     public SlotItem withClickSound(@Nullable String clickSound) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code nameSpans} replaced. */
     public SlotItem withNameSpans(@Nullable List<ChatSpan> nameSpans) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 
     /** Returns a copy with {@code loreLines} replaced. */
     public SlotItem withLoreLines(@Nullable List<LoreLine> loreLines) {
-        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines);
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
+    }
+
+    /** Returns a copy with {@code headTexture} replaced. */
+    public SlotItem withHeadTexture(@Nullable String headTexture) {
+        return new SlotItem(id, count, name, lore, glint, customModel, components, countText, bar, barColor, head, color, frames, frameMs, hideTooltip, clickSound, nameSpans, loreLines, headTexture);
     }
 }

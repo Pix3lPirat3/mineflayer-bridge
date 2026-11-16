@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { BridgeError } from '@mineflayer-bridge/protocol';
 import { defineExtension } from './extensions.ts';
 import { itemId } from './ext-util.ts';
-import type { ContainerClick, ContainerEvent, ContainerItem, ContainerLayout, ContainerView, MineflayerItemLike } from './input-types.ts';
+import type { ChatContent, ChatSpanInput, ContainerClick, ContainerEvent, ContainerItem, ContainerLayout, ContainerView, MineflayerItemLike } from './input-types.ts';
 import type { EmitterLike, InventoryLike } from './types.ts';
 
 /** First slot of the hotbar in a mineflayer inventory window. */
@@ -35,6 +35,10 @@ export interface WindowItemLike extends Omit<MineflayerItemLike, 'customName'> {
   readonly customLore?: unknown;
   /** Enchantments; an item with any gets the glint. */
   readonly enchants?: unknown;
+  /** Data components (prismarine-item on 1.20.5+): a `profile` one gives a head its skin. */
+  readonly components?: unknown;
+  /** Item NBT on older versions: `SkullOwner` gives a head its skin. */
+  readonly nbt?: unknown;
 }
 
 /** The parts of a bot `bridge:window` uses besides `bot.inventory`. */
@@ -196,19 +200,197 @@ export function textReader(registry: unknown, loader: ChatLoader | null = findCh
   };
 }
 
+/** The 16 named chat colours, as `§0` to `§f` give them. */
+const NAMED_COLORS: Readonly<Record<string, number>> = {
+  black: 0x000000,
+  dark_blue: 0x0000aa,
+  dark_green: 0x00aa00,
+  dark_aqua: 0x00aaaa,
+  dark_red: 0xaa0000,
+  dark_purple: 0xaa00aa,
+  gold: 0xffaa00,
+  gray: 0xaaaaaa,
+  dark_gray: 0x555555,
+  blue: 0x5555ff,
+  green: 0x55ff55,
+  aqua: 0x55ffff,
+  red: 0xff5555,
+  light_purple: 0xff55ff,
+  yellow: 0xffff55,
+  white: 0xffffff,
+};
+const CODE_COLORS = Object.values(NAMED_COLORS);
+
+/** A text style as chat components carry it, for {@link styledText}; a field left out is inherited. */
+export interface TextStyle {
+  color?: number;
+  bold?: boolean;
+  italic?: boolean;
+  underlined?: boolean;
+  strikethrough?: boolean;
+  obfuscated?: boolean;
+}
+
+const FLAGS = ['bold', 'italic', 'underlined', 'strikethrough', 'obfuscated'] as const;
+const FORMAT_CODES: Readonly<Record<string, (typeof FLAGS)[number]>> = { k: 'obfuscated', l: 'bold', m: 'strikethrough', n: 'underlined', o: 'italic' };
+const SECTION = '§';
+
+function colorOf(v: unknown): number | undefined {
+  if (typeof v !== 'string') return undefined;
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return parseInt(v.slice(1), 16);
+  return NAMED_COLORS[v];
+}
+
+/** NBT booleans are bytes: 0 or 1. */
+function flagOf(v: unknown): boolean | undefined {
+  if (v === undefined || v === null) return undefined;
+  return v === true || v === 1 || v === '1' || v === 'true';
+}
+
+type Run = { text: string; style: TextStyle };
+
+/** Text with legacy `§` codes in it, split into styled runs. */
+function legacyRuns(text: string, base: TextStyle, out: Run[]): void {
+  let style: TextStyle = { ...base };
+  let run = '';
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]!;
+    if (c === SECTION && i + 1 < text.length) {
+      const k = text[i + 1]!.toLowerCase();
+      const hex = '0123456789abcdef'.indexOf(k);
+      if (hex >= 0 || k === 'r' || FORMAT_CODES[k] !== undefined) {
+        if (run !== '') out.push({ text: run, style });
+        run = '';
+        i++;
+        // A colour code resets the formatting after it, as in vanilla.
+        if (hex >= 0) style = { ...base, color: CODE_COLORS[hex]!, bold: false, italic: false, underlined: false, strikethrough: false, obfuscated: false };
+        else if (k === 'r') style = { ...base };
+        else style = { ...style, [FORMAT_CODES[k]!]: true };
+        continue;
+      }
+    }
+    run += c;
+  }
+  if (run !== '') out.push({ text: run, style });
+}
+
+function styleOf(o: Record<string, unknown>, parent: TextStyle): TextStyle {
+  const s: TextStyle = { ...parent };
+  const c = colorOf(o['color']);
+  if (c !== undefined) s.color = c;
+  for (const f of FLAGS) {
+    const b = flagOf(o[f]);
+    if (b !== undefined) s[f] = b;
+  }
+  return s;
+}
+
+function walk(v: unknown, parent: TextStyle, out: Run[], depth: number): void {
+  if (depth > 32) return;
+  if (typeof v === 'string') return legacyRuns(v, parent, out);
+  if (typeof v === 'number' || typeof v === 'boolean') {
+    out.push({ text: String(v), style: parent });
+    return;
+  }
+  if (Array.isArray(v)) {
+    // A list is a component whose first entry styles the rest.
+    if (v.length === 0) return;
+    const first = v[0];
+    const own = typeof first === 'object' && first !== null && !Array.isArray(first) ? styleOf(first as Record<string, unknown>, parent) : parent;
+    walk(first, parent, out, depth + 1);
+    for (const x of v.slice(1)) walk(x, own, out, depth + 1);
+    return;
+  }
+  if (typeof v !== 'object' || v === null) return;
+  const o = v as Record<string, unknown>;
+  const style = styleOf(o, parent);
+  const own = ['text', '', 'fallback', 'translate', 'keybind'].map((k) => o[k]).find((x): x is string => typeof x === 'string' && x !== '') ?? '';
+  if (own !== '') legacyRuns(own, style, out);
+  if (Array.isArray(o['extra'])) for (const x of o['extra']) walk(x, style, out, depth + 1);
+}
+
 /**
- * A mineflayer item as a container view shows it: id, count, the custom name and lore as text, and
- * the glint for an enchanted item. `null` for an empty slot.
+ * A chat component as the styled parts container views and chat take: colours, bold, italic,
+ * underline, strikethrough and obfuscated text from a JSON or NBT component, or from legacy `§`
+ * codes in plain text. `base` is the style vanilla starts from, such as italics for item names.
+ * Parts without any style are plain strings; an empty component gives one empty string.
+ * `undefined` for `null` and `undefined`.
  */
-export function windowItem(item: WindowItemLike | null | undefined, text: (value: unknown) => string | undefined = plainText): ContainerItem | null {
+export function styledText(value: unknown, base: Readonly<TextStyle> = {}): (string | ChatSpanInput)[] | undefined {
+  if (value === null || value === undefined) return undefined;
+  let v: unknown = value;
+  if (typeof v === 'string' && /^\s*[[{"]/.test(v)) {
+    try {
+      v = JSON.parse(v);
+    } catch {
+      // plain text after all
+    }
+  } else if (typeof v === 'object') v = untagged(v);
+  const runs: Run[] = [];
+  walk(v, { ...base }, runs, 0);
+  if (runs.length === 0) return [''];
+  return runs.map(({ text, style }) => {
+    const span: ChatSpanInput = { text };
+    if (style.color !== undefined) span.color = style.color;
+    for (const f of FLAGS) if (style[f] === true) span[f] = true;
+    return Object.keys(span).length === 1 ? text : span;
+  });
+}
+
+/** Vanilla shows custom names in italics, and lore lines in purple italics, unless they say otherwise. */
+const NAME_BASE: TextStyle = { italic: true };
+const LORE_BASE: TextStyle = { italic: true, color: NAMED_COLORS['dark_purple']! };
+
+/** Styled parts as one ChatContent: a lone plain string stays a string. */
+function content(parts: (string | ChatSpanInput)[]): ChatContent {
+  return parts.length === 1 && typeof parts[0] === 'string' ? parts[0] : parts;
+}
+
+/** The base64 `textures` value a head carries: from its `profile` component, or old `SkullOwner` NBT. */
+export function headTexture(item: WindowItemLike): string | undefined {
+  const find = (v: unknown, depth = 0): string | undefined => {
+    if (depth > 8 || typeof v !== 'object' || v === null) return undefined;
+    const o = v as Record<string, unknown>;
+    if (Array.isArray(o['properties'])) {
+      for (const p of o['properties'] as unknown[]) {
+        const q = untagged(p) as Record<string, unknown> | null;
+        if (typeof q === 'object' && q !== null && q['name'] === 'textures' && typeof q['value'] === 'string' && q['value'] !== '') return q['value'];
+      }
+    }
+    const tex = (o['Properties'] as Record<string, unknown> | undefined)?.['textures'];
+    const first = Array.isArray(tex) ? (tex[0] as Record<string, unknown> | undefined) : undefined;
+    if (typeof first?.['Value'] === 'string' && first['Value'] !== '') return first['Value'];
+    for (const x of Object.values(o)) {
+      const r = find(x, depth + 1);
+      if (r !== undefined) return r;
+    }
+    return undefined;
+  };
+  if (Array.isArray(item.components)) {
+    for (const c of item.components as { type?: unknown; data?: unknown }[]) if (c?.type === 'profile') return find(untagged(c.data));
+  }
+  if (item.nbt === undefined || item.nbt === null) return undefined;
+  return find((untagged(item.nbt) as Record<string, unknown> | null)?.['SkullOwner']);
+}
+
+/**
+ * A mineflayer item as a container view shows it: id, count, the custom name and lore with their
+ * colours and styles (empty lore lines are kept: servers use them as spacers), a head's skin, and
+ * the glint for an enchanted item. `null` for an empty slot. The `text` argument is not used any
+ * more; names and lore keep their styles.
+ */
+export function windowItem(item: WindowItemLike | null | undefined, _text?: (value: unknown) => string | undefined): ContainerItem | null {
   if (item === null || item === undefined) return null;
-  const name = text(item.customName);
-  const lore = Array.isArray(item.customLore) ? item.customLore.map((l) => text(l) ?? '').filter((l) => l !== '') : [];
+  const name = styledText(item.customName, NAME_BASE);
+  const lore = Array.isArray(item.customLore) ? item.customLore.map((l) => styledText(l, LORE_BASE) ?? ['']) : [];
+  const texture = item.name === 'player_head' ? headTexture(item) : undefined;
+  const blank = name === undefined || name.every((p) => (typeof p === 'string' ? p : p.text) === '');
   return {
     id: itemId(item.name),
     count: item.count,
-    ...(name === undefined || name === '' ? {} : { name }),
-    ...(lore.length === 0 ? {} : { lore }),
+    ...(blank ? {} : { name: content(name) }),
+    ...(lore.length === 0 ? {} : { lore: lore.map(content) }),
+    ...(texture === undefined ? {} : { headTexture: texture }),
     ...(Array.isArray(item.enchants) && item.enchants.length > 0 ? { glint: true } : {}),
   };
 }

@@ -549,7 +549,7 @@ public final class CommandEngine {
         List<Suggestion> builtins = builtins(arg, input, component);
         CompletionQuery q = new CompletionQuery(bot, command, path, arg, spec, input, component, args, ctx);
         if (spec.source().equals("dynamic")) {
-            return dynamic.complete(command.key(), path, arg.name(), input, q.args()).handle((list, error) -> {
+            return dynamic.complete(command.key(), path, arg.name(), input, q.args(), bot.bots()).handle((list, error) -> {
                 List<Suggestion> out = new ArrayList<>(list == null ? List.of() : list);
                 out.addAll(builtins);
                 return cap(out);

@@ -99,6 +99,10 @@ function presentation(out: SlotItem, it: ContainerItem, ctx: ItemContext, nested
   }
   if (it.barColor !== undefined) out.barColor = toColor(it.barColor);
   if (it.head !== undefined) out.head = headName(it.head, ctx);
+  if (it.headTexture !== undefined) {
+    if (typeof it.headTexture !== 'string' || !/^[A-Za-z0-9+/=_-]{1,32768}$/.test(it.headTexture)) throw new BridgeError('invalid_message', 'headTexture must be the base64 textures value, at most 32768 characters');
+    out.headTexture = it.headTexture;
+  }
   if (it.color !== undefined) out.color = toColor(it.color);
   if (it.frames !== undefined) {
     if (nested) throw new BridgeError('invalid_message', 'animation frames cannot have frames of their own');
@@ -143,11 +147,14 @@ export function toSlotItem(input: ItemInput, ctx: ItemContext = NO_SELF): SlotIt
 }
 
 function fromSpan(s: ChatSpan): string | ChatSpanInput {
-  if (s.color === undefined && s.bold !== true && s.italic !== true && s.hover === undefined) return s.text;
+  if (s.color === undefined && s.bold !== true && s.italic !== true && s.underlined !== true && s.strikethrough !== true && s.obfuscated !== true && s.hover === undefined) return s.text;
   const out: Mutable<ChatSpanInput> = { text: s.text };
   if (s.color !== undefined) out.color = s.color;
   if (s.bold === true) out.bold = true;
   if (s.italic === true) out.italic = true;
+  if (s.underlined === true) out.underlined = true;
+  if (s.strikethrough === true) out.strikethrough = true;
+  if (s.obfuscated === true) out.obfuscated = true;
   if (s.hover !== undefined) out.hover = s.hover;
   return out;
 }
@@ -172,6 +179,7 @@ export function fromSlotItem(s: SlotItem): ContainerItem {
   if (s.bar !== undefined) out.bar = s.bar;
   if (s.barColor !== undefined) out.barColor = s.barColor;
   if (s.head !== undefined) out.head = s.head;
+  if (s.headTexture !== undefined) out.headTexture = s.headTexture;
   if (s.color !== undefined) out.color = s.color;
   if (s.frames !== undefined) {
     out.frames = s.frames.map(fromSlotItem);

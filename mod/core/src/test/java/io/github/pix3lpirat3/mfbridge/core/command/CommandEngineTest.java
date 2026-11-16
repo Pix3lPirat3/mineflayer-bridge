@@ -310,7 +310,7 @@ class CommandEngineTest {
     @Test
     void dynamicSourcesGetTheEarlierArguments() {
         List<Object[]> calls = new ArrayList<>();
-        CommandEngine e = new CommandEngine(Map.of(), (key, path, arg, input, args) -> {
+        CommandEngine e = new CommandEngine(Map.of(), (key, path, arg, input, args, bots) -> {
             calls.add(new Object[] {key, path, arg, input, args});
             return CompletableFuture.completedFuture(List.of(new Suggestion("red", "Red team", "5 players")));
         });
