@@ -13,7 +13,6 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  * Payload of message {@code prompt.request} (id 0x63), sent by node with reliable delivery. Answered by {@code prompt.result}; default timeout 600000 ms.
  *
  * @param timeoutMs Default {@code 30000}.
- * @param placement One of: hud | world. Default {@code hud}.
  * @param surface One of: hud | dialog | anvil | sign | book | chat | world | stonecutter | enchanting | merchant | crafting. Default {@code hud}.
  * @param item anvil: item shown in the input slot.
  * @param wood sign: wood type, e.g. spruce.
@@ -22,12 +21,12 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  * @param options Stonecutter and enchanting choices.
  * @param offers Merchant surface.
  */
-public record PromptRequest(PromptKind kind, String text, @Nullable List<String> choices, @Nullable Object defaultValue, int timeoutMs, String placement, @Nullable Vec3d at, String surface, @Nullable String item, @Nullable String wood, @Nullable Double min, @Nullable Double max, @Nullable Integer maxLength, @Nullable List<WorldMenuEntry> options, @Nullable List<MerchantOffer> offers) {
+public record PromptRequest(PromptKind kind, String text, @Nullable List<String> choices, @Nullable Object defaultValue, int timeoutMs, @Nullable Vec3d at, String surface, @Nullable String item, @Nullable String wood, @Nullable Double min, @Nullable Double max, @Nullable Integer maxLength, @Nullable List<WorldMenuEntry> options, @Nullable List<MerchantOffer> offers) {
     /** Wire codec for this record. */
     public static final WireCodec<PromptRequest> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, PromptRequest v) {
-            w.writeArrayHeader(15);
+            w.writeArrayHeader(14);
             PromptKind.CODEC.write(w, v.kind());
             w.writeString(v.text());
             if (v.choices() == null) {
@@ -41,7 +40,6 @@ public record PromptRequest(PromptKind kind, String text, @Nullable List<String>
                 w.writeAny(v.defaultValue());
             }
             w.writeUInt(Integer.toUnsignedLong(v.timeoutMs()));
-            w.writeString(v.placement());
             if (v.at() == null) {
                 w.writeNil();
             } else {
@@ -96,88 +94,82 @@ public record PromptRequest(PromptKind kind, String text, @Nullable List<String>
             @Nullable List<String> choices = n > 2 && !r.tryReadNil() ? WireCodecs.list(WireCodecs.STRING).read(r) : null;
             @Nullable Object defaultValue = n > 3 && !r.tryReadNil() ? r.readAny() : null;
             int timeoutMs = n > 4 && !r.tryReadNil() ? r.readUInt() : 30000;
-            String placement = n > 5 && !r.tryReadNil() ? r.readString() : "hud";
-            @Nullable Vec3d at = n > 6 && !r.tryReadNil() ? Vec3d.CODEC.read(r) : null;
-            String surface = n > 7 && !r.tryReadNil() ? r.readString() : "hud";
-            @Nullable String item = n > 8 && !r.tryReadNil() ? r.readString() : null;
-            @Nullable String wood = n > 9 && !r.tryReadNil() ? r.readString() : null;
-            @Nullable Double min = n > 10 && !r.tryReadNil() ? r.readDouble() : null;
-            @Nullable Double max = n > 11 && !r.tryReadNil() ? r.readDouble() : null;
-            @Nullable Integer maxLength = n > 12 && !r.tryReadNil() ? r.readUInt() : null;
-            @Nullable List<WorldMenuEntry> options = n > 13 && !r.tryReadNil() ? WireCodecs.list(WorldMenuEntry.CODEC).read(r) : null;
-            @Nullable List<MerchantOffer> offers = n > 14 && !r.tryReadNil() ? WireCodecs.list(MerchantOffer.CODEC).read(r) : null;
-            r.skipValues(n - 15);
-            return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+            @Nullable Vec3d at = n > 5 && !r.tryReadNil() ? Vec3d.CODEC.read(r) : null;
+            String surface = n > 6 && !r.tryReadNil() ? r.readString() : "hud";
+            @Nullable String item = n > 7 && !r.tryReadNil() ? r.readString() : null;
+            @Nullable String wood = n > 8 && !r.tryReadNil() ? r.readString() : null;
+            @Nullable Double min = n > 9 && !r.tryReadNil() ? r.readDouble() : null;
+            @Nullable Double max = n > 10 && !r.tryReadNil() ? r.readDouble() : null;
+            @Nullable Integer maxLength = n > 11 && !r.tryReadNil() ? r.readUInt() : null;
+            @Nullable List<WorldMenuEntry> options = n > 12 && !r.tryReadNil() ? WireCodecs.list(WorldMenuEntry.CODEC).read(r) : null;
+            @Nullable List<MerchantOffer> offers = n > 13 && !r.tryReadNil() ? WireCodecs.list(MerchantOffer.CODEC).read(r) : null;
+            r.skipValues(n - 14);
+            return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
         }
     };
 
     /** Creates a value from the required fields; later fields take null or their schema default. */
     public PromptRequest(PromptKind kind, String text) {
-        this(kind, text, null, null, 30000, "hud", null, "hud", null, null, null, null, null, null, null);
+        this(kind, text, null, null, 30000, null, "hud", null, null, null, null, null, null, null);
     }
 
     /** Returns a copy with {@code choices} replaced. */
     public PromptRequest withChoices(@Nullable List<String> choices) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 
     /** Returns a copy with {@code defaultValue} replaced. */
     public PromptRequest withDefaultValue(@Nullable Object defaultValue) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 
     /** Returns a copy with {@code timeoutMs} replaced. */
     public PromptRequest withTimeoutMs(int timeoutMs) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
-    }
-
-    /** Returns a copy with {@code placement} replaced. */
-    public PromptRequest withPlacement(String placement) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 
     /** Returns a copy with {@code at} replaced. */
     public PromptRequest withAt(@Nullable Vec3d at) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 
     /** Returns a copy with {@code surface} replaced. */
     public PromptRequest withSurface(String surface) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 
     /** Returns a copy with {@code item} replaced. */
     public PromptRequest withItem(@Nullable String item) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 
     /** Returns a copy with {@code wood} replaced. */
     public PromptRequest withWood(@Nullable String wood) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 
     /** Returns a copy with {@code min} replaced. */
     public PromptRequest withMin(@Nullable Double min) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 
     /** Returns a copy with {@code max} replaced. */
     public PromptRequest withMax(@Nullable Double max) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 
     /** Returns a copy with {@code maxLength} replaced. */
     public PromptRequest withMaxLength(@Nullable Integer maxLength) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 
     /** Returns a copy with {@code options} replaced. */
     public PromptRequest withOptions(@Nullable List<WorldMenuEntry> options) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 
     /** Returns a copy with {@code offers} replaced. */
     public PromptRequest withOffers(@Nullable List<MerchantOffer> offers) {
-        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers);
+        return new PromptRequest(kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers);
     }
 }

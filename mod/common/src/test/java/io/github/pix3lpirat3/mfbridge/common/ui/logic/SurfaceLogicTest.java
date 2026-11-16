@@ -25,7 +25,7 @@ class SurfaceLogicTest {
 
     static PromptRequest prompt(final PromptKind kind, final String surface, final List<String> choices, final Double min,
             final Double max) {
-        return new PromptRequest(kind, "Question?", choices, null, 30_000, "hud", null, surface, null, null, min, max, null, null, null);
+        return new PromptRequest(kind, "Question?", choices, null, 30_000, null, surface, null, null, min, max, null, null, null);
     }
 
     static PromptRequest prompt(final PromptKind kind, final String surface) {
@@ -105,8 +105,6 @@ class SurfaceLogicTest {
         assertEquals(Surfaces.Surface.WORLD, Surfaces.forPrompt(prompt(PromptKind.CONFIRM, "world")));
         assertEquals(Surfaces.Surface.WORLD, Surfaces.forPrompt(prompt(PromptKind.CHOICE, "world")));
         assertEquals(Surfaces.Surface.HUD, Surfaces.forPrompt(prompt(PromptKind.TEXT, "world")), "world menus only offer entries");
-        assertEquals(Surfaces.Surface.WORLD, Surfaces.forPrompt(new PromptRequest(PromptKind.CONFIRM, "Q", null, null, 30_000, "world",
-                null, "hud", null, null, null, null, null, null, null)), "placement world also means a world menu");
         assertFalse(Surfaces.opensScreen(Surfaces.Surface.WORLD));
         assertEquals("world", Surfaces.wireName(Surfaces.Surface.WORLD));
         assertEquals("hud", Surfaces.wireName(Surfaces.Surface.HUD));
@@ -207,7 +205,7 @@ class SurfaceLogicTest {
     }
 
     static PromptRequest menuPrompt(final String surface, final List<WorldMenuEntry> options, final List<MerchantOffer> offers) {
-        return new PromptRequest(PromptKind.CHOICE, "Pick", null, null, 30_000, "hud", null, surface, null, null, null, null, null,
+        return new PromptRequest(PromptKind.CHOICE, "Pick", null, null, 30_000, null, surface, null, null, null, null, null,
                 options, offers);
     }
 

@@ -74,21 +74,13 @@ function presentation(out: SlotItem, it: ContainerItem, ctx: ItemContext, nested
   else if (it.count !== undefined && it.count > COMPACT_ABOVE) out.countText = compactCount(it.count);
   if (it.name !== undefined) {
     if (typeof it.name === 'string') out.name = it.name;
-    else {
-      out.nameSpans = spans('item name', it.name);
-      // The plain text stays for clients that predate styled names.
-      out.name = out.nameSpans.map((s) => s.text).join('');
-    }
+    else out.nameSpans = spans('item name', it.name);
   }
   if (it.lore !== undefined) {
     if (!Array.isArray(it.lore)) throw new BridgeError('invalid_message', 'lore must be a list of lines');
     const lines = it.lore as readonly ChatContent[];
     if (lines.every((l) => typeof l === 'string')) out.lore = lines.map(String);
-    else {
-      const rich: LoreLine[] = lines.map((l) => ({ spans: spans('lore', l) }));
-      out.loreLines = rich;
-      out.lore = rich.map((l) => l.spans.map((s) => s.text).join(''));
-    }
+    else out.loreLines = lines.map((l): LoreLine => ({ spans: spans('lore', l) }));
   }
   if (it.glint === true) out.glint = true;
   if (it.customModel !== undefined) out.customModel = it.customModel;
@@ -138,7 +130,7 @@ function convert(input: ItemInput, ctx: ItemContext, nested: boolean): SlotItem 
 /**
  * Converts any accepted item form to the wire `SlotItem`. Objects with a string `id` are {@link
  * ContainerItem}s; other objects with a string `name` are mineflayer items. Plain names and lore
- * stay plain; styled ones become `nameSpans` and `loreLines`, with the plain text kept alongside.
+ * stay plain; styled ones become `nameSpans` and `loreLines`.
  * `head: 'self'` resolves through `ctx`.
  * @throws BridgeError `invalid_message` for anything that does not fit.
  */

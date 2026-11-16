@@ -22,7 +22,7 @@ class PromptSurfacesTest {
     }
 
     static PromptRequest request(@Nullable List<WorldMenuEntry> options, @Nullable List<MerchantOffer> offers) {
-        return new PromptRequest(PromptKind.CHOICE, "Pick", null, null, 30_000, "hud", null, "stonecutter", null, null, null, null,
+        return new PromptRequest(PromptKind.CHOICE, "Pick", null, null, 30_000, null, "stonecutter", null, null, null, null,
                 null, options, offers);
     }
 

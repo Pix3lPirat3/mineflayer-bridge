@@ -3520,15 +3520,13 @@ export interface DisplayTextData {
   /** 0-15 fixed light, world light when absent. */
   brightness?: number | undefined;
   glow?: number | undefined;
-  hover?: HoverStyle | undefined;
-  interactive?: Interactive | undefined;
   /** Default `64`. */
   maxDistance?: number | undefined;
 }
 /** Wire codec for {@link DisplayTextData}. */
 export const DisplayTextDataCodec: Codec<DisplayTextData> = {
   write(w, v) {
-    w.arrayHeader(20);
+    w.arrayHeader(18);
     Vec3dCodec.write(w, v.pos);
     w.str(v.text);
     w.uint(v.lineWidth ?? 200);
@@ -3546,8 +3544,6 @@ export const DisplayTextDataCodec: Codec<DisplayTextData> = {
     w.uint(v.animatePeriodMs ?? 2000);
     if (v.brightness === undefined || v.brightness === null) w.nil(); else w.int(v.brightness);
     if (v.glow === undefined || v.glow === null) w.nil(); else w.uint(v.glow);
-    if (v.hover === undefined || v.hover === null) w.nil(); else HoverStyleCodec.write(w, v.hover);
-    if (v.interactive === undefined || v.interactive === null) w.nil(); else InteractiveCodec.write(w, v.interactive);
     w.f32(v.maxDistance ?? 64);
   },
   read(r) {
@@ -3570,11 +3566,9 @@ export const DisplayTextDataCodec: Codec<DisplayTextData> = {
     const animatePeriodMs = n > 14 && !r.tryNil() ? r.uint() : 2000;
     const brightness = n > 15 && !r.tryNil() ? r.int() : undefined;
     const glow = n > 16 && !r.tryNil() ? r.uint() : undefined;
-    const hover = n > 17 && !r.tryNil() ? HoverStyleCodec.read(r) : undefined;
-    const interactive = n > 18 && !r.tryNil() ? InteractiveCodec.read(r) : undefined;
-    const maxDistance = n > 19 && !r.tryNil() ? r.float() : 64;
-    for (let i = 20; i < n; i++) r.skip();
-    return { pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance };
+    const maxDistance = n > 17 && !r.tryNil() ? r.float() : 64;
+    for (let i = 18; i < n; i++) r.skip();
+    return { pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance };
   },
 };
 
@@ -3602,15 +3596,13 @@ export interface DisplayItemData {
   /** 0-15 fixed light, world light when absent. */
   brightness?: number | undefined;
   glow?: number | undefined;
-  hover?: HoverStyle | undefined;
-  interactive?: Interactive | undefined;
   /** Default `64`. */
   maxDistance?: number | undefined;
 }
 /** Wire codec for {@link DisplayItemData}. */
 export const DisplayItemDataCodec: Codec<DisplayItemData> = {
   write(w, v) {
-    w.arrayHeader(16);
+    w.arrayHeader(14);
     Vec3dCodec.write(w, v.pos);
     SlotItemCodec.write(w, v.item);
     w.str(v.mode ?? "ground");
@@ -3624,8 +3616,6 @@ export const DisplayItemDataCodec: Codec<DisplayItemData> = {
     w.uint(v.animatePeriodMs ?? 2000);
     if (v.brightness === undefined || v.brightness === null) w.nil(); else w.int(v.brightness);
     if (v.glow === undefined || v.glow === null) w.nil(); else w.uint(v.glow);
-    if (v.hover === undefined || v.hover === null) w.nil(); else HoverStyleCodec.write(w, v.hover);
-    if (v.interactive === undefined || v.interactive === null) w.nil(); else InteractiveCodec.write(w, v.interactive);
     w.f32(v.maxDistance ?? 64);
   },
   read(r) {
@@ -3644,11 +3634,9 @@ export const DisplayItemDataCodec: Codec<DisplayItemData> = {
     const animatePeriodMs = n > 10 && !r.tryNil() ? r.uint() : 2000;
     const brightness = n > 11 && !r.tryNil() ? r.int() : undefined;
     const glow = n > 12 && !r.tryNil() ? r.uint() : undefined;
-    const hover = n > 13 && !r.tryNil() ? HoverStyleCodec.read(r) : undefined;
-    const interactive = n > 14 && !r.tryNil() ? InteractiveCodec.read(r) : undefined;
-    const maxDistance = n > 15 && !r.tryNil() ? r.float() : 64;
-    for (let i = 16; i < n; i++) r.skip();
-    return { pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance };
+    const maxDistance = n > 13 && !r.tryNil() ? r.float() : 64;
+    for (let i = 14; i < n; i++) r.skip();
+    return { pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance };
   },
 };
 
@@ -3674,15 +3662,13 @@ export interface DisplayBlockData {
   /** 0-15 fixed light, world light when absent. */
   brightness?: number | undefined;
   glow?: number | undefined;
-  hover?: HoverStyle | undefined;
-  interactive?: Interactive | undefined;
   /** Default `64`. */
   maxDistance?: number | undefined;
 }
 /** Wire codec for {@link DisplayBlockData}. */
 export const DisplayBlockDataCodec: Codec<DisplayBlockData> = {
   write(w, v) {
-    w.arrayHeader(15);
+    w.arrayHeader(13);
     Vec3dCodec.write(w, v.pos);
     w.str(v.state);
     w.f32(v.scale ?? 1);
@@ -3695,8 +3681,6 @@ export const DisplayBlockDataCodec: Codec<DisplayBlockData> = {
     w.uint(v.animatePeriodMs ?? 2000);
     if (v.brightness === undefined || v.brightness === null) w.nil(); else w.int(v.brightness);
     if (v.glow === undefined || v.glow === null) w.nil(); else w.uint(v.glow);
-    if (v.hover === undefined || v.hover === null) w.nil(); else HoverStyleCodec.write(w, v.hover);
-    if (v.interactive === undefined || v.interactive === null) w.nil(); else InteractiveCodec.write(w, v.interactive);
     w.f32(v.maxDistance ?? 64);
   },
   read(r) {
@@ -3714,11 +3698,9 @@ export const DisplayBlockDataCodec: Codec<DisplayBlockData> = {
     const animatePeriodMs = n > 9 && !r.tryNil() ? r.uint() : 2000;
     const brightness = n > 10 && !r.tryNil() ? r.int() : undefined;
     const glow = n > 11 && !r.tryNil() ? r.uint() : undefined;
-    const hover = n > 12 && !r.tryNil() ? HoverStyleCodec.read(r) : undefined;
-    const interactive = n > 13 && !r.tryNil() ? InteractiveCodec.read(r) : undefined;
-    const maxDistance = n > 14 && !r.tryNil() ? r.float() : 64;
-    for (let i = 15; i < n; i++) r.skip();
-    return { pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance };
+    const maxDistance = n > 12 && !r.tryNil() ? r.float() : 64;
+    for (let i = 13; i < n; i++) r.skip();
+    return { pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance };
   },
 };
 
@@ -3759,8 +3741,6 @@ export interface DisplayEntityData {
   /** 0-15 fixed light, world light when absent. */
   brightness?: number | undefined;
   glow?: number | undefined;
-  hover?: HoverStyle | undefined;
-  interactive?: Interactive | undefined;
   /** Default `64`. */
   maxDistance?: number | undefined;
   /** Default `false`. */
@@ -3788,7 +3768,7 @@ export interface DisplayEntityData {
 /** Wire codec for {@link DisplayEntityData}. */
 export const DisplayEntityDataCodec: Codec<DisplayEntityData> = {
   write(w, v) {
-    w.arrayHeader(35);
+    w.arrayHeader(33);
     Vec3dCodec.write(w, v.pos);
     w.str(v.type);
     w.f32(v.yaw ?? 0);
@@ -3810,8 +3790,6 @@ export const DisplayEntityDataCodec: Codec<DisplayEntityData> = {
     w.uint(v.animatePeriodMs ?? 2000);
     if (v.brightness === undefined || v.brightness === null) w.nil(); else w.int(v.brightness);
     if (v.glow === undefined || v.glow === null) w.nil(); else w.uint(v.glow);
-    if (v.hover === undefined || v.hover === null) w.nil(); else HoverStyleCodec.write(w, v.hover);
-    if (v.interactive === undefined || v.interactive === null) w.nil(); else InteractiveCodec.write(w, v.interactive);
     w.f32(v.maxDistance ?? 64);
     w.bool(v.invisible ?? false);
     w.bool(v.onFire ?? false);
@@ -3849,22 +3827,20 @@ export const DisplayEntityDataCodec: Codec<DisplayEntityData> = {
     const animatePeriodMs = n > 18 && !r.tryNil() ? r.uint() : 2000;
     const brightness = n > 19 && !r.tryNil() ? r.int() : undefined;
     const glow = n > 20 && !r.tryNil() ? r.uint() : undefined;
-    const hover = n > 21 && !r.tryNil() ? HoverStyleCodec.read(r) : undefined;
-    const interactive = n > 22 && !r.tryNil() ? InteractiveCodec.read(r) : undefined;
-    const maxDistance = n > 23 && !r.tryNil() ? r.float() : 64;
-    const invisible = n > 24 && !r.tryNil() ? r.bool() : false;
-    const onFire = n > 25 && !r.tryNil() ? r.bool() : false;
-    const frozen = n > 26 && !r.tryNil() ? r.bool() : false;
-    const variant = n > 27 && !r.tryNil() ? r.str() : undefined;
-    const color = n > 28 && !r.tryNil() ? r.str() : undefined;
-    const profession = n > 29 && !r.tryNil() ? r.str() : undefined;
-    const charged = n > 30 && !r.tryNil() ? r.bool() : false;
-    const saddled = n > 31 && !r.tryNil() ? r.bool() : false;
-    const armorStand = n > 32 && !r.tryNil() ? ArmorStandPropsCodec.read(r) : undefined;
-    const effects = n > 33 && !r.tryNil() ? readList(r, () => r.str()) : undefined;
-    const data = n > 34 && !r.tryNil() ? r.str() : undefined;
-    for (let i = 35; i < n; i++) r.skip();
-    return { pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data };
+    const maxDistance = n > 21 && !r.tryNil() ? r.float() : 64;
+    const invisible = n > 22 && !r.tryNil() ? r.bool() : false;
+    const onFire = n > 23 && !r.tryNil() ? r.bool() : false;
+    const frozen = n > 24 && !r.tryNil() ? r.bool() : false;
+    const variant = n > 25 && !r.tryNil() ? r.str() : undefined;
+    const color = n > 26 && !r.tryNil() ? r.str() : undefined;
+    const profession = n > 27 && !r.tryNil() ? r.str() : undefined;
+    const charged = n > 28 && !r.tryNil() ? r.bool() : false;
+    const saddled = n > 29 && !r.tryNil() ? r.bool() : false;
+    const armorStand = n > 30 && !r.tryNil() ? ArmorStandPropsCodec.read(r) : undefined;
+    const effects = n > 31 && !r.tryNil() ? readList(r, () => r.str()) : undefined;
+    const data = n > 32 && !r.tryNil() ? r.str() : undefined;
+    for (let i = 33; i < n; i++) r.skip();
+    return { pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data };
   },
 };
 
@@ -4166,7 +4142,7 @@ export interface Welcome {
   limits: Limits;
   budget: Budget;
   /** Granted permissions for this device. */
-  permissions?: string[] | undefined;
+  permissions: string[];
   /** The mod's proof over auth.response.nonce, made with the secret the plugin used. */
   proof?: Uint8Array | undefined;
 }
@@ -4183,12 +4159,12 @@ export const WelcomeCodec: Codec<Welcome> = {
     writeList(w, v.extensions, (x) => ExtensionRefCodec.write(w, x));
     LimitsCodec.write(w, v.limits);
     BudgetCodec.write(w, v.budget);
-    if (v.permissions === undefined || v.permissions === null) w.nil(); else writeList(w, v.permissions, (x) => w.str(x));
+    writeList(w, v.permissions, (x) => w.str(x));
     if (v.proof === undefined || v.proof === null) w.nil(); else w.bin(v.proof);
   },
   read(r) {
     const n = r.arrayHeader();
-    if (n < 9) throw new WireError('invalid_message', 'welcome: expected at least 9 fields, got ' + n);
+    if (n < 10) throw new WireError('invalid_message', 'welcome: expected at least 10 fields, got ' + n);
     const protocolMajor = r.uint();
     const protocolMinor = r.uint();
     const modVersion = r.str();
@@ -4198,7 +4174,7 @@ export const WelcomeCodec: Codec<Welcome> = {
     const extensions = readList(r, () => ExtensionRefCodec.read(r));
     const limits = LimitsCodec.read(r);
     const budget = BudgetCodec.read(r);
-    const permissions = n > 9 && !r.tryNil() ? readList(r, () => r.str()) : undefined;
+    const permissions = readList(r, () => r.str());
     const proof = n > 10 && !r.tryNil() ? r.bin() : undefined;
     for (let i = 11; i < n; i++) r.skip();
     return { protocolMajor, protocolMinor, modVersion, gameVersion, loader, registry, extensions, limits, budget, permissions, proof };
@@ -5028,8 +5004,6 @@ export interface PromptRequest {
   defaultValue?: unknown | undefined;
   /** Default `30000`. */
   timeoutMs?: number | undefined;
-  /** One of: hud | world. Default `hud`. */
-  placement?: string | undefined;
   at?: Vec3d | undefined;
   /** One of: hud | dialog | anvil | sign | book | chat | world | stonecutter | enchanting | merchant | crafting. Default `hud`. */
   surface?: string | undefined;
@@ -5050,13 +5024,12 @@ export interface PromptRequest {
 /** Wire codec for {@link PromptRequest}. */
 export const PromptRequestCodec: Codec<PromptRequest> = {
   write(w, v) {
-    w.arrayHeader(15);
+    w.arrayHeader(14);
     PromptKindCodec.write(w, v.kind);
     w.str(v.text);
     if (v.choices === undefined || v.choices === null) w.nil(); else writeList(w, v.choices, (x) => w.str(x));
     if (v.defaultValue === undefined || v.defaultValue === null) w.nil(); else w.any(v.defaultValue);
     w.uint(v.timeoutMs ?? 30000);
-    w.str(v.placement ?? "hud");
     if (v.at === undefined || v.at === null) w.nil(); else Vec3dCodec.write(w, v.at);
     w.str(v.surface ?? "hud");
     if (v.item === undefined || v.item === null) w.nil(); else w.str(v.item);
@@ -5075,18 +5048,17 @@ export const PromptRequestCodec: Codec<PromptRequest> = {
     const choices = n > 2 && !r.tryNil() ? readList(r, () => r.str()) : undefined;
     const defaultValue = n > 3 && !r.tryNil() ? r.any() : undefined;
     const timeoutMs = n > 4 && !r.tryNil() ? r.uint() : 30000;
-    const placement = n > 5 && !r.tryNil() ? r.str() : "hud";
-    const at = n > 6 && !r.tryNil() ? Vec3dCodec.read(r) : undefined;
-    const surface = n > 7 && !r.tryNil() ? r.str() : "hud";
-    const item = n > 8 && !r.tryNil() ? r.str() : undefined;
-    const wood = n > 9 && !r.tryNil() ? r.str() : undefined;
-    const min = n > 10 && !r.tryNil() ? r.float() : undefined;
-    const max = n > 11 && !r.tryNil() ? r.float() : undefined;
-    const maxLength = n > 12 && !r.tryNil() ? r.uint() : undefined;
-    const options = n > 13 && !r.tryNil() ? readList(r, () => WorldMenuEntryCodec.read(r)) : undefined;
-    const offers = n > 14 && !r.tryNil() ? readList(r, () => MerchantOfferCodec.read(r)) : undefined;
-    for (let i = 15; i < n; i++) r.skip();
-    return { kind, text, choices, defaultValue, timeoutMs, placement, at, surface, item, wood, min, max, maxLength, options, offers };
+    const at = n > 5 && !r.tryNil() ? Vec3dCodec.read(r) : undefined;
+    const surface = n > 6 && !r.tryNil() ? r.str() : "hud";
+    const item = n > 7 && !r.tryNil() ? r.str() : undefined;
+    const wood = n > 8 && !r.tryNil() ? r.str() : undefined;
+    const min = n > 9 && !r.tryNil() ? r.float() : undefined;
+    const max = n > 10 && !r.tryNil() ? r.float() : undefined;
+    const maxLength = n > 11 && !r.tryNil() ? r.uint() : undefined;
+    const options = n > 12 && !r.tryNil() ? readList(r, () => WorldMenuEntryCodec.read(r)) : undefined;
+    const offers = n > 13 && !r.tryNil() ? readList(r, () => MerchantOfferCodec.read(r)) : undefined;
+    for (let i = 14; i < n; i++) r.skip();
+    return { kind, text, choices, defaultValue, timeoutMs, at, surface, item, wood, min, max, maxLength, options, offers };
   },
 };
 
@@ -5096,7 +5068,7 @@ export interface PromptResult {
   /** Default `false`. */
   timedOut?: boolean | undefined;
   /** Surface that answered, after any fallback. */
-  surface?: string | undefined;
+  surface: string;
 }
 /** Wire codec for {@link PromptResult}. */
 export const PromptResultCodec: Codec<PromptResult> = {
@@ -5104,13 +5076,14 @@ export const PromptResultCodec: Codec<PromptResult> = {
     w.arrayHeader(3);
     if (v.value === undefined || v.value === null) w.nil(); else w.any(v.value);
     w.bool(v.timedOut ?? false);
-    if (v.surface === undefined || v.surface === null) w.nil(); else w.str(v.surface);
+    w.str(v.surface);
   },
   read(r) {
     const n = r.arrayHeader();
+    if (n < 3) throw new WireError('invalid_message', 'prompt.result: expected at least 3 fields, got ' + n);
     const value = n > 0 && !r.tryNil() ? r.any() : undefined;
     const timedOut = n > 1 && !r.tryNil() ? r.bool() : false;
-    const surface = n > 2 && !r.tryNil() ? r.str() : undefined;
+    const surface = r.str();
     for (let i = 3; i < n; i++) r.skip();
     return { value, timedOut, surface };
   },

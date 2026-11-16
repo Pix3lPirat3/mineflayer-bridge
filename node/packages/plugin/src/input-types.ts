@@ -187,8 +187,6 @@ export interface PromptOptions<T> {
   default?: T;
   /** Deadline in ms, counted by the mod from receipt. Default 30000, at most 600000. */
   timeoutMs?: number;
-  /** `hud` (default): a small card. `world`: a world menu at `at`, the same as `surface: 'world'`. */
-  placement?: 'hud' | 'world';
   /** Position of a `world` prompt, in blocks. */
   at?: Vec3Like;
   /** Aborting sends `prompt.cancel` and rejects with `cancelled`. */

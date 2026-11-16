@@ -3,6 +3,7 @@ package io.github.pix3lpirat3.mfbridge.protocol.core;
 
 import org.jspecify.annotations.Nullable;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireCodec;
+import io.github.pix3lpirat3.mfbridge.protocol.wire.WireException;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireReader;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
 
@@ -12,7 +13,7 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  * @param timedOut Default {@code false}.
  * @param surface Surface that answered, after any fallback.
  */
-public record PromptResult(@Nullable Object value, boolean timedOut, @Nullable String surface) {
+public record PromptResult(@Nullable Object value, boolean timedOut, String surface) {
     /** Wire codec for this record. */
     public static final WireCodec<PromptResult> CODEC = new WireCodec<>() {
         @Override
@@ -24,41 +25,20 @@ public record PromptResult(@Nullable Object value, boolean timedOut, @Nullable S
                 w.writeAny(v.value());
             }
             w.writeBool(v.timedOut());
-            if (v.surface() == null) {
-                w.writeNil();
-            } else {
-                w.writeString(v.surface());
-            }
+            w.writeString(v.surface());
         }
 
         @Override
         public PromptResult read(WireReader r) {
             int n = r.readArrayHeader();
+            if (n < 3) {
+                throw WireException.invalid("prompt.result: expected at least 3 fields, got " + n);
+            }
             @Nullable Object value = n > 0 && !r.tryReadNil() ? r.readAny() : null;
             boolean timedOut = n > 1 && !r.tryReadNil() ? r.readBool() : false;
-            @Nullable String surface = n > 2 && !r.tryReadNil() ? r.readString() : null;
+            String surface = r.readString();
             r.skipValues(n - 3);
             return new PromptResult(value, timedOut, surface);
         }
     };
-
-    /** Creates a value from the required fields; later fields take null or their schema default. */
-    public PromptResult() {
-        this(null, false, null);
-    }
-
-    /** Returns a copy with {@code value} replaced. */
-    public PromptResult withValue(@Nullable Object value) {
-        return new PromptResult(value, timedOut, surface);
-    }
-
-    /** Returns a copy with {@code timedOut} replaced. */
-    public PromptResult withTimedOut(boolean timedOut) {
-        return new PromptResult(value, timedOut, surface);
-    }
-
-    /** Returns a copy with {@code surface} replaced. */
-    public PromptResult withSurface(@Nullable String surface) {
-        return new PromptResult(value, timedOut, surface);
-    }
 }

@@ -20,12 +20,12 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  * @param brightness 0-15 fixed light, world light when absent.
  * @param maxDistance Default {@code 64}.
  */
-public record DisplayBlockData(Vec3d pos, String state, float scale, @Nullable String group, @Nullable DisplayTransform transform, String billboard, int interpolateMs, @Nullable String animate, float animateAmplitude, int animatePeriodMs, @Nullable Integer brightness, @Nullable Integer glow, @Nullable HoverStyle hover, @Nullable Interactive interactive, float maxDistance) {
+public record DisplayBlockData(Vec3d pos, String state, float scale, @Nullable String group, @Nullable DisplayTransform transform, String billboard, int interpolateMs, @Nullable String animate, float animateAmplitude, int animatePeriodMs, @Nullable Integer brightness, @Nullable Integer glow, float maxDistance) {
     /** Wire codec for this record. */
     public static final WireCodec<DisplayBlockData> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, DisplayBlockData v) {
-            w.writeArrayHeader(15);
+            w.writeArrayHeader(13);
             Vec3d.CODEC.write(w, v.pos());
             w.writeString(v.state());
             w.writeFloat(v.scale());
@@ -58,16 +58,6 @@ public record DisplayBlockData(Vec3d pos, String state, float scale, @Nullable S
             } else {
                 w.writeUInt(Integer.toUnsignedLong(v.glow()));
             }
-            if (v.hover() == null) {
-                w.writeNil();
-            } else {
-                HoverStyle.CODEC.write(w, v.hover());
-            }
-            if (v.interactive() == null) {
-                w.writeNil();
-            } else {
-                Interactive.CODEC.write(w, v.interactive());
-            }
             w.writeFloat(v.maxDistance());
         }
 
@@ -89,81 +79,69 @@ public record DisplayBlockData(Vec3d pos, String state, float scale, @Nullable S
             int animatePeriodMs = n > 9 && !r.tryReadNil() ? r.readUInt() : 2000;
             @Nullable Integer brightness = n > 10 && !r.tryReadNil() ? r.readInt() : null;
             @Nullable Integer glow = n > 11 && !r.tryReadNil() ? r.readUInt() : null;
-            @Nullable HoverStyle hover = n > 12 && !r.tryReadNil() ? HoverStyle.CODEC.read(r) : null;
-            @Nullable Interactive interactive = n > 13 && !r.tryReadNil() ? Interactive.CODEC.read(r) : null;
-            float maxDistance = n > 14 && !r.tryReadNil() ? r.readFloat() : 64f;
-            r.skipValues(n - 15);
-            return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+            float maxDistance = n > 12 && !r.tryReadNil() ? r.readFloat() : 64f;
+            r.skipValues(n - 13);
+            return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
         }
     };
 
     /** Creates a value from the required fields; later fields take null or their schema default. */
     public DisplayBlockData(Vec3d pos, String state) {
-        this(pos, state, 1f, null, null, "fixed", 0, null, 0.1f, 2000, null, null, null, null, 64f);
+        this(pos, state, 1f, null, null, "fixed", 0, null, 0.1f, 2000, null, null, 64f);
     }
 
     /** Returns a copy with {@code scale} replaced. */
     public DisplayBlockData withScale(float scale) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code group} replaced. */
     public DisplayBlockData withGroup(@Nullable String group) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code transform} replaced. */
     public DisplayBlockData withTransform(@Nullable DisplayTransform transform) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code billboard} replaced. */
     public DisplayBlockData withBillboard(String billboard) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code interpolateMs} replaced. */
     public DisplayBlockData withInterpolateMs(int interpolateMs) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code animate} replaced. */
     public DisplayBlockData withAnimate(@Nullable String animate) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code animateAmplitude} replaced. */
     public DisplayBlockData withAnimateAmplitude(float animateAmplitude) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code animatePeriodMs} replaced. */
     public DisplayBlockData withAnimatePeriodMs(int animatePeriodMs) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code brightness} replaced. */
     public DisplayBlockData withBrightness(@Nullable Integer brightness) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code glow} replaced. */
     public DisplayBlockData withGlow(@Nullable Integer glow) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
-    }
-
-    /** Returns a copy with {@code hover} replaced. */
-    public DisplayBlockData withHover(@Nullable HoverStyle hover) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
-    }
-
-    /** Returns a copy with {@code interactive} replaced. */
-    public DisplayBlockData withInteractive(@Nullable Interactive interactive) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code maxDistance} replaced. */
     public DisplayBlockData withMaxDistance(float maxDistance) {
-        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayBlockData(pos, state, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 }

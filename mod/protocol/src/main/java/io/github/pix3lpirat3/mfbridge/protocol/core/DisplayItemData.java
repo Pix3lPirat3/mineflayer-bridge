@@ -21,12 +21,12 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  * @param brightness 0-15 fixed light, world light when absent.
  * @param maxDistance Default {@code 64}.
  */
-public record DisplayItemData(Vec3d pos, SlotItem item, String mode, float scale, @Nullable String group, @Nullable DisplayTransform transform, String billboard, int interpolateMs, @Nullable String animate, float animateAmplitude, int animatePeriodMs, @Nullable Integer brightness, @Nullable Integer glow, @Nullable HoverStyle hover, @Nullable Interactive interactive, float maxDistance) {
+public record DisplayItemData(Vec3d pos, SlotItem item, String mode, float scale, @Nullable String group, @Nullable DisplayTransform transform, String billboard, int interpolateMs, @Nullable String animate, float animateAmplitude, int animatePeriodMs, @Nullable Integer brightness, @Nullable Integer glow, float maxDistance) {
     /** Wire codec for this record. */
     public static final WireCodec<DisplayItemData> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, DisplayItemData v) {
-            w.writeArrayHeader(16);
+            w.writeArrayHeader(14);
             Vec3d.CODEC.write(w, v.pos());
             SlotItem.CODEC.write(w, v.item());
             w.writeString(v.mode());
@@ -60,16 +60,6 @@ public record DisplayItemData(Vec3d pos, SlotItem item, String mode, float scale
             } else {
                 w.writeUInt(Integer.toUnsignedLong(v.glow()));
             }
-            if (v.hover() == null) {
-                w.writeNil();
-            } else {
-                HoverStyle.CODEC.write(w, v.hover());
-            }
-            if (v.interactive() == null) {
-                w.writeNil();
-            } else {
-                Interactive.CODEC.write(w, v.interactive());
-            }
             w.writeFloat(v.maxDistance());
         }
 
@@ -92,86 +82,74 @@ public record DisplayItemData(Vec3d pos, SlotItem item, String mode, float scale
             int animatePeriodMs = n > 10 && !r.tryReadNil() ? r.readUInt() : 2000;
             @Nullable Integer brightness = n > 11 && !r.tryReadNil() ? r.readInt() : null;
             @Nullable Integer glow = n > 12 && !r.tryReadNil() ? r.readUInt() : null;
-            @Nullable HoverStyle hover = n > 13 && !r.tryReadNil() ? HoverStyle.CODEC.read(r) : null;
-            @Nullable Interactive interactive = n > 14 && !r.tryReadNil() ? Interactive.CODEC.read(r) : null;
-            float maxDistance = n > 15 && !r.tryReadNil() ? r.readFloat() : 64f;
-            r.skipValues(n - 16);
-            return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+            float maxDistance = n > 13 && !r.tryReadNil() ? r.readFloat() : 64f;
+            r.skipValues(n - 14);
+            return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
         }
     };
 
     /** Creates a value from the required fields; later fields take null or their schema default. */
     public DisplayItemData(Vec3d pos, SlotItem item) {
-        this(pos, item, "ground", 1f, null, null, "fixed", 0, null, 0.1f, 2000, null, null, null, null, 64f);
+        this(pos, item, "ground", 1f, null, null, "fixed", 0, null, 0.1f, 2000, null, null, 64f);
     }
 
     /** Returns a copy with {@code mode} replaced. */
     public DisplayItemData withMode(String mode) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code scale} replaced. */
     public DisplayItemData withScale(float scale) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code group} replaced. */
     public DisplayItemData withGroup(@Nullable String group) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code transform} replaced. */
     public DisplayItemData withTransform(@Nullable DisplayTransform transform) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code billboard} replaced. */
     public DisplayItemData withBillboard(String billboard) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code interpolateMs} replaced. */
     public DisplayItemData withInterpolateMs(int interpolateMs) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code animate} replaced. */
     public DisplayItemData withAnimate(@Nullable String animate) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code animateAmplitude} replaced. */
     public DisplayItemData withAnimateAmplitude(float animateAmplitude) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code animatePeriodMs} replaced. */
     public DisplayItemData withAnimatePeriodMs(int animatePeriodMs) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code brightness} replaced. */
     public DisplayItemData withBrightness(@Nullable Integer brightness) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code glow} replaced. */
     public DisplayItemData withGlow(@Nullable Integer glow) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
-    }
-
-    /** Returns a copy with {@code hover} replaced. */
-    public DisplayItemData withHover(@Nullable HoverStyle hover) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
-    }
-
-    /** Returns a copy with {@code interactive} replaced. */
-    public DisplayItemData withInteractive(@Nullable Interactive interactive) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code maxDistance} replaced. */
     public DisplayItemData withMaxDistance(float maxDistance) {
-        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayItemData(pos, item, mode, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 }

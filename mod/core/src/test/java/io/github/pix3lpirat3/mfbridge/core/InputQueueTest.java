@@ -59,9 +59,9 @@ class InputQueueTest {
         return new PickRequest(kind, "Click the chest", timeoutMs, null, null, null, urgent);
     }
 
-    static PromptRequest prompt(PromptKind kind, Object defaultValue, int timeoutMs, String placement) {
+    static PromptRequest prompt(PromptKind kind, Object defaultValue, int timeoutMs, String surface) {
         return new PromptRequest(kind, "Place 214 blocks?", kind == PromptKind.CHOICE ? List.of("pickaxe", "shovel") : null,
-                defaultValue, timeoutMs, placement, null, "hud", null, null, null, null, null, null, null);
+                defaultValue, timeoutMs, null, surface, null, null, null, null, null, null, null);
     }
 
     static FormOpen farmForm() {
@@ -129,7 +129,7 @@ class InputQueueTest {
             PromptInput confirm = assertInstanceOf(PromptInput.class, active(h));
             assertThrows(IllegalArgumentException.class, () -> in.resolvePrompt(confirm.id(), "yes"));
             in.resolvePrompt(confirm.id(), true);
-            assertEquals(new PromptResult(true, false, null), response(p, CoreMessages.PROMPT_RESULT, r2));
+            assertEquals(new PromptResult(true, false, "hud"), response(p, CoreMessages.PROMPT_RESULT, r2));
 
             FormInput form = assertInstanceOf(FormInput.class, active(h));
             assertEquals(0, in.queued());
@@ -190,7 +190,7 @@ class InputQueueTest {
             assertThrows(IllegalArgumentException.class, () -> h.core.input().resolvePrompt(choice.id(), "axe"));
 
             h.clock.advanceMs(5_000);
-            assertEquals(new PromptResult("shovel", true, null), response(p, CoreMessages.PROMPT_RESULT, promptReq),
+            assertEquals(new PromptResult("shovel", true, "hud"), response(p, CoreMessages.PROMPT_RESULT, promptReq),
                     "a timed-out prompt resolves with its default");
             FormInput form = assertInstanceOf(FormInput.class, active(h));
             assertEquals(form.createdAtMs() + CoreMessages.FORM_OPEN.timeoutMs(), form.deadlineMs());

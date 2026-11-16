@@ -245,7 +245,7 @@ describe('bridge:window', () => {
     expect(api.showing).toBe('window');
     expect(e.mod.views()[0]!.data).toMatchObject({ title: 'Server selector', layout: 'chest:3' });
     expect(e.mod.views()[0]!.data.slots).toHaveLength(1);
-    expect(e.mod.views()[0]!.data.slots[0]).toMatchObject({ slot: 4, item: { id: 'minecraft:compass', name: 'Survival', lore: ['12 online'], glint: true } });
+    expect(e.mod.views()[0]!.data.slots[0]).toMatchObject({ slot: 4, item: { id: 'minecraft:compass', nameSpans: [{ text: 'Survival', italic: true }], loreLines: [{ spans: [{ text: '12 online', color: 0xffaa00aa, italic: true }] }], glint: true } });
     expect(api.view.size).toBe(27);
 
     chest.set(5, item('emerald', 2));

@@ -68,11 +68,13 @@ describe('item presentation', () => {
     await until(() => entries('look').length === 7);
     const item = (slot: number) => entry('look', slot)!.item;
     expect(item(0)).toMatchObject({ bar: 0.25, barColor: 0xff00ff00 });
-    expect(item(1)).toMatchObject({ head: 'Alice', name: 'Alice (bot)', nameSpans: [{ text: 'Alice', color: 0xffffaa00, bold: true }, { text: ' (bot)' }] });
+    expect(item(1).name ?? undefined).toBeUndefined();
+    expect(item(1)).toMatchObject({ head: 'Alice', nameSpans: [{ text: 'Alice', color: 0xffffaa00, bold: true }, { text: ' (bot)' }] });
     expect(item(2)).toMatchObject({ head: 'Bob', hideTooltip: true });
     expect(item(3)).toMatchObject({ color: 0xffff0000, clickSound: 'minecraft:ui.button.click' });
     expect(item(4)).toMatchObject({ frameMs: 250, frames: [expect.objectContaining({ id: 'minecraft:clock' }), expect.objectContaining({ id: 'minecraft:compass', glint: true })] });
-    expect(item(5)).toMatchObject({ lore: ['plain', 'Rare item'], loreLines: [{ spans: [{ text: 'plain' }] }, { spans: [{ text: 'Rare', italic: true }, { text: ' item' }] }] });
+    expect(item(5).lore ?? undefined).toBeUndefined();
+    expect(item(5)).toMatchObject({ loreLines: [{ spans: [{ text: 'plain' }] }, { spans: [{ text: 'Rare', italic: true }, { text: ' item' }] }] });
     expect(item(6).lore).toEqual(['one', 'two']);
     expect(item(6).loreLines).toBeUndefined();
     expect(v.slot(1)).toMatchObject({ head: 'Alice', name: [{ text: 'Alice', color: 0xffffaa00, bold: true }, ' (bot)'] });
@@ -85,7 +87,7 @@ describe('item presentation', () => {
 
     const pick = b.worldMenu({ at: [0, 66, 0], entries: [{ id: 'a', item: { id: 'emerald', count: 500, name: [{ text: 'Pay', color: '#00ff00' }] } }] });
     const [req] = await e.mod.waitFor('inputRequest');
-    expect(req.type === 'world-menu' && req.request.entries[0]!.item).toMatchObject({ count: 500, countText: '500', name: 'Pay', nameSpans: [{ text: 'Pay', color: 0xff00ff00 }] });
+    expect(req.type === 'world-menu' && req.request.entries[0]!.item).toMatchObject({ count: 500, countText: '500', nameSpans: [{ text: 'Pay', color: 0xff00ff00 }] });
     e.mod.resolveWorldMenu(req.id, 'a');
     expect(await pick).toBe('a');
   });

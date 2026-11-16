@@ -237,7 +237,7 @@ describe('more vanilla surfaces', () => {
     const pending = b.prompt.recipe('Recipe?', { items: ['stick'], surface: undefined, options: undefined } as never);
     const r = await nextInput();
     const sent = r.type === 'prompt' ? Object.entries(r.request).filter(([, v]) => v !== undefined).map(([k]) => k) : [];
-    expect(sent.sort()).toEqual(['defaultValue', 'kind', 'options', 'placement', 'surface', 'text', 'timeoutMs']);
+    expect(sent.sort()).toEqual(['defaultValue', 'kind', 'options', 'surface', 'text', 'timeoutMs']);
     expect(r.type === 'prompt' && r.request.options).toMatchObject([{ id: 'minecraft:stick', item: { id: 'minecraft:stick' } }]);
     e.mod.resolvePrompt(r.id, Array.from({ length: 9 }, () => null));
     await pending;

@@ -376,10 +376,9 @@ export function headTexture(item: WindowItemLike): string | undefined {
 /**
  * A mineflayer item as a container view shows it: id, count, the custom name and lore with their
  * colours and styles (empty lore lines are kept: servers use them as spacers), a head's skin, and
- * the glint for an enchanted item. `null` for an empty slot. The `text` argument is not used any
- * more; names and lore keep their styles.
+ * the glint for an enchanted item. `null` for an empty slot.
  */
-export function windowItem(item: WindowItemLike | null | undefined, _text?: (value: unknown) => string | undefined): ContainerItem | null {
+export function windowItem(item: WindowItemLike | null | undefined): ContainerItem | null {
   if (item === null || item === undefined) return null;
   const name = styledText(item.customName, NAME_BASE);
   const lore = Array.isArray(item.customLore) ? item.customLore.map((l) => styledText(l, LORE_BASE) ?? ['']) : [];
@@ -455,7 +454,7 @@ export const windowMirror = defineExtension({
     /** How many of the window's slots the view shows: the whole inventory, or a container's own slots. */
     const shown = (w: WindowLike): number => (isInventory(w) ? INVENTORY_SLOTS : Math.min(MAX_SLOTS, Math.max(0, w.inventoryStart ?? w.slots.length - PLAYER_SLOTS)));
     const layoutOf = (w: WindowLike): ContainerLayout => (isInventory(w) ? 'player_inventory' : layoutFor(shown(w), String(w.type ?? '')));
-    const slotsOf = (w: WindowLike): (ContainerItem | null)[] => Array.from({ length: shown(w) }, (_, i) => windowItem(w.slots[i], text));
+    const slotsOf = (w: WindowLike): (ContainerItem | null)[] => Array.from({ length: shown(w) }, (_, i) => windowItem(w.slots[i]));
 
     const stackAt = (slot: number): MineflayerItemLike | undefined => inventory.slots[slot] ?? undefined;
     const tossStack = async (slot: number): Promise<boolean> => {
@@ -524,7 +523,7 @@ export const windowMirror = defineExtension({
     const attach = (w: WindowLike): void => {
       detach();
       const off = ctx.on(w, 'updateSlot', (slot: number, _old: unknown, item: WindowItemLike | null | undefined) => {
-        if (Number.isInteger(slot) && slot >= 0 && slot < Math.min(shown(w), view.size)) view.setSlot(slot, windowItem(item, text));
+        if (Number.isInteger(slot) && slot >= 0 && slot < Math.min(shown(w), view.size)) view.setSlot(slot, windowItem(item));
       });
       attached = { window: w, off };
       view.update({ title: titleOf(w), layout: layoutOf(w) });

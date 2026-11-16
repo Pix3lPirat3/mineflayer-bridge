@@ -486,7 +486,7 @@ function keys(...names: string[]): ReadonlySet<string> {
   return new Set(names);
 }
 
-const PROMPT_KEYS = ['default', 'timeoutMs', 'placement', 'at', 'signal', 'onTimeout', 'onSurface', 'surface', 'refused'];
+const PROMPT_KEYS = ['default', 'timeoutMs', 'at', 'signal', 'onTimeout', 'onSurface', 'surface', 'refused'];
 /**
  * The options each prompt method accepts. Unknown keys reject, so a mistyped option (such as
  * `options` for a recipe's `items`) cannot leak onto the wire and confuse the mod.
@@ -840,14 +840,13 @@ export class ScopeInput {
     const d = deadline('prompt', 'prompt.request', o.timeoutMs, PROMPT_DEFAULT_TIMEOUT_MS);
     const refused = refusedOption('prompt', o.refused);
     if (typeof text !== 'string') throw new BridgeError('invalid_message', 'prompt text must be a string');
-    const surface = wire.surface ?? o.surface ?? (o.placement === 'world' ? 'world' : DEFAULT_SURFACE[kind]);
+    const surface = wire.surface ?? o.surface ?? DEFAULT_SURFACE[kind];
     if (!SURFACES[kind].includes(surface)) throw new BridgeError('invalid_message', `a ${kind} prompt cannot use the ${String(surface)} surface; use one of ${SURFACES[kind].join(', ')}`);
     if (o.maxLength !== undefined && (!Number.isInteger(o.maxLength) || o.maxLength <= 0)) throw new BridgeError('invalid_message', 'prompt maxLength must be a positive integer');
     if (o.min !== undefined && !Number.isFinite(o.min)) throw new BridgeError('invalid_message', 'prompt min must be a finite number');
     if (o.max !== undefined && !Number.isFinite(o.max)) throw new BridgeError('invalid_message', 'prompt max must be a finite number');
     if (o.min !== undefined && o.max !== undefined && o.min > o.max) throw new BridgeError('invalid_message', 'prompt min must not exceed max');
-    // `placement` predates surfaces; both name a world menu so older and newer mods agree.
-    const p: MessagePayloads['prompt.request'] = { kind, text, defaultValue: def, timeoutMs: d.timeoutMs, placement: surface === 'world' ? 'world' : 'hud', surface };
+    const p: MessagePayloads['prompt.request'] = { kind, text, defaultValue: def, timeoutMs: d.timeoutMs, surface };
     if (choices !== undefined) p.choices = [...choices];
     if (o.at !== undefined) p.at = toVec3(o.at, 'prompt position') satisfies Vec3d;
     if (o.item !== undefined) p.item = o.item;
@@ -860,8 +859,7 @@ export class ScopeInput {
     const r = await this.send('prompt.request', p, d, o.signal, refused);
     const value = r.value === undefined || r.value === null ? def : coerce(r.value);
     if (value === undefined) throw new BridgeError('invalid_message', `the mod answered a ${kind} prompt with ${JSON.stringify(r.value)}`);
-    // An older mod does not report the surface; it can only have used the one requested.
-    const used = (r.surface ?? surface) as PromptSurface;
+    const used = r.surface as PromptSurface;
     if (strict && used !== surface) throw new BridgeError('unsupported', `the mod showed this prompt on ${used} instead of ${surface}`);
     if (o.onSurface !== undefined) guard(this.host, () => o.onSurface!(used));
     if (r.timedOut === true && o.onTimeout !== undefined) guard(this.host, () => o.onTimeout!(value));
@@ -889,7 +887,7 @@ export class ScopeInput {
       }
       entries.push(w);
     }
-    const surface = o.surface ?? (o.placement === 'world' ? 'world' : 'hud');
+    const surface = o.surface ?? 'hud';
     if (surface === 'enchanting' && ids.length > ENCHANTING_OPTIONS) throw new BridgeError('invalid_message', `an enchanting prompt shows at most ${ENCHANTING_OPTIONS} options`);
     // The mod may answer with the choice itself or with its index.
     const coerce = (v: unknown): C | undefined => (typeof v === 'string' ? ids.find((c) => c === v) : typeof v === 'number' ? ids[v] : undefined);

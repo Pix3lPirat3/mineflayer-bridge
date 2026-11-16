@@ -1,10 +1,6 @@
 package io.github.pix3lpirat3.mfbridge.core.traits;
 
 import io.github.pix3lpirat3.mfbridge.api.thread.AnyThread;
-import io.github.pix3lpirat3.mfbridge.protocol.core.DisplayBlockData;
-import io.github.pix3lpirat3.mfbridge.protocol.core.DisplayEntityData;
-import io.github.pix3lpirat3.mfbridge.protocol.core.DisplayItemData;
-import io.github.pix3lpirat3.mfbridge.protocol.core.DisplayTextData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.EditableField;
 import io.github.pix3lpirat3.mfbridge.protocol.core.HoverStyle;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Interactive;
@@ -13,53 +9,29 @@ import io.github.pix3lpirat3.mfbridge.protocol.core.Visibility;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
-/**
- * Reads an object's traits. The per-kind {@code interactive} and {@code
- * hover} fields of displays are aliases kept for one release; the traits block wins when both are
- * present. Pure functions.
- */
+/** Reads an object's traits. Pure functions. */
 @AnyThread
 public final class Traits {
     private Traits() {}
 
     /**
-     * Returns the effective interaction spec.
+     * Returns the interaction spec.
      *
      * @param traits the object's traits, or null
-     * @param data the decoded kind data, or null
-     * @return {@code traits.interactive}, else the display's own field, else null
+     * @return {@code traits.interactive}, or null
      */
-    public static @Nullable Interactive interactive(@Nullable ObjectTraits traits, @Nullable Object data) {
-        if (traits != null && traits.interactive() != null) {
-            return traits.interactive();
-        }
-        return switch (data) {
-            case DisplayTextData d -> d.interactive();
-            case DisplayItemData d -> d.interactive();
-            case DisplayBlockData d -> d.interactive();
-            case DisplayEntityData d -> d.interactive();
-            case null, default -> null;
-        };
+    public static @Nullable Interactive interactive(@Nullable ObjectTraits traits) {
+        return traits == null ? null : traits.interactive();
     }
 
     /**
-     * Returns the effective hover style.
+     * Returns the hover style.
      *
      * @param traits the object's traits, or null
-     * @param data the decoded kind data, or null
-     * @return {@code traits.hover}, else the display's own field, else null
+     * @return {@code traits.hover}, or null
      */
-    public static @Nullable HoverStyle hover(@Nullable ObjectTraits traits, @Nullable Object data) {
-        if (traits != null && traits.hover() != null) {
-            return traits.hover();
-        }
-        return switch (data) {
-            case DisplayTextData d -> d.hover();
-            case DisplayItemData d -> d.hover();
-            case DisplayBlockData d -> d.hover();
-            case DisplayEntityData d -> d.hover();
-            case null, default -> null;
-        };
+    public static @Nullable HoverStyle hover(@Nullable ObjectTraits traits) {
+        return traits == null ? null : traits.hover();
     }
 
     /** Returns the fields the player may edit; empty when none. Immutable. */
@@ -83,10 +55,10 @@ public final class Traits {
      * Returns whether the object takes part in the bridge raycast: it is interactive, editable, has
      * bound actions or a hover style, or is only shown while looked at.
      */
-    public static boolean targetable(@Nullable ObjectTraits traits, @Nullable Object data) {
+    public static boolean targetable(@Nullable ObjectTraits traits) {
         Visibility v = visibleWhen(traits);
-        return interactive(traits, data) != null || !editable(traits).isEmpty() || !actions(traits).isEmpty()
-                || hover(traits, data) != null || v != null && v.lookedAt();
+        return interactive(traits) != null || !editable(traits).isEmpty() || !actions(traits).isEmpty()
+                || hover(traits) != null || v != null && v.lookedAt();
     }
 
     /**

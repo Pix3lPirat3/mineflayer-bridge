@@ -15,7 +15,7 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  * @param permissions Granted permissions for this device.
  * @param proof The mod's proof over auth.response.nonce, made with the secret the plugin used.
  */
-public record Welcome(int protocolMajor, int protocolMinor, String modVersion, String gameVersion, String loader, List<RegistryEntry> registry, List<ExtensionRef> extensions, Limits limits, Budget budget, @Nullable List<String> permissions, @Nullable byte[] proof) {
+public record Welcome(int protocolMajor, int protocolMinor, String modVersion, String gameVersion, String loader, List<RegistryEntry> registry, List<ExtensionRef> extensions, Limits limits, Budget budget, List<String> permissions, @Nullable byte[] proof) {
     /** Wire codec for this record. */
     public static final WireCodec<Welcome> CODEC = new WireCodec<>() {
         @Override
@@ -30,11 +30,7 @@ public record Welcome(int protocolMajor, int protocolMinor, String modVersion, S
             WireCodecs.list(ExtensionRef.CODEC).write(w, v.extensions());
             Limits.CODEC.write(w, v.limits());
             Budget.CODEC.write(w, v.budget());
-            if (v.permissions() == null) {
-                w.writeNil();
-            } else {
-                WireCodecs.list(WireCodecs.STRING).write(w, v.permissions());
-            }
+            WireCodecs.list(WireCodecs.STRING).write(w, v.permissions());
             if (v.proof() == null) {
                 w.writeNil();
             } else {
@@ -45,8 +41,8 @@ public record Welcome(int protocolMajor, int protocolMinor, String modVersion, S
         @Override
         public Welcome read(WireReader r) {
             int n = r.readArrayHeader();
-            if (n < 9) {
-                throw WireException.invalid("welcome: expected at least 9 fields, got " + n);
+            if (n < 10) {
+                throw WireException.invalid("welcome: expected at least 10 fields, got " + n);
             }
             int protocolMajor = r.readUInt();
             int protocolMinor = r.readUInt();
@@ -57,7 +53,7 @@ public record Welcome(int protocolMajor, int protocolMinor, String modVersion, S
             List<ExtensionRef> extensions = WireCodecs.list(ExtensionRef.CODEC).read(r);
             Limits limits = Limits.CODEC.read(r);
             Budget budget = Budget.CODEC.read(r);
-            @Nullable List<String> permissions = n > 9 && !r.tryReadNil() ? WireCodecs.list(WireCodecs.STRING).read(r) : null;
+            List<String> permissions = WireCodecs.list(WireCodecs.STRING).read(r);
             @Nullable byte[] proof = n > 10 && !r.tryReadNil() ? r.readBytes() : null;
             r.skipValues(n - 11);
             return new Welcome(protocolMajor, protocolMinor, modVersion, gameVersion, loader, registry, extensions, limits, budget, permissions, proof);
@@ -65,13 +61,8 @@ public record Welcome(int protocolMajor, int protocolMinor, String modVersion, S
     };
 
     /** Creates a value from the required fields; later fields take null or their schema default. */
-    public Welcome(int protocolMajor, int protocolMinor, String modVersion, String gameVersion, String loader, List<RegistryEntry> registry, List<ExtensionRef> extensions, Limits limits, Budget budget) {
-        this(protocolMajor, protocolMinor, modVersion, gameVersion, loader, registry, extensions, limits, budget, null, null);
-    }
-
-    /** Returns a copy with {@code permissions} replaced. */
-    public Welcome withPermissions(@Nullable List<String> permissions) {
-        return new Welcome(protocolMajor, protocolMinor, modVersion, gameVersion, loader, registry, extensions, limits, budget, permissions, proof);
+    public Welcome(int protocolMajor, int protocolMinor, String modVersion, String gameVersion, String loader, List<RegistryEntry> registry, List<ExtensionRef> extensions, Limits limits, Budget budget, List<String> permissions) {
+        this(protocolMajor, protocolMinor, modVersion, gameVersion, loader, registry, extensions, limits, budget, permissions, null);
     }
 
     /** Returns a copy with {@code proof} replaced. */

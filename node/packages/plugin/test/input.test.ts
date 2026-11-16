@@ -164,14 +164,14 @@ describe('prompts and forms', () => {
     const ok = b.prompt.confirm('Place 214 blocks?', { default: false, timeoutMs: 20_000 });
     let r = await queued;
     expect(r).toMatchObject({ type: 'prompt', kind: 'confirm' });
-    expect(r.request).toMatchObject({ text: 'Place 214 blocks?', defaultValue: false, timeoutMs: 20_000, placement: 'hud' });
+    expect(r.request).toMatchObject({ text: 'Place 214 blocks?', defaultValue: false, timeoutMs: 20_000, surface: 'hud' });
     e.mod.resolvePrompt(r.id, true);
     expect(await ok).toBe(true);
 
     queued = nextInput();
-    const tool = b.prompt.choice('Which tool?', ['pickaxe', 'shovel'], { placement: 'world', at: [1, 70, 2] });
+    const tool = b.prompt.choice('Which tool?', ['pickaxe', 'shovel'], { surface: 'world', at: [1, 70, 2] });
     r = await queued;
-    expect(r.request).toMatchObject({ choices: ['pickaxe', 'shovel'], defaultValue: 'pickaxe', placement: 'world', at: { x: 1, y: 70, z: 2 } });
+    expect(r.request).toMatchObject({ choices: ['pickaxe', 'shovel'], defaultValue: 'pickaxe', surface: 'world', at: { x: 1, y: 70, z: 2 } });
     e.mod.resolvePrompt(r.id, 'shovel');
     expect(await tool).toBe('shovel');
 

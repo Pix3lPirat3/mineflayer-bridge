@@ -62,9 +62,6 @@ public final class Surfaces {
     public static Surface forPrompt(final PromptRequest request) {
         final PromptKind kind = request.kind();
         final boolean entries = kind == PromptKind.CONFIRM || kind == PromptKind.CHOICE;
-        if (entries && "world".equalsIgnoreCase(request.placement())) {
-            return Surface.WORLD;
-        }
         return switch (request.surface().toLowerCase(Locale.ROOT)) {
             case "dialog" -> Surface.DIALOG;
             case "anvil" -> kind == PromptKind.TEXT ? Surface.ANVIL : Surface.HUD;

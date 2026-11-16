@@ -39,12 +39,12 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  * @param effects Status effects whose particles swirl around the entity, e.g. minecraft:speed.
  * @param data SNBT entity data applied client-side like /summon, for anything not covered above.
  */
-public record DisplayEntityData(Vec3d pos, String type, float yaw, float pitch, @Nullable Float headYaw, @Nullable String pose, @Nullable String name, boolean nameVisible, boolean baby, @Nullable String skin, @Nullable Map<String, SlotItem> equipment, float scale, @Nullable String group, @Nullable DisplayTransform transform, String billboard, int interpolateMs, @Nullable String animate, float animateAmplitude, int animatePeriodMs, @Nullable Integer brightness, @Nullable Integer glow, @Nullable HoverStyle hover, @Nullable Interactive interactive, float maxDistance, boolean invisible, boolean onFire, boolean frozen, @Nullable String variant, @Nullable String color, @Nullable String profession, boolean charged, boolean saddled, @Nullable ArmorStandProps armorStand, @Nullable List<String> effects, @Nullable String data) {
+public record DisplayEntityData(Vec3d pos, String type, float yaw, float pitch, @Nullable Float headYaw, @Nullable String pose, @Nullable String name, boolean nameVisible, boolean baby, @Nullable String skin, @Nullable Map<String, SlotItem> equipment, float scale, @Nullable String group, @Nullable DisplayTransform transform, String billboard, int interpolateMs, @Nullable String animate, float animateAmplitude, int animatePeriodMs, @Nullable Integer brightness, @Nullable Integer glow, float maxDistance, boolean invisible, boolean onFire, boolean frozen, @Nullable String variant, @Nullable String color, @Nullable String profession, boolean charged, boolean saddled, @Nullable ArmorStandProps armorStand, @Nullable List<String> effects, @Nullable String data) {
     /** Wire codec for this record. */
     public static final WireCodec<DisplayEntityData> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, DisplayEntityData v) {
-            w.writeArrayHeader(35);
+            w.writeArrayHeader(33);
             Vec3d.CODEC.write(w, v.pos());
             w.writeString(v.type());
             w.writeFloat(v.yaw());
@@ -105,16 +105,6 @@ public record DisplayEntityData(Vec3d pos, String type, float yaw, float pitch, 
                 w.writeNil();
             } else {
                 w.writeUInt(Integer.toUnsignedLong(v.glow()));
-            }
-            if (v.hover() == null) {
-                w.writeNil();
-            } else {
-                HoverStyle.CODEC.write(w, v.hover());
-            }
-            if (v.interactive() == null) {
-                w.writeNil();
-            } else {
-                Interactive.CODEC.write(w, v.interactive());
             }
             w.writeFloat(v.maxDistance());
             w.writeBool(v.invisible());
@@ -181,192 +171,180 @@ public record DisplayEntityData(Vec3d pos, String type, float yaw, float pitch, 
             int animatePeriodMs = n > 18 && !r.tryReadNil() ? r.readUInt() : 2000;
             @Nullable Integer brightness = n > 19 && !r.tryReadNil() ? r.readInt() : null;
             @Nullable Integer glow = n > 20 && !r.tryReadNil() ? r.readUInt() : null;
-            @Nullable HoverStyle hover = n > 21 && !r.tryReadNil() ? HoverStyle.CODEC.read(r) : null;
-            @Nullable Interactive interactive = n > 22 && !r.tryReadNil() ? Interactive.CODEC.read(r) : null;
-            float maxDistance = n > 23 && !r.tryReadNil() ? r.readFloat() : 64f;
-            boolean invisible = n > 24 && !r.tryReadNil() ? r.readBool() : false;
-            boolean onFire = n > 25 && !r.tryReadNil() ? r.readBool() : false;
-            boolean frozen = n > 26 && !r.tryReadNil() ? r.readBool() : false;
-            @Nullable String variant = n > 27 && !r.tryReadNil() ? r.readString() : null;
-            @Nullable String color = n > 28 && !r.tryReadNil() ? r.readString() : null;
-            @Nullable String profession = n > 29 && !r.tryReadNil() ? r.readString() : null;
-            boolean charged = n > 30 && !r.tryReadNil() ? r.readBool() : false;
-            boolean saddled = n > 31 && !r.tryReadNil() ? r.readBool() : false;
-            @Nullable ArmorStandProps armorStand = n > 32 && !r.tryReadNil() ? ArmorStandProps.CODEC.read(r) : null;
-            @Nullable List<String> effects = n > 33 && !r.tryReadNil() ? WireCodecs.list(WireCodecs.STRING).read(r) : null;
-            @Nullable String data = n > 34 && !r.tryReadNil() ? r.readString() : null;
-            r.skipValues(n - 35);
-            return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+            float maxDistance = n > 21 && !r.tryReadNil() ? r.readFloat() : 64f;
+            boolean invisible = n > 22 && !r.tryReadNil() ? r.readBool() : false;
+            boolean onFire = n > 23 && !r.tryReadNil() ? r.readBool() : false;
+            boolean frozen = n > 24 && !r.tryReadNil() ? r.readBool() : false;
+            @Nullable String variant = n > 25 && !r.tryReadNil() ? r.readString() : null;
+            @Nullable String color = n > 26 && !r.tryReadNil() ? r.readString() : null;
+            @Nullable String profession = n > 27 && !r.tryReadNil() ? r.readString() : null;
+            boolean charged = n > 28 && !r.tryReadNil() ? r.readBool() : false;
+            boolean saddled = n > 29 && !r.tryReadNil() ? r.readBool() : false;
+            @Nullable ArmorStandProps armorStand = n > 30 && !r.tryReadNil() ? ArmorStandProps.CODEC.read(r) : null;
+            @Nullable List<String> effects = n > 31 && !r.tryReadNil() ? WireCodecs.list(WireCodecs.STRING).read(r) : null;
+            @Nullable String data = n > 32 && !r.tryReadNil() ? r.readString() : null;
+            r.skipValues(n - 33);
+            return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
         }
     };
 
     /** Creates a value from the required fields; later fields take null or their schema default. */
     public DisplayEntityData(Vec3d pos, String type) {
-        this(pos, type, 0f, 0f, null, null, null, false, false, null, null, 1f, null, null, "fixed", 0, null, 0.1f, 2000, null, null, null, null, 64f, false, false, false, null, null, null, false, false, null, null, null);
+        this(pos, type, 0f, 0f, null, null, null, false, false, null, null, 1f, null, null, "fixed", 0, null, 0.1f, 2000, null, null, 64f, false, false, false, null, null, null, false, false, null, null, null);
     }
 
     /** Returns a copy with {@code yaw} replaced. */
     public DisplayEntityData withYaw(float yaw) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code pitch} replaced. */
     public DisplayEntityData withPitch(float pitch) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code headYaw} replaced. */
     public DisplayEntityData withHeadYaw(@Nullable Float headYaw) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code pose} replaced. */
     public DisplayEntityData withPose(@Nullable String pose) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code name} replaced. */
     public DisplayEntityData withName(@Nullable String name) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code nameVisible} replaced. */
     public DisplayEntityData withNameVisible(boolean nameVisible) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code baby} replaced. */
     public DisplayEntityData withBaby(boolean baby) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code skin} replaced. */
     public DisplayEntityData withSkin(@Nullable String skin) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code equipment} replaced. */
     public DisplayEntityData withEquipment(@Nullable Map<String, SlotItem> equipment) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code scale} replaced. */
     public DisplayEntityData withScale(float scale) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code group} replaced. */
     public DisplayEntityData withGroup(@Nullable String group) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code transform} replaced. */
     public DisplayEntityData withTransform(@Nullable DisplayTransform transform) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code billboard} replaced. */
     public DisplayEntityData withBillboard(String billboard) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code interpolateMs} replaced. */
     public DisplayEntityData withInterpolateMs(int interpolateMs) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code animate} replaced. */
     public DisplayEntityData withAnimate(@Nullable String animate) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code animateAmplitude} replaced. */
     public DisplayEntityData withAnimateAmplitude(float animateAmplitude) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code animatePeriodMs} replaced. */
     public DisplayEntityData withAnimatePeriodMs(int animatePeriodMs) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code brightness} replaced. */
     public DisplayEntityData withBrightness(@Nullable Integer brightness) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code glow} replaced. */
     public DisplayEntityData withGlow(@Nullable Integer glow) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
-    }
-
-    /** Returns a copy with {@code hover} replaced. */
-    public DisplayEntityData withHover(@Nullable HoverStyle hover) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
-    }
-
-    /** Returns a copy with {@code interactive} replaced. */
-    public DisplayEntityData withInteractive(@Nullable Interactive interactive) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code maxDistance} replaced. */
     public DisplayEntityData withMaxDistance(float maxDistance) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code invisible} replaced. */
     public DisplayEntityData withInvisible(boolean invisible) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code onFire} replaced. */
     public DisplayEntityData withOnFire(boolean onFire) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code frozen} replaced. */
     public DisplayEntityData withFrozen(boolean frozen) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code variant} replaced. */
     public DisplayEntityData withVariant(@Nullable String variant) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code color} replaced. */
     public DisplayEntityData withColor(@Nullable String color) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code profession} replaced. */
     public DisplayEntityData withProfession(@Nullable String profession) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code charged} replaced. */
     public DisplayEntityData withCharged(boolean charged) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code saddled} replaced. */
     public DisplayEntityData withSaddled(boolean saddled) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code armorStand} replaced. */
     public DisplayEntityData withArmorStand(@Nullable ArmorStandProps armorStand) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code effects} replaced. */
     public DisplayEntityData withEffects(@Nullable List<String> effects) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 
     /** Returns a copy with {@code data} replaced. */
     public DisplayEntityData withData(@Nullable String data) {
-        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
+        return new DisplayEntityData(pos, type, yaw, pitch, headYaw, pose, name, nameVisible, baby, skin, equipment, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance, invisible, onFire, frozen, variant, color, profession, charged, saddled, armorStand, effects, data);
     }
 }

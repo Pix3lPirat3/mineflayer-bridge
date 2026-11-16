@@ -57,7 +57,7 @@ class ChatBridgeTest {
     }
 
     static PromptRequest chatPrompt(PromptKind kind, Integer maxLength) {
-        return new PromptRequest(kind, "What should I build?", null, null, 30_000, "hud", null, "chat", null, null, null,
+        return new PromptRequest(kind, "What should I build?", null, null, 30_000, null, "chat", null, null, null,
                 null, maxLength, null, null);
     }
 

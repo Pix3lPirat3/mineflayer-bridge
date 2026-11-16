@@ -163,6 +163,10 @@ public final class WorldMenus {
         promptNode = null;
     }
 
+    /** Entries light up when looked at. */
+    private static final io.github.pix3lpirat3.mfbridge.protocol.core.ObjectTraits HIGHLIGHTED =
+            new io.github.pix3lpirat3.mfbridge.protocol.core.ObjectTraits(null, HIGHLIGHT, null, null, null);
+
     /** World menus must stay readable at night and underground, so entries ignore world light. */
     private static final Integer FULL_BRIGHT = 15;
 
@@ -173,13 +177,13 @@ public final class WorldMenus {
         final DisplayNode node;
         if (e.item() != null) {
             node = node(key, new DisplayItemData(origin, e.item(), "fixed", 0.75f, null, null, "vertical", 0, null, 0f, 2000, FULL_BRIGHT,
-                    null, HIGHLIGHT, null, 64));
+                    null, 64));
         } else if (e.block() != null) {
             node = node(key, new DisplayBlockData(origin, e.block(), 0.4f, null, new DisplayTransform(null, null,
-                    new Vec3d(-0.2, -0.2, -0.2)), "vertical", 0, null, 0f, 2000, FULL_BRIGHT, null, HIGHLIGHT, null, 64));
+                    new Vec3d(-0.2, -0.2, -0.2)), "vertical", 0, null, 0f, 2000, FULL_BRIGHT, null, 64));
         } else if (e.entity() != null) {
             node = node(key, new DisplayEntityData(origin, e.entity(), 0f, 0f, null, null, null, false, false, null, null, 0.45f,
-                    null, null, "vertical", 0, null, 0f, 2000, FULL_BRIGHT, null, HIGHLIGHT, null, 64, false, false, false, null, null,
+                    null, null, "vertical", 0, null, 0f, 2000, FULL_BRIGHT, null, 64, false, false, false, null, null,
                     null, false, false, null, null, null));
         } else {
             return textEntry(e.id(), e.text() != null ? e.text() : label != null ? label : e.id(), answer);
@@ -194,13 +198,13 @@ public final class WorldMenus {
 
     private static DisplayTextData text(final String text, final float scale) {
         return new DisplayTextData(new Vec3d(0, 0, 0), text, 200, 0x80000000, true, false, "center", scale, null, null, "center",
-                0, null, 0f, 2000, 15, null, HIGHLIGHT, null, 64);
+                0, null, 0f, 2000, 15, null, 64);
     }
 
     private static DisplayNode node(final String key, final Object data) {
         final DisplayNode.Kind kind = Objects.requireNonNull(DisplayNode.kindOf(data));
         final DisplayNode n = new DisplayNode(key, "", null, kind, data);
-        n.update(data, null, 0L, 0L);
+        n.update(data, HIGHLIGHTED, 0L, 0L);
         return n;
     }
 

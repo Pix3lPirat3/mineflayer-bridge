@@ -138,8 +138,8 @@ final class DisplayDrawer {
         }
         final ItemStack stack = SlotItems.stack(d.item());
         minecraft.getItemModelResolver().updateForTopItem(state, stack, itemContext(d.mode()), level, null, n.key.hashCode());
-        final String name = d.item().name();
-        n.itemName = name == null ? null : FormattedCharSequence.forward(name, Style.EMPTY);
+        final net.minecraft.network.chat.Component name = SlotItems.name(d.item());
+        n.itemName = name == null ? null : name.getVisualOrderText();
         n.itemNameWidth = name == null ? 0 : minecraft.font.width(name);
         n.boxX = 0d;
         n.boxY = 0d;

@@ -745,8 +745,7 @@ export class Link {
       maxInteractive: w.limits.maxInteractive ?? DEFAULT_LIMITS.maxInteractive,
       effectsPerSecond: w.limits.effectsPerSecond ?? DEFAULT_LIMITS.effectsPerSecond,
     };
-    // A mod that does not report permissions predates them; grant the local-device defaults.
-    this.setPermissions(w.permissions ?? LOCAL_DEFAULT_PERMISSIONS);
+    this.setPermissions(w.permissions);
     this.pairing = false;
     this.lastInbound = Date.now();
     this.startHeartbeat();

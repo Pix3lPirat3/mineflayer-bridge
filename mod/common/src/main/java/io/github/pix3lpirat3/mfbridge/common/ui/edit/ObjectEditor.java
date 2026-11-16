@@ -134,7 +134,7 @@ public final class ObjectEditor {
 
     /** A local text prompt, so the bot prompt surfaces edit text without a bot request. */
     private static PromptInput prompt(final RenderEntry e, final FieldEditors.Field f) {
-        final PromptRequest r = new PromptRequest(PromptKind.TEXT, name(e) + ": " + f.label(), null, f.value(), 0, "screen", null,
+        final PromptRequest r = new PromptRequest(PromptKind.TEXT, name(e) + ": " + f.label(), null, f.value(), 0, null,
                 "screen", "minecraft:name_tag", null, null, null, null, null, null);
         return new PromptInput(-1L, name(e), null, 0, r, 0L, Long.MAX_VALUE);
     }

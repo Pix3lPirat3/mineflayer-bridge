@@ -84,12 +84,9 @@ public final class SlotItems {
         final String texture = item.headTexture();
         final Item type = head != null || texture != null ? Items.PLAYER_HEAD : known == null ? Items.BARRIER : known;
         final ItemStack stack = new ItemStack(type, Math.clamp(Integer.toUnsignedLong(item.count()), 1, MAX_COUNT));
-        final List<ChatSpan> nameSpans = item.nameSpans();
-        if (nameSpans != null && !nameSpans.isEmpty()) {
-            stack.set(DataComponents.CUSTOM_NAME, spans(nameSpans));
-        } else if (item.name() != null) {
-            // Server GUI plugins show names upright; vanilla italicises custom names.
-            stack.set(DataComponents.CUSTOM_NAME, Component.literal(item.name()).withStyle(s -> s.withItalic(false)));
+        final Component name = name(item);
+        if (name != null) {
+            stack.set(DataComponents.CUSTOM_NAME, name);
         }
         final List<Component> lines = lore(item);
         if (!lines.isEmpty()) {
@@ -123,6 +120,21 @@ public final class SlotItems {
             stack.set(DataComponents.TOOLTIP_DISPLAY, new TooltipDisplay(true, TooltipDisplay.DEFAULT.hiddenComponents()));
         }
         return stack;
+    }
+
+    /**
+     * Returns an item's display name: its styled spans, or its plain name upright (server GUI plugins
+     * show names upright; vanilla italicises custom names), or null when it has none.
+     *
+     * @param item the bot's item
+     * @return the name, or null
+     */
+    public static @Nullable Component name(final SlotItem item) {
+        final List<ChatSpan> nameSpans = item.nameSpans();
+        if (nameSpans != null && !nameSpans.isEmpty()) {
+            return spans(nameSpans);
+        }
+        return item.name() == null ? null : Component.literal(item.name()).withStyle(s -> s.withItalic(false));
     }
 
     private static List<Component> lore(final SlotItem item) {

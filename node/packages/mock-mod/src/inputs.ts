@@ -76,7 +76,7 @@ export class InputQueue {
     const found = this.find(id, 'prompt');
     if (found.info.type === 'prompt') checkAnswer(found.info.kind, found.info.request, value, answeredOn ?? found.info.surface);
     const e = this.take(id, 'prompt');
-    const surface = answeredOn ?? (e.info.type === 'prompt' ? e.info.surface : undefined);
+    const surface = answeredOn ?? (e.info.type === 'prompt' ? e.info.surface : 'hud');
     this.answer(e, 'prompt.result', { value, timedOut: false, surface });
   }
 
@@ -139,7 +139,7 @@ export class InputQueue {
     if (header.req === undefined) return this.core.sendSessionError(s, 'invalid_message', `${info.type} request needs a request id`, header);
     const { attached, worldMatched } = this.core.player.attachState(s);
     const worldScoped =
-      info.type === 'pick' ? info.kind !== 'item' : info.type === 'world-menu' || (info.type === 'prompt' && (info.request.placement === 'world' || info.surface === 'world'));
+      info.type === 'pick' ? info.kind !== 'item' : info.type === 'world-menu' || (info.type === 'prompt' && info.surface === 'world');
     const code = !attached ? 'not_attached' : worldScoped && !worldMatched ? 'world_mismatch' : undefined;
     if (code !== undefined) {
       this.core.emit('inputRejected', { session: this.core.info(s), type: info.type, code });

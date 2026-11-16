@@ -728,8 +728,6 @@ kinds:
       animatePeriodMs: u32 = 2000
       brightness: i32?        # 0-15 fixed light, world light when absent
       glow: u32?
-      hover: HoverStyle?
-      interactive: Interactive?
       maxDistance: f32 = 64
 
   core:display.item:
@@ -748,8 +746,6 @@ kinds:
       animatePeriodMs: u32 = 2000
       brightness: i32?        # 0-15 fixed light, world light when absent
       glow: u32?
-      hover: HoverStyle?
-      interactive: Interactive?
       maxDistance: f32 = 64
 
   core:display.block:
@@ -767,8 +763,6 @@ kinds:
       animatePeriodMs: u32 = 2000
       brightness: i32?        # 0-15 fixed light, world light when absent
       glow: u32?
-      hover: HoverStyle?
-      interactive: Interactive?
       maxDistance: f32 = 64
 
   core:display.entity:
@@ -795,8 +789,6 @@ kinds:
       animatePeriodMs: u32 = 2000
       brightness: i32?        # 0-15 fixed light, world light when absent
       glow: u32?
-      hover: HoverStyle?
-      interactive: Interactive?
       maxDistance: f32 = 64
       invisible: bool = false
       onFire: bool = false
@@ -911,7 +903,7 @@ messages:
       extensions: list<ExtensionRef>
       limits: Limits
       budget: Budget
-      permissions: list<string>?   # granted permissions for this device
+      permissions: list<string>    # granted permissions for this device
       proof: bytes?            # the mod's proof over auth.response.nonce, made with the secret the plugin used
 
   ping:
@@ -1213,7 +1205,6 @@ messages:
       choices: list<string>?
       defaultValue: any?
       timeoutMs: u32 = 30000
-      placement: string = hud   # hud | world
       at: Vec3d?
       surface: string = hud     # hud | dialog | anvil | sign | book | chat | world | stonecutter | enchanting | merchant | crafting
       item: string?             # anvil: item shown in the input slot
@@ -1231,7 +1222,7 @@ messages:
     fields:
       value: any?
       timedOut: bool = false
-      surface: string?         # surface that answered, after any fallback
+      surface: string          # surface that answered, after any fallback
 
   prompt.cancel:
     id: 0x65

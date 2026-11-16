@@ -103,7 +103,7 @@ final class OwnerQuotas {
             m |= bit(Counter.DISPLAY);
         }
         // Every interactive object counts, whatever its kind.
-        if (Traits.interactive(traits, decoded) != null) {
+        if (Traits.interactive(traits) != null) {
             m |= bit(Counter.INTERACTIVE);
         }
         if (kind == CoreKinds.DISPLAY_ENTITY) {

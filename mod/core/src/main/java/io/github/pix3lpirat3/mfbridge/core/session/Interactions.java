@@ -251,7 +251,7 @@ final class Interactions implements InteractionControls {
         if (o == null) {
             return;
         }
-        Interactive spec = Traits.interactive(o.state().traits(), o.state().decoded());
+        Interactive spec = Traits.interactive(o.state().traits());
         if (spec == null || !declares(spec, input, key)) {
             return;
         }

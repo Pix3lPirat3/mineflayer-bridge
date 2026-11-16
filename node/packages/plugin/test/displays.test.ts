@@ -628,7 +628,7 @@ describe('world prompts and reported surfaces', () => {
     let queued = nextInput();
     const ok = b.prompt.confirm('Place 214 blocks?', { surface: 'world', at: [0, 66, 0], onSurface: (s) => void surfaces.push(s) });
     let r = await queued;
-    expect(r).toMatchObject({ type: 'prompt', kind: 'confirm', surface: 'world', request: { surface: 'world', placement: 'world', at: { x: 0, y: 66, z: 0 } } });
+    expect(r).toMatchObject({ type: 'prompt', kind: 'confirm', surface: 'world', request: { surface: 'world', at: { x: 0, y: 66, z: 0 } } });
     e.mod.resolvePrompt(r.id, true);
     expect(await ok).toBe(true);
 

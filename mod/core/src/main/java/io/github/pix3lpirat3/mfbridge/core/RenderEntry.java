@@ -58,11 +58,11 @@ public record RenderEntry(
 
     /** Returns the effective interaction spec: the traits' one, else the kind's own field, else null. */
     public @Nullable Interactive interactive() {
-        return Traits.interactive(traits, data);
+        return Traits.interactive(traits);
     }
 
     /** Returns the effective hover style: the traits' one, else the kind's own field, else null. */
     public @Nullable HoverStyle hover() {
-        return Traits.hover(traits, data);
+        return Traits.hover(traits);
     }
 }

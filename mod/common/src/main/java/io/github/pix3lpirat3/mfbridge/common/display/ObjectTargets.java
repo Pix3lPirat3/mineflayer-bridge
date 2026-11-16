@@ -107,7 +107,7 @@ final class ObjectTargets {
 
     private static boolean candidate(final RenderEntry e) {
         return DisplayNode.kindOf(e.data()) == null
-                && (Traits.targetable(e.traits(), e.data()) || Traits.perFrame(Traits.visibleWhen(e.traits())));
+                && (Traits.targetable(e.traits()) || Traits.perFrame(Traits.visibleWhen(e.traits())));
     }
 
     private boolean touches(final RenderSnapshot.Change change) {

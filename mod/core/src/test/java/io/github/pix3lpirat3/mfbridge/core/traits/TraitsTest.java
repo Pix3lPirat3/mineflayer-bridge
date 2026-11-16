@@ -22,33 +22,26 @@ class TraitsTest {
     private static final Interactive OWN = new Interactive(List.of(ElementInput.PRIMARY));
     private static final Interactive TRAIT = new Interactive(List.of(ElementInput.SECONDARY));
 
-    private static DisplayTextData display(Interactive interactive, HoverStyle hover) {
-        return new DisplayTextData(new Vec3d(0, 0, 0), "t", 200, 0, false, false, "center", 1f, null, null, "center", 0,
-                null, 0f, 0, null, null, hover, interactive, 64f);
-    }
-
     @Test
-    void traitsWinOverTheKindAliases() {
-        HoverStyle ownHover = new HoverStyle(2f, null, null);
-        DisplayTextData d = display(OWN, ownHover);
-        assertSame(OWN, Traits.interactive(null, d));
-        assertSame(ownHover, Traits.hover(new ObjectTraits(), d));
+    void interactionAndHoverComeFromTheTraits() {
+        assertNull(Traits.interactive(null));
+        assertNull(Traits.hover(new ObjectTraits()));
         HoverStyle traitHover = new HoverStyle(null, 0xFF00FF00, null);
         ObjectTraits t = new ObjectTraits(TRAIT, traitHover, null, null, null);
-        assertSame(TRAIT, Traits.interactive(t, d));
-        assertSame(traitHover, Traits.hover(t, d));
+        assertSame(TRAIT, Traits.interactive(t));
+        assertSame(traitHover, Traits.hover(t));
     }
 
     @Test
     void anyKindCanBeInteractiveOrTargetable() {
         BoxData box = new BoxData(new Vec3d(0, 0, 0), new Vec3d(1, 1, 1), null);
-        assertNull(Traits.interactive(null, box));
-        assertFalse(Traits.targetable(null, box));
-        assertSame(TRAIT, Traits.interactive(new ObjectTraits(TRAIT, null, null, null, null), box));
-        assertTrue(Traits.targetable(new ObjectTraits(null, null, List.of(new EditableField("min")), null, null), box));
-        assertTrue(Traits.targetable(new ObjectTraits(null, null, null, List.of("open"), null), box));
-        assertTrue(Traits.targetable(new ObjectTraits(null, null, null, null, new Visibility(null, null, false, true)), box));
-        assertTrue(Traits.targetable(new ObjectTraits(null, new HoverStyle(null, 0x00FF00, null), null, null, null), box), "a hover glow needs the raycast");
+        assertNull(Traits.interactive(null));
+        assertFalse(Traits.targetable(null));
+        assertSame(TRAIT, Traits.interactive(new ObjectTraits(TRAIT, null, null, null, null)));
+        assertTrue(Traits.targetable(new ObjectTraits(null, null, List.of(new EditableField("min")), null, null)));
+        assertTrue(Traits.targetable(new ObjectTraits(null, null, null, List.of("open"), null)));
+        assertTrue(Traits.targetable(new ObjectTraits(null, null, null, null, new Visibility(null, null, false, true))));
+        assertTrue(Traits.targetable(new ObjectTraits(null, new HoverStyle(null, 0x00FF00, null), null, null, null)), "a hover glow needs the raycast");
         assertEquals(List.of(), Traits.editable(null));
         assertEquals(List.of(), Traits.actions(new ObjectTraits()));
     }

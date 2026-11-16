@@ -63,7 +63,7 @@ final class InputQueue implements InputControls {
         boolean worldScoped() {
             return switch (view) {
                 case PickInput p -> p.request().kind() != PickKind.ITEM;
-                case PromptInput p -> "world".equals(p.request().placement()) || "world".equals(p.request().surface());
+                case PromptInput p -> "world".equals(p.request().surface());
                 case FormInput f -> false;
                 case WorldMenuInput w -> true;
             };
@@ -248,7 +248,7 @@ final class InputQueue implements InputControls {
 
     private void timeOut(Entry e) {
         if (e.view instanceof PromptInput p) {
-            host.respond(e.session, CoreMessages.PROMPT_RESULT, new PromptResult(p.request().defaultValue(), true, e.surface),
+            host.respond(e.session, CoreMessages.PROMPT_RESULT, new PromptResult(p.request().defaultValue(), true, e.surface != null ? e.surface : p.request().surface()),
                     e.req);
         } else {
             host.respondError(e.session, "timeout", "the player did not answer in time", e.requestType, e.req);
@@ -345,7 +345,8 @@ final class InputQueue implements InputControls {
         if (!(e.view instanceof PromptInput p)) {
             throw new IllegalArgumentException("input " + id + " is not a prompt");
         }
-        String used = surface != null ? surface : e.surface;
+        // Not shown yet: it would have used the surface asked for.
+        String used = surface != null ? surface : e.surface != null ? e.surface : p.request().surface();
         Object answer = value == null ? null : PromptSurfaces.handles(used) ? PromptSurfaces.value(p.request(), used, value)
                 : promptValue(p.request(), value);
         remove(e);

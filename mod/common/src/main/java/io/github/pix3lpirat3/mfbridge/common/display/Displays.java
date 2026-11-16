@@ -303,7 +303,7 @@ public final class Displays {
             final DisplayFields f = n.fields;
             final Interactive spec = f == null ? null : f.interactive();
             if (f == null || !n.kind.drawn || !n.visible || n.resolvedFrame < 0
-                    || spec == null && !Traits.targetable(n.traits, n.data)) {
+                    || spec == null && !Traits.targetable(n.traits)) {
                 continue;
             }
             final double range = range(spec, n.traits, reach);
@@ -323,7 +323,7 @@ public final class Displays {
             final double range = range(spec, t.entry().traits(), reach);
             final double d2 = t.distanceSq(eye.x, eye.y, eye.z);
             // Distance rules hide an object from hit testing too; lookedAt is what this raycast decides.
-            if (!Traits.targetable(t.entry().traits(), t.entry().data()) || !Traits.shown(Traits.visibleWhen(t.entry().traits()), d2, true)) {
+            if (!Traits.targetable(t.entry().traits()) || !Traits.shown(Traits.visibleWhen(t.entry().traits()), d2, true)) {
                 continue;
             }
             final double hx = (t.maxX() - t.minX()) / 2d;

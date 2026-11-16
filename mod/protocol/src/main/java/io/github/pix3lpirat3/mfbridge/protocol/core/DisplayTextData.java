@@ -25,12 +25,12 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  * @param brightness 0-15 fixed light, world light when absent.
  * @param maxDistance Default {@code 64}.
  */
-public record DisplayTextData(Vec3d pos, String text, int lineWidth, int background, boolean shadow, boolean seeThrough, String align, float scale, @Nullable String group, @Nullable DisplayTransform transform, String billboard, int interpolateMs, @Nullable String animate, float animateAmplitude, int animatePeriodMs, @Nullable Integer brightness, @Nullable Integer glow, @Nullable HoverStyle hover, @Nullable Interactive interactive, float maxDistance) {
+public record DisplayTextData(Vec3d pos, String text, int lineWidth, int background, boolean shadow, boolean seeThrough, String align, float scale, @Nullable String group, @Nullable DisplayTransform transform, String billboard, int interpolateMs, @Nullable String animate, float animateAmplitude, int animatePeriodMs, @Nullable Integer brightness, @Nullable Integer glow, float maxDistance) {
     /** Wire codec for this record. */
     public static final WireCodec<DisplayTextData> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, DisplayTextData v) {
-            w.writeArrayHeader(20);
+            w.writeArrayHeader(18);
             Vec3d.CODEC.write(w, v.pos());
             w.writeString(v.text());
             w.writeUInt(Integer.toUnsignedLong(v.lineWidth()));
@@ -68,16 +68,6 @@ public record DisplayTextData(Vec3d pos, String text, int lineWidth, int backgro
             } else {
                 w.writeUInt(Integer.toUnsignedLong(v.glow()));
             }
-            if (v.hover() == null) {
-                w.writeNil();
-            } else {
-                HoverStyle.CODEC.write(w, v.hover());
-            }
-            if (v.interactive() == null) {
-                w.writeNil();
-            } else {
-                Interactive.CODEC.write(w, v.interactive());
-            }
             w.writeFloat(v.maxDistance());
         }
 
@@ -104,106 +94,94 @@ public record DisplayTextData(Vec3d pos, String text, int lineWidth, int backgro
             int animatePeriodMs = n > 14 && !r.tryReadNil() ? r.readUInt() : 2000;
             @Nullable Integer brightness = n > 15 && !r.tryReadNil() ? r.readInt() : null;
             @Nullable Integer glow = n > 16 && !r.tryReadNil() ? r.readUInt() : null;
-            @Nullable HoverStyle hover = n > 17 && !r.tryReadNil() ? HoverStyle.CODEC.read(r) : null;
-            @Nullable Interactive interactive = n > 18 && !r.tryReadNil() ? Interactive.CODEC.read(r) : null;
-            float maxDistance = n > 19 && !r.tryReadNil() ? r.readFloat() : 64f;
-            r.skipValues(n - 20);
-            return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+            float maxDistance = n > 17 && !r.tryReadNil() ? r.readFloat() : 64f;
+            r.skipValues(n - 18);
+            return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
         }
     };
 
     /** Creates a value from the required fields; later fields take null or their schema default. */
     public DisplayTextData(Vec3d pos, String text) {
-        this(pos, text, 200, 1073741824, false, false, "center", 1f, null, null, "fixed", 0, null, 0.1f, 2000, null, null, null, null, 64f);
+        this(pos, text, 200, 1073741824, false, false, "center", 1f, null, null, "fixed", 0, null, 0.1f, 2000, null, null, 64f);
     }
 
     /** Returns a copy with {@code lineWidth} replaced. */
     public DisplayTextData withLineWidth(int lineWidth) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code background} replaced. */
     public DisplayTextData withBackground(int background) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code shadow} replaced. */
     public DisplayTextData withShadow(boolean shadow) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code seeThrough} replaced. */
     public DisplayTextData withSeeThrough(boolean seeThrough) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code align} replaced. */
     public DisplayTextData withAlign(String align) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code scale} replaced. */
     public DisplayTextData withScale(float scale) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code group} replaced. */
     public DisplayTextData withGroup(@Nullable String group) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code transform} replaced. */
     public DisplayTextData withTransform(@Nullable DisplayTransform transform) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code billboard} replaced. */
     public DisplayTextData withBillboard(String billboard) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code interpolateMs} replaced. */
     public DisplayTextData withInterpolateMs(int interpolateMs) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code animate} replaced. */
     public DisplayTextData withAnimate(@Nullable String animate) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code animateAmplitude} replaced. */
     public DisplayTextData withAnimateAmplitude(float animateAmplitude) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code animatePeriodMs} replaced. */
     public DisplayTextData withAnimatePeriodMs(int animatePeriodMs) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code brightness} replaced. */
     public DisplayTextData withBrightness(@Nullable Integer brightness) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code glow} replaced. */
     public DisplayTextData withGlow(@Nullable Integer glow) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
-    }
-
-    /** Returns a copy with {@code hover} replaced. */
-    public DisplayTextData withHover(@Nullable HoverStyle hover) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
-    }
-
-    /** Returns a copy with {@code interactive} replaced. */
-    public DisplayTextData withInteractive(@Nullable Interactive interactive) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 
     /** Returns a copy with {@code maxDistance} replaced. */
     public DisplayTextData withMaxDistance(float maxDistance) {
-        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, hover, interactive, maxDistance);
+        return new DisplayTextData(pos, text, lineWidth, background, shadow, seeThrough, align, scale, group, transform, billboard, interpolateMs, animate, animateAmplitude, animatePeriodMs, brightness, glow, maxDistance);
     }
 }

@@ -63,7 +63,7 @@ record DisplayFields(
             return f;
         }
         return new DisplayFields(f.pos, f.scale, f.group, f.transform, f.billboard, f.interpolateMs, f.animation, f.amplitude,
-                f.periodMs, f.brightness, f.glow, Traits.hover(traits, data), Traits.interactive(traits, data), f.maxDistance);
+                f.periodMs, f.brightness, f.glow, Traits.hover(traits), Traits.interactive(traits), f.maxDistance);
     }
 
     /** Emitters follow groups: an emitter is placed like a display, with nothing else to draw. */
@@ -76,16 +76,16 @@ record DisplayFields(
         return switch (data) {
             case DisplayTextData d -> new DisplayFields(d.pos(), d.scale(), d.group(), d.transform(), d.billboard(),
                     d.interpolateMs(), Animation.of(d.animate()), d.animateAmplitude(), d.animatePeriodMs(), d.brightness(),
-                    d.glow(), d.hover(), d.interactive(), d.maxDistance());
+                    d.glow(), null, null, d.maxDistance());
             case DisplayItemData d -> new DisplayFields(d.pos(), d.scale(), d.group(), d.transform(), d.billboard(),
                     d.interpolateMs(), Animation.of(d.animate()), d.animateAmplitude(), d.animatePeriodMs(), d.brightness(),
-                    d.glow(), d.hover(), d.interactive(), d.maxDistance());
+                    d.glow(), null, null, d.maxDistance());
             case DisplayBlockData d -> new DisplayFields(d.pos(), d.scale(), d.group(), d.transform(), d.billboard(),
                     d.interpolateMs(), Animation.of(d.animate()), d.animateAmplitude(), d.animatePeriodMs(), d.brightness(),
-                    d.glow(), d.hover(), d.interactive(), d.maxDistance());
+                    d.glow(), null, null, d.maxDistance());
             case DisplayEntityData d -> new DisplayFields(d.pos(), d.scale(), d.group(), d.transform(), d.billboard(),
                     d.interpolateMs(), Animation.of(d.animate()), d.animateAmplitude(), d.animatePeriodMs(), d.brightness(),
-                    d.glow(), d.hover(), d.interactive(), d.maxDistance());
+                    d.glow(), null, null, d.maxDistance());
             case GroupData g -> new DisplayFields(g.pos(), 1f, null, g.transform(), g.billboard(), g.interpolateMs(),
                     Animation.NONE, 0f, 1, null, null, null, null, Float.MAX_VALUE);
             case ParticleEmitterData e -> placement(e.pos(), e.group());

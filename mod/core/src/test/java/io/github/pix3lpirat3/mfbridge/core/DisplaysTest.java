@@ -69,14 +69,20 @@ class DisplaysTest {
     @TempDir
     Path dir;
 
-    static DisplayTextData text(String text, @Nullable Interactive interactive) {
+    static DisplayTextData text(String text) {
         return new DisplayTextData(POS, text, 200, 0x40000000, false, false, "center", 1, null, null, "fixed", 0, null,
-                0.1f, 2000, null, null, null, interactive, 64);
+                0.1f, 2000, null, null, 64);
     }
 
-    static DisplayItemData item(@Nullable Interactive interactive) {
+    static DisplayItemData item() {
         return new DisplayItemData(POS, new SlotItem("minecraft:diamond"), "ground", 1,
-                null, null, "fixed", 0, null, 0.1f, 2000, null, null, null, interactive, 64);
+                null, null, "fixed", 0, null, 0.1f, 2000, null, null, 64);
+    }
+
+    /** The object with an interactive trait. */
+    static ObjectFull interactive(ObjectFull o, Interactive spec) {
+        return new ObjectFull(o.key(), o.kind(), o.rev(), o.layer(), o.lifetime(), o.scope(), o.world(), o.ttlMs(), o.data(),
+                new io.github.pix3lpirat3.mfbridge.protocol.core.ObjectTraits(spec, null, null, null, null));
     }
 
     static DisplayEntityData entity() {
@@ -102,8 +108,8 @@ class DisplaysTest {
             Interactive spec = new Interactive(List.of(ElementInput.PRIMARY, ElementInput.HOVER_ENTER,
                     ElementInput.KEY, ElementInput.DRAG_START), "Left: take one", List.of("key.keyboard.q"), null, null,
                     null);
-            p.upsert(s, worldObj(OFFER, CoreKinds.DISPLAY_ITEM, BOT_WORLD, item(spec)),
-                    worldObj(TITLE, CoreKinds.DISPLAY_TEXT, BOT_WORLD, text("Shop", null)));
+            p.upsert(s, interactive(worldObj(OFFER, CoreKinds.DISPLAY_ITEM, BOT_WORLD, item()), spec),
+                    worldObj(TITLE, CoreKinds.DISPLAY_TEXT, BOT_WORLD, text("Shop")));
             p.sync();
             h.tick();
 
@@ -203,8 +209,8 @@ class DisplaysTest {
             h.clock.advanceMs(1_000);
             assertEquals(new PromptResult(false, true, "anvil"), response(p, CoreMessages.PROMPT_RESULT, timed));
             h.clock.advanceMs(1_000);
-            assertEquals(new PromptResult(true, true, null), response(p, CoreMessages.PROMPT_RESULT, unknown),
-                    "a prompt never shown reports no surface");
+            assertEquals(new PromptResult(true, true, "hud"), response(p, CoreMessages.PROMPT_RESULT, unknown),
+                    "a prompt never shown reports the surface it asked for");
 
             long id = Objects.requireNonNull(in.active()).id();
             in.surfaceShown(id, "world");
@@ -310,7 +316,7 @@ class DisplaysTest {
             p.upsert(s, obj(base + "cow256", CoreKinds.DISPLAY_ENTITY, entity()));
             assertQuotaError(p, s, "entity display");
             p.upsert(s, FakePlugin.object(base + "cow0", CoreKinds.DISPLAY_TEXT, 2,
-                    CoreKinds.DISPLAY_TEXT.encode(text("was a cow", null))));
+                    CoreKinds.DISPLAY_TEXT.encode(text("was a cow"))));
             p.upsert(s, obj(base + "cow256", CoreKinds.DISPLAY_ENTITY, entity()));
             p.sync();
             h.tick();
@@ -318,14 +324,14 @@ class DisplaysTest {
 
             List<ObjectFull> texts = new ArrayList<>();
             for (int i = 0; i < 4096 - 257; i++) {
-                texts.add(obj(base + "t" + i, CoreKinds.DISPLAY_TEXT, text("line " + i, null)));
+                texts.add(obj(base + "t" + i, CoreKinds.DISPLAY_TEXT, text("line " + i)));
             }
             upsertAll(p, s, texts);
-            p.upsert(s, obj(base + "extra", CoreKinds.DISPLAY_ITEM, item(null)));
+            p.upsert(s, obj(base + "extra", CoreKinds.DISPLAY_ITEM, item()));
             assertQuotaError(p, s, "display");
-            p.upsert(s, FakePlugin.object(base + "t0", CoreKinds.DISPLAY_ITEM, 2, CoreKinds.DISPLAY_ITEM.encode(item(null))));
+            p.upsert(s, FakePlugin.object(base + "t0", CoreKinds.DISPLAY_ITEM, 2, CoreKinds.DISPLAY_ITEM.encode(item())));
             p.reliable(s, CoreMessages.OBJ_REMOVE, new ObjRemove(List.of(base + "t1"), List.of()));
-            p.upsert(s, obj(base + "extra", CoreKinds.DISPLAY_ITEM, item(null)));
+            p.upsert(s, obj(base + "extra", CoreKinds.DISPLAY_ITEM, item()));
             p.sync();
             h.tick();
             assertFalse(p.poll(f -> f.is(CoreMessages.ERROR)), "a removal frees a display slot: " + p.describe());

@@ -17,7 +17,7 @@ describe('prompt surfaces', () => {
     const name = b.prompt.text('Name this chest', { surface: 'anvil', item: 'minecraft:chest', maxLength: 32 });
     let r = await queued;
     expect(r).toMatchObject({ type: 'prompt', kind: 'text', surface: 'anvil' });
-    expect(r.request).toMatchObject({ surface: 'anvil', item: 'minecraft:chest', maxLength: 32, placement: 'hud' });
+    expect(r.request).toMatchObject({ surface: 'anvil', item: 'minecraft:chest', maxLength: 32 });
     e.mod.resolvePrompt(r.id, 'Ores');
     expect(await name).toBe('Ores');
 
@@ -88,7 +88,7 @@ describe('prompt surfaces', () => {
     expect(e.mod.inputQueue()).toEqual([]);
   });
 
-  it('treats a world surface like a world placement', async () => {
+  it('treats a world surface as world-scoped', async () => {
     const b = await attached();
     e.mod.setAttached('alice@play.example.net:25565', true);
     e.mod.setPlayerContext({ server: SERVER, dimension: 'minecraft:the_nether' });
