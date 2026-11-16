@@ -156,7 +156,8 @@ class ChatBridgeTest {
 
             h.core.attach().setChoice(IDENTITY, false);
             h.tick();
-            assertEquals(new ChatRoute.PassThrough("@miner hi"), chat.route("@miner hi"), "detached bots are unknown");
+            assertEquals(new ChatRoute.Unknown("Miner is not in your world, or is not shown here"), chat.route("@miner hi"),
+                    "a detached bot is kept from the server chat");
             assertEquals(List.of("Farmer"), assertInstanceOf(ChatRoute.CapturedMessage.class, chat.route("@all hi"))
                     .recipients());
         }

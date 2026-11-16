@@ -88,11 +88,12 @@ describe('chat capture', () => {
     expect(got[0]).toEqual(['what should I build?', { raw: '@ALICE what should I build?', broadcast: false }]);
   });
 
-  it('only captures lines for attached bots', async () => {
+  it('keeps a line for a detached bot from the server chat, and runs nothing', async () => {
     const b = await attached();
     e.mod.setAttached('alice@play.example.net:25565', false);
     await until(() => !b.state.attached);
-    expect(await e.mod.sendChat('@alice come')).toEqual({ captured: false, text: '@alice come' });
+    expect(await e.mod.sendChat('@alice come')).toEqual({ captured: true, broadcast: false, deliveries: [], unknown: 'Alice is not in your world, or is not shown here' });
+    expect(await e.mod.sendChat('@steve hi')).toEqual({ captured: false, text: '@steve hi' });
   });
 
   it('runs a line that parses as one of the bot commands, with positional arguments and defaults', async () => {

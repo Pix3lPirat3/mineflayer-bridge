@@ -60,6 +60,16 @@ public interface CommandControls {
     List<Addressee> addressees();
 
     /**
+     * Says why a name the player typed after the chat prefix reaches nobody, when it is a bot or a
+     * group the bridge knows but cannot reach now: a bot in another world or not attached, or a crew
+     * bot or group none of whose bots is here. Such a line must not go to the server as chat.
+     *
+     * @param name the typed name
+     * @return the reason, fit to show the player, or null for a name the bridge does not know
+     */
+    @Nullable String unreachable(String name);
+
+    /**
      * Finds an addressable owner by display name, ignoring case.
      *
      * @param name the typed name

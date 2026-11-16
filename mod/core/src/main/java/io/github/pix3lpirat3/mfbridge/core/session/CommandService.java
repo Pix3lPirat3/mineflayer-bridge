@@ -120,6 +120,29 @@ final class CommandService implements CommandControls {
     }
 
     @Override
+    public @Nullable String unreachable(String name) {
+        for (Session s : host.liveBots()) {
+            if (s.displayName.equalsIgnoreCase(name)) {
+                return s.displayName + " is not in your world, or is not shown here";
+            }
+        }
+        for (CrewDecl crew : host.declarations().crews()) {
+            for (String bot : crew.data().bots()) {
+                if (bot.equalsIgnoreCase(name)) {
+                    return bot + " is not here: it is offline or in another world";
+                }
+            }
+            List<CrewGroup> groups = crew.data().groups();
+            for (CrewGroup g : groups == null ? List.<CrewGroup>of() : groups) {
+                if (g.name().equalsIgnoreCase(name)) {
+                    return "None of " + g.name() + " is here: they are offline or in another world";
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
     public List<Addressee> addressees() {
         DeclarationSnapshot decl = host.declarations();
         Map<String, List<CommandDecl>> orders = new HashMap<>();

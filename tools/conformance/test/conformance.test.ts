@@ -257,6 +257,15 @@ describe.each(targets)('conformance against $name', ({ start, features }) => {
       expect(heard).toEqual([]);
     });
 
+    it('keeps a known bot from the server when it cannot be reached', async () => {
+      boss.crew.set({ bots: ['Alice', 'Bob', 'Carol'], groups: { miners: ['Bob'], night: ['Carol'] } });
+      await until(async () => (await mod.chat('@carol dig')).route === 'unknown', 'the crew with Carol');
+      expect(await mod.chat('@night dig')).toMatchObject({ route: 'unknown' });
+      await mod.setAttached(`bot:bob@${SERVER}`, false);
+      await until(async () => (await mod.chat('@bob dig')).route === 'unknown', 'Bob detached');
+      expect(digs).toEqual([]);
+    });
+
     it('passes other names and the doubled prefix on to the server', async () => {
       expect(await mod.chat('@steve hi')).toEqual({ route: 'pass', text: '@steve hi' });
       expect(await mod.chat('@@alice hi')).toEqual({ route: 'pass', text: '@alice hi' });

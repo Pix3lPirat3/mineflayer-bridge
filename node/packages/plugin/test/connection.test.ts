@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events';
 import { describe, expect, it } from 'vitest';
 import { BridgeError, FileCredentialStore } from '../src/index.ts';
 import { ALICE, ALICE_PREFIX, BOT_OPTIONS, FakeBot, fixture, load, OVERWORLD, sleep, until, within, type Env } from './helpers.ts';
@@ -273,6 +274,22 @@ describe('declared state', () => {
 });
 
 describe('world, attach and interest', () => {
+  it('reports the world by its own name, which servers give worlds on the overworld type', async () => {
+    const bot = new FakeBot('Alice');
+    const client = new EventEmitter();
+    Object.assign(bot, { _client: client });
+    load(hub().plugin(), bot);
+    await until(() => e.mod.session(ALICE)?.world);
+    expect(e.mod.session(ALICE)?.world).toEqual(OVERWORLD);
+    // A proxy moved the bot to its creative server: mineflayer still says overworld.
+    client.emit('respawn', { worldState: { name: 'minecraft:creative', dimension: 0 } });
+    bot.emit('respawn');
+    await until(() => e.mod.session(ALICE)?.world?.dimension === 'minecraft:creative');
+    // Older protocols name it worldName.
+    client.emit('login', { worldName: 'skyblock' });
+    await until(() => e.mod.session(ALICE)?.world?.dimension === 'minecraft:skyblock');
+  });
+
   it('reports the world on spawn and dimension change, and positions at most 2 Hz only while attached', async () => {
     const bot = new FakeBot('Alice');
     const b = load(hub().plugin(), bot);

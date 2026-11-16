@@ -68,6 +68,12 @@ export interface BotLike extends EmitterLike {
   entity?: { readonly position: Vec3Like; readonly id?: number } | null;
   game?: { readonly dimension?: string } | null;
   player?: { readonly uuid?: string } | null;
+  /**
+   * The protocol client (mineflayer `bot._client`). Its `login` and `respawn` packets name the world
+   * the bot is in, which `game.dimension` does not: a server can run worlds such as `minecraft:creative`
+   * on the overworld dimension type.
+   */
+  _client?: EmitterLike;
   /** The player inventory window, read by `bridge:window`. Emits `updateSlot(slot, oldItem, newItem)`. */
   inventory?: InventoryLike;
   /** Drops a whole stack (mineflayer `bot.tossStack`). */

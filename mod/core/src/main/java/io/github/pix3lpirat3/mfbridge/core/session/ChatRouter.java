@@ -87,6 +87,11 @@ final class ChatRouter implements ChatControls {
             if (closest != null) {
                 return new ChatRoute.Mistyped(name, closest, prefix + closest + rest.substring(name.length()), prefix + line);
             }
+            // A bot the bridge knows is meant, even when it cannot be reached: never send it as chat.
+            String why = commands.unreachable(name);
+            if (why != null) {
+                return new ChatRoute.Unknown(why);
+            }
             return new ChatRoute.PassThrough(line);
         }
         Addressee permitted = permitted(to);

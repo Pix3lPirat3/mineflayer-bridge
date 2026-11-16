@@ -1069,6 +1069,8 @@ export class BotBridgeImpl extends SessionImpl implements BotBridge {
   private readonly botOptions: BotOptionsLike | undefined;
   private readonly server: string;
   private botWorld: WorldKey | undefined;
+  /** The world's name from the last login or respawn packet, such as `minecraft:creative`. */
+  private levelName: string | undefined;
   private lastPositionAt = 0;
   private positionTimer: NodeJS.Timeout | undefined;
   private readonly offs: (() => void)[] = [];
@@ -1085,6 +1087,23 @@ export class BotBridgeImpl extends SessionImpl implements BotBridge {
         else bot.removeListener?.(event, fn);
       });
     };
+    // The world's own name, as the player's game has it: mineflayer keeps only the dimension type.
+    const client = bot._client;
+    if (typeof client?.on === 'function') {
+      const named = (packet: { worldState?: { name?: unknown }; worldName?: unknown } | undefined): void => {
+        const name = packet?.worldState?.name ?? packet?.worldName;
+        if (typeof name !== 'string' || name === '') return;
+        this.levelName = dimensionKey(name);
+        // mineflayer's own handler ran first and the bot's events already fired: report the new name.
+        if (this.bot.game?.dimension !== undefined) this.reportWorld();
+      };
+      client.on('login', named);
+      client.on('respawn', named);
+      this.offs.push(() => {
+        client.removeListener?.('login', named);
+        client.removeListener?.('respawn', named);
+      });
+    }
     if (bot.username !== undefined && bot.username !== '') this.resolveIdentity();
     else listen('login', () => this.resolveIdentity());
     listen('spawn', () => this.reportWorld());
@@ -1122,7 +1141,7 @@ export class BotBridgeImpl extends SessionImpl implements BotBridge {
   }
 
   private reportWorld(): void {
-    const dimension = dimensionKey(this.bot.game?.dimension ?? undefined);
+    const dimension = this.levelName ?? dimensionKey(this.bot.game?.dimension ?? undefined);
     if (dimension === undefined) return;
     const world: WorldKey = { server: this.server, dimension };
     if (this.botWorld !== undefined && this.botWorld.dimension === world.dimension && this.botWorld.server === world.server) return;

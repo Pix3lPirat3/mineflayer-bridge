@@ -304,6 +304,18 @@ final class PlayerView implements Sight, PlayerControls {
         return out;
     }
 
+    /** Returns the live bot sessions, attached or not, sorted by owned prefix. */
+    List<Session> liveBots() {
+        List<Session> out = new ArrayList<>();
+        for (Session s : table.writers.values()) {
+            if (s.kind == SessionKind.BOT && !s.ended && !s.superseded) {
+                out.add(s);
+            }
+        }
+        out.sort((a, b) -> a.ownerPrefix.compareTo(b.ownerPrefix));
+        return out;
+    }
+
     /** Live controller sessions, sorted by owner. Controllers are always attached. */
     List<Session> liveControllers() {
         List<Session> out = new ArrayList<>();

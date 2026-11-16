@@ -11,11 +11,11 @@ the mod works on any server and gives the player no advantage there.
 
 ## Status
 
-Pre-release, version 0.1.0-alpha.12, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
+Pre-release, version 0.1.0-alpha.13, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
 [GitHub Releases](https://github.com/Pix3lPirat3/mineflayer-bridge/releases) only: the Fabric and
 NeoForge jars and the plugin tarball.
 
-API reference for 0.1.0-alpha.12: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
+API reference for 0.1.0-alpha.13: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
 [mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/) and
 [client extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/client/).
 
@@ -43,12 +43,12 @@ connect. Turn on "Ask before allowing local bots" in the settings to approve eac
 Node 22.12 or newer. Install the plugin from the release tarball:
 
 ```sh
-npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.12/mineflayer-bridge-0.1.0-alpha.12.tgz
+npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.13/mineflayer-bridge-0.1.0-alpha.13.tgz
 ```
 
 npm 12 refuses tarball URLs unless `allow-remote` permits them, so later installs of the same
 project need it too: put `allow-remote=all` in the project's `.npmrc`. Or download the tarball and
-`npm install ./mineflayer-bridge-0.1.0-alpha.12.tgz`, which needs no setting.
+`npm install ./mineflayer-bridge-0.1.0-alpha.13.tgz`, which needs no setting.
 
 The package is ESM; CommonJS code can `require()` it on Node 22.12+. TypeScript users get
 `bot.bridge` on mineflayer's `Bot` type with:
@@ -129,7 +129,8 @@ otherwise attach the bot from Bridge home. More complete scripts are in [`exampl
 - **Handles.** Most calls return a handle with `update(patch)`, `remove()` and `alive`. Calling the
   same method with the same id again updates the same object and returns the same handle. In a
   patch, `null` restores a field's default.
-- **Worlds.** World objects are bound to the bot's world (server and dimension) and only render
+- **Worlds.** World objects are bound to the bot's world (server and world name, such as
+  `minecraft:overworld`, or `minecraft:creative` on a server that names its worlds) and only render
   while the player is in it. Pass `world: 'global'` to opt out.
 - **Inputs.** Positions accept a mineflayer `Vec3`, `{ x, y, z }` or `[x, y, z]`. Colours accept
   `'#rrggbb'`, `'#rrggbbaa'` or a number. Item inputs accept an id, a mineflayer `Item`, or an object
@@ -448,7 +449,8 @@ its name the same way (`@fleet status`); `@all` means the bots only. Crew orders
 (`@farmers harvest`) are described under [Several bots](#several-bots-and-several-players). A line
 whose name is one typo away from a known name (`@minr come`) is not sent: the mod offers the
 corrected line, or the line with the prefix doubled (`@@minr come`), which always goes to the server
-as typed.
+as typed. A line for a bot or group the mod knows but cannot reach now (in another world, detached,
+offline) is not sent either; the mod says why.
 
 Chat spans can carry a click: `action` (a context action of the bot), `command` (one of its command
 lines), `suggest` (text for the chat box), `copy` (to the clipboard) or `url` (an http or https link,
@@ -863,7 +865,7 @@ const frames = readRecording(readFileSync('./runs/today.mfbrec'))   // [{ direct
 ## API reference
 
 Every option, handle and event is documented in the reference generated from the code. It describes
-the latest release, 0.1.0-alpha.12; older versions are not kept.
+the latest release, 0.1.0-alpha.13; older versions are not kept.
 
 - [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/): the `mineflayer-bridge` package.
 - [Mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/): for mods that

@@ -93,6 +93,11 @@ final class EngineHost implements SessionHost {
     }
 
     @Override
+    public List<Session> liveBots() {
+        return view.liveBots();
+    }
+
+    @Override
     public boolean attachedNow(Session s) {
         return view.attachedNow(s);
     }

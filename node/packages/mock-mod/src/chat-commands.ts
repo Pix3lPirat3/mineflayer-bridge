@@ -159,7 +159,11 @@ export class ChatCommands {
     if (found === undefined) {
       // Most likely a typo of a name that would match: kept from the server, nothing is delivered.
       const closest = closestName(book, name);
-      if (closest === undefined) return { captured: false, text: line };
+      if (closest === undefined) {
+        // A bot the bridge knows is meant, even when it cannot be reached: never sent as chat.
+        const why = this.unreachable(name);
+        return why === undefined ? { captured: false, text: line } : { captured: true, broadcast: false, deliveries: [], unknown: why };
+      }
       const corrected = prefix + closest + rest.slice(name.length);
       return { captured: true, broadcast: false, deliveries: [], mistyped: { name, closest, corrected, asChat: prefix + line } };
     }
@@ -281,6 +285,21 @@ export class ChatCommands {
       if (bots.length > 0) p.bots = [...bots];
       this.core.sendSession(s, 'command.invoked', p);
     });
+  }
+
+  /** Why a bot or group the bridge knows reaches nobody now, as the real mod says it; undefined for other names. */
+  private unreachable(name: string): string | undefined {
+    const lower = name.toLowerCase();
+    const live = [...this.core.sessions.values()].filter((s) => s.conn !== null && isLive(s) && s.kind === 'bot');
+    const bot = live.find((s) => (s.identity?.username ?? s.name).toLowerCase() === lower);
+    if (bot !== undefined) return `${bot.identity?.username ?? bot.name} is not in your world, or is not shown here`;
+    for (const c of this.core.store.declarations('core:crew', '~crew/')) {
+      const crewBot = c.data.bots.find((b) => b.toLowerCase() === lower);
+      if (crewBot !== undefined) return `${crewBot} is not here: it is offline or in another world`;
+      const group = (c.data.groups ?? []).find((g) => g.name.toLowerCase() === lower);
+      if (group !== undefined) return `None of ${group.name} is here: they are offline or in another world`;
+    }
+    return undefined;
   }
 
   /**

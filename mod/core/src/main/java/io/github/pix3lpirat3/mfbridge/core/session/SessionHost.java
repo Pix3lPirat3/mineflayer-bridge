@@ -60,6 +60,9 @@ interface SessionHost {
     /** Returns the live controller sessions, sorted by owner. Controllers are always attached. */
     List<Session> liveControllers();
 
+    /** Returns the live bot sessions, attached or not, sorted by owned prefix. */
+    List<Session> liveBots();
+
     /** Returns whether the player currently has this session attached. */
     boolean attachedNow(Session s);
 
