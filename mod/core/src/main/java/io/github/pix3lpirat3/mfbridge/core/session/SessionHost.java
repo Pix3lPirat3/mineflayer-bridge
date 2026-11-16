@@ -66,6 +66,9 @@ interface SessionHost {
     /** Returns whether the player currently has this session attached. */
     boolean attachedNow(Session s);
 
+    /** Records the player's own choice to attach or detach a bot, which holds in every world. */
+    void chooseAttached(Session s, boolean attached);
+
     /** Returns whether a bot session reported the world the player is in. */
     boolean worldMatched(Session s);
 

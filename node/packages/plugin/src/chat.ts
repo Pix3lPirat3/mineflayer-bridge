@@ -9,6 +9,7 @@ const CLICK_ACTIONS: Readonly<Record<ChatClickAction['action'], string>> = {
   suggest: 'suggest',
   copy: 'copy',
   url: 'open_url',
+  bridge: 'bridge',
 };
 
 /** A validated span whose `action` click still names a local action id. */
@@ -44,10 +45,13 @@ function toSpan(input: string | ChatSpanInput): PendingSpan {
   let action: string | undefined;
   if (input.click !== undefined) {
     const wire = CLICK_ACTIONS[input.click.action];
-    if (wire === undefined) throw new BridgeError('invalid_message', `unknown chat click action ${String(input.click.action)}; use action, command, suggest, copy or url`);
+    if (wire === undefined) throw new BridgeError('invalid_message', `unknown chat click action ${String(input.click.action)}; use action, command, suggest, copy, url or bridge`);
     const value = input.click.value;
     if (typeof value !== 'string' || value === '') throw new BridgeError('invalid_message', 'a chat click needs a non-empty value');
     if (input.click.action === 'url' && !/^https?:\/\/\S+$/i.test(value)) throw new BridgeError('invalid_message', `a url click needs an http or https link: ${value}`);
+    if (input.click.action === 'bridge' && !/^(menu|settings|(attach|detach)(:\S.*)?)$/.test(value)) {
+      throw new BridgeError('invalid_message', `a bridge click is attach, detach, attach:<bot>, detach:<bot>, menu or settings: ${value}`);
+    }
     if (input.click.action === 'action') {
       if (value.includes('/')) throw new BridgeError('invalid_message', `a chat click action names an action id of this scope, without /: ${value}`);
       action = value;

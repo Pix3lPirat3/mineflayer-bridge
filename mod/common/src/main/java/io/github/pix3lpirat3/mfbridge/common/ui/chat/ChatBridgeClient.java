@@ -11,6 +11,8 @@ import io.github.pix3lpirat3.mfbridge.common.ui.input.Crosshair;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.PacketGuard;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.Notifier;
+import io.github.pix3lpirat3.mfbridge.api.BridgeException;
+import io.github.pix3lpirat3.mfbridge.core.chat.BridgeClick;
 import io.github.pix3lpirat3.mfbridge.core.chat.ChatPrint;
 import io.github.pix3lpirat3.mfbridge.core.chat.ChatRoute;
 import io.github.pix3lpirat3.mfbridge.core.command.Completion;
@@ -256,10 +258,14 @@ public final class ChatBridgeClient {
         if (span.color() != null) {
             s = s.withColor(span.color() & 0xFFFFFF);
         }
-        if (span.hover() != null) {
+        final ChatClick click = span.click();
+        // What a click on the mod itself does is said by the mod, under whatever the bot wrote.
+        final Component own = click != null && "bridge".equals(click.action()) ? bridgeTooltip(p, click.value()) : null;
+        if (own != null) {
+            s = s.withHoverEvent(new HoverEvent.ShowText(span.hover() == null ? own : Component.literal(span.hover() + "\n").append(own)));
+        } else if (span.hover() != null) {
             s = s.withHoverEvent(new HoverEvent.ShowText(Component.literal(span.hover())));
         }
-        final ChatClick click = span.click();
         if (click != null) {
             s = s.withClickEvent(clickEvent(p, click));
         }
@@ -273,6 +279,7 @@ public final class ChatBridgeClient {
             case "open_url" -> openUrl(click.value());
             case "run_action" -> register(() -> runAction(p.ownerName(), click.value(), "air"));
             case "run_command" -> register(() -> runCommand(p, click.value()));
+            case "bridge" -> bridgeTooltip(p, click.value()) == null ? null : register(() -> runBridgeClick(p, click.value()));
             default -> null;
         };
     }
@@ -329,6 +336,45 @@ public final class ChatBridgeClient {
         }
         final Target target = new Target(targetType, null, null, null, Crosshair.vec(minecraft.player.position()), null, null);
         ui.track("action", ownerName, core.invokeAction(actionKey, target, "chat"));
+    }
+
+    /** The mod's own line for a {@code bridge} click, or null when the click is not one it accepts. */
+    private @Nullable Component bridgeTooltip(final ChatPrint p, final String value) {
+        final BridgeCore core = ui.core();
+        if (core == null) {
+            return null;
+        }
+        try {
+            final BridgeClick c = core.chat().describeBridgeClick(p.owner(), value);
+            return (switch (c.kind()) {
+                case ATTACHED -> Component.translatable("mineflayer_bridge.chat.click.attach", c.bot());
+                case DETACHED -> Component.translatable("mineflayer_bridge.chat.click.detach", c.bot());
+                case MENU -> Component.translatable("mineflayer_bridge.chat.click.menu");
+                case SETTINGS -> Component.translatable("mineflayer_bridge.chat.click.settings");
+            }).withStyle(ChatFormatting.GRAY);
+        } catch (final BridgeException e) {
+            Constants.LOG.debug("Ignoring a bridge click {}: {}", value, e.getMessage());
+            return null;
+        }
+    }
+
+    /** {@code bridge}: attach or detach a bot by the player's click, or open one of the mod's screens. */
+    private void runBridgeClick(final ChatPrint p, final String value) {
+        final BridgeCore core = ui.core();
+        if (core == null) {
+            return;
+        }
+        try {
+            final BridgeClick c = core.chat().runBridgeClick(p.owner(), value);
+            switch (c.kind()) {
+                case ATTACHED -> ui.toastInfo(String.valueOf(c.bot()), I18n.get("mineflayer_bridge.chat.clicked.attached"));
+                case DETACHED -> ui.toastInfo(String.valueOf(c.bot()), I18n.get("mineflayer_bridge.chat.clicked.detached"));
+                case MENU -> ui.openHome();
+                case SETTINGS -> ui.openSettings();
+            }
+        } catch (final BridgeException e) {
+            ui.toastError(p.ownerName(), String.valueOf(e.getMessage()));
+        }
     }
 
     /** {@code run_command}: the value is a command line for the printing bot. */

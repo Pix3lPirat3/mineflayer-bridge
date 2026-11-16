@@ -26,6 +26,9 @@ describe('chat.print', () => {
       { text: ' [say]', click: { action: 'suggest', value: '@alice ' } },
       { text: ' [copy]', click: { action: 'copy', value: '1 -58 3' } },
       { text: ' [link]', click: { action: 'url', value: 'https://example.net/a' } },
+      { text: ' [attach]', click: { action: 'bridge', value: 'attach' } },
+      { text: ' [attach bob]', click: { action: 'bridge', value: 'attach:bob' } },
+      { text: ' [menu]', click: { action: 'bridge', value: 'menu' } },
     ]);
     b.chat.print({ text: 'one span' });
     await until(() => e.mod.printed().length === 3);
@@ -40,6 +43,9 @@ describe('chat.print', () => {
       { text: ' [say]', click: { action: 'suggest', value: '@alice ' } },
       { text: ' [copy]', click: { action: 'copy', value: '1 -58 3' } },
       { text: ' [link]', click: { action: 'open_url', value: 'https://example.net/a' } },
+      { text: ' [attach]', click: { action: 'bridge', value: 'attach' } },
+      { text: ' [attach bob]', click: { action: 'bridge', value: 'attach:bob' } },
+      { text: ' [menu]', click: { action: 'bridge', value: 'menu' } },
     ]);
   });
 
@@ -52,6 +58,9 @@ describe('chat.print', () => {
     expect(() => b.chat.print({ text: 'x', click: { action: 'action', value: 'a/b' } })).toThrow(/without \//);
     expect(() => b.chat.print({ text: 'x', click: { action: 'copy', value: '' } })).toThrow(/non-empty value/);
     expect(() => b.chat.print({ text: 'x', click: { action: 'url', value: 'javascript:alert(1)' } })).toThrow(/http or https/);
+    for (const value of ['fly', 'attach:', 'settings:x', 'menu now']) {
+      expect(() => b.chat.print({ text: 'x', click: { action: 'bridge', value } })).toThrow(/a bridge click is attach, detach/);
+    }
   });
 
   it('drops lines printed while the session is not open instead of showing them late', async () => {

@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.pix3lpirat3.mfbridge.api.BridgeException;
+import io.github.pix3lpirat3.mfbridge.core.chat.BridgeClick;
 import io.github.pix3lpirat3.mfbridge.core.chat.ChatControls;
 import io.github.pix3lpirat3.mfbridge.core.chat.ChatPrint;
 import io.github.pix3lpirat3.mfbridge.core.chat.ChatRoute;
@@ -160,6 +162,43 @@ class ChatBridgeTest {
                     "a detached bot, one in another world, still gets the line");
             assertEquals(List.of("Farmer", "Miner"), assertInstanceOf(ChatRoute.CapturedMessage.class, chat.route("@all hi"))
                     .recipients());
+        }
+    }
+
+    @Test
+    void bridgeClicksAttachByThePlayersClickAndOnlyBotsTheSenderMayOffer() throws Exception {
+        try (Harness h = ResumeTest.always(dir, b -> {}); FakePlugin p = FakePlugin.ready(h, "dev")) {
+            declare(h, p);
+            p.openBot("Farmer", "example.com");
+            long req = p.request(0, CoreMessages.SESSION_OPEN, new SessionOpen(SessionKind.CONTROLLER, "eco", null, List.of()));
+            int ctl = p.await("opened", f -> f.is(CoreMessages.SESSION_OPENED) && f.env().req() == req)
+                    .decode(CoreMessages.SESSION_OPENED).sessionId();
+            p.upsert(ctl, obj("ctl:dev/eco/user:default/~crew/crew", CoreKinds.CREW, new CrewData(List.of("Miner", "farmer", "Absent"), List.of())));
+            p.sync();
+            h.tick();
+            ChatControls chat = h.core.chat();
+            String eco = h.core.declarations().crews().get(0).owner();
+
+            // Describing changes nothing; the click does, and the choice then holds in every world.
+            h.core.attach().setChoice(IDENTITY, false);
+            assertEquals(new BridgeClick(BridgeClick.Kind.ATTACHED, "Miner"), chat.describeBridgeClick(InputTestSupport.OWNER, "attach"));
+            assertEquals(Boolean.FALSE, h.core.attach().choice(IDENTITY));
+            assertEquals(new BridgeClick(BridgeClick.Kind.ATTACHED, "Miner"), chat.runBridgeClick(InputTestSupport.OWNER, "attach"));
+            assertEquals(Boolean.TRUE, h.core.attach().choice(IDENTITY));
+            assertEquals(new BridgeClick(BridgeClick.Kind.DETACHED, "Miner"), chat.runBridgeClick(InputTestSupport.OWNER, " detach "));
+            assertEquals(Boolean.FALSE, h.core.attach().choice(IDENTITY));
+
+            // A controller offers the bots of its crew, by name; a bot offers only itself.
+            assertEquals(new BridgeClick(BridgeClick.Kind.ATTACHED, "Farmer"), chat.runBridgeClick(eco, "attach:farmer"));
+            assertEquals(new BridgeClick(BridgeClick.Kind.ATTACHED, "Miner"), chat.runBridgeClick(eco, "attach:Miner"));
+            assertEquals(Boolean.TRUE, h.core.attach().choice(IDENTITY));
+            assertEquals("not_owner", assertThrows(BridgeException.class, () -> chat.runBridgeClick(InputTestSupport.OWNER, "attach:Farmer")).code());
+            assertEquals("invalid_message", assertThrows(BridgeException.class, () -> chat.runBridgeClick(eco, "attach")).code());
+            assertEquals("invalid_message", assertThrows(BridgeException.class, () -> chat.runBridgeClick(eco, "attach:Absent")).code());
+            assertEquals("invalid_message", assertThrows(BridgeException.class, () -> chat.describeBridgeClick(eco, "fly")).code());
+
+            assertEquals(new BridgeClick(BridgeClick.Kind.MENU, null), chat.runBridgeClick(eco, "menu"));
+            assertEquals(new BridgeClick(BridgeClick.Kind.SETTINGS, null), chat.describeBridgeClick(InputTestSupport.OWNER, "settings"));
         }
     }
 

@@ -105,6 +105,7 @@ public final class BridgeClient {
         // (hitboxes) is a debug chord, and vanilla does not click other mappings for a key it used as one.
         this.openHomeKey = BridgeUi.keyMapping("open_home", InputConstants.KEY_B);
         ui.setHomeFactory(this::createHomeScreen);
+        ui.setSettingsFactory(this::createSettingsScreen);
         ui.setHomeKey(openHomeKey);
         gameBridge.addWorldRenderListener(frame -> {
             final long start = System.nanoTime();

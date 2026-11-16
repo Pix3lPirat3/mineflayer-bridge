@@ -103,4 +103,10 @@ public interface UiContext {
      * @return whether the view opened
      */
     boolean openContainerView(String viewKey);
+
+    /** Opens Bridge home over the game. */
+    void openHome();
+
+    /** Opens the mod's settings over the game. */
+    void openSettings();
 }

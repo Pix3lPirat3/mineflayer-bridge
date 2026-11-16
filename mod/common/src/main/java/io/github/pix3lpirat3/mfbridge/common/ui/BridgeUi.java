@@ -113,6 +113,9 @@ public final class BridgeUi implements UiContext {
     private final InputRouter router;
 
     private Supplier<@Nullable BridgeCore> coreSource = () -> null;
+    private Function<@Nullable Screen, Screen> settingsFactory = parent -> {
+        throw new IllegalStateException("no settings screen set");
+    };
     private Function<@Nullable Screen, Screen> homeFactory = parent -> {
         throw new IllegalStateException("Bridge home is not set up");
     };
@@ -222,6 +225,25 @@ public final class BridgeUi implements UiContext {
      */
     public void setHomeFactory(final Function<@Nullable Screen, Screen> factory) {
         this.homeFactory = Objects.requireNonNull(factory, "factory");
+    }
+
+    /**
+     * Sets how the mod's settings screen is made.
+     *
+     * @param factory makes the screen over a parent, or over the game for null
+     */
+    public void setSettingsFactory(final Function<@Nullable Screen, Screen> factory) {
+        this.settingsFactory = Objects.requireNonNull(factory, "factory");
+    }
+
+    @Override
+    public void openHome() {
+        openHome(null);
+    }
+
+    @Override
+    public void openSettings() {
+        Minecraft.getInstance().gui.setScreen(settingsFactory.apply(null));
     }
 
     /** Sets the key that opens Bridge home, so it also works inside what bots put on screen. */

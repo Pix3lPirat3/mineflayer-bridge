@@ -4,6 +4,8 @@ import io.github.pix3lpirat3.mfbridge.core.remote.Permission;
 import io.github.pix3lpirat3.mfbridge.api.BridgeException;
 import io.github.pix3lpirat3.mfbridge.api.event.EventBus;
 import io.github.pix3lpirat3.mfbridge.api.thread.ClientThread;
+import io.github.pix3lpirat3.mfbridge.core.chat.BridgeClick;
+import io.github.pix3lpirat3.mfbridge.core.decl.CrewDecl;
 import io.github.pix3lpirat3.mfbridge.core.chat.ChatControls;
 import io.github.pix3lpirat3.mfbridge.core.chat.ChatPrint;
 import io.github.pix3lpirat3.mfbridge.core.chat.ChatRoute;
@@ -316,6 +318,74 @@ final class ChatRouter implements ChatControls {
             case ParseResult.Failure f -> CompletableFuture.failedFuture(new BridgeException("invalid_message",
                     f.command() == null ? f.message() : f.command().data().name() + ": " + f.message()));
         };
+    }
+
+    @Override
+    public BridgeClick describeBridgeClick(String owner, String value) {
+        return bridgeClick(owner, value, false);
+    }
+
+    @Override
+    public BridgeClick runBridgeClick(String owner, String value) {
+        return bridgeClick(owner, value, true);
+    }
+
+    private BridgeClick bridgeClick(String owner, String value, boolean run) {
+        String v = value.strip();
+        if (v.equals("menu")) {
+            return new BridgeClick(BridgeClick.Kind.MENU, null);
+        }
+        if (v.equals("settings")) {
+            return new BridgeClick(BridgeClick.Kind.SETTINGS, null);
+        }
+        int colon = v.indexOf(':');
+        String verb = colon < 0 ? v : v.substring(0, colon);
+        if (!verb.equals("attach") && !verb.equals("detach")) {
+            throw new BridgeException("invalid_message", "a bridge click is attach, detach, menu or settings, not " + value);
+        }
+        Session target = colon < 0 ? ownBot(owner) : crewBot(owner, v.substring(colon + 1).strip());
+        boolean attach = verb.equals("attach");
+        if (run) {
+            host.chooseAttached(target, attach);
+        }
+        return new BridgeClick(attach ? BridgeClick.Kind.ATTACHED : BridgeClick.Kind.DETACHED, target.displayName);
+    }
+
+    /** The printing session itself, which must be a bot. */
+    private Session ownBot(String owner) {
+        for (Session s : host.liveBots()) {
+            if (s.owner.equals(owner)) {
+                return s;
+            }
+        }
+        throw new BridgeException("invalid_message", "only a bot can offer to attach itself; a controller names a bot of its crew");
+    }
+
+    /** A connected bot by name, which the printing session may offer: itself, or one of its crew. */
+    private Session crewBot(String owner, String name) {
+        Session found = null;
+        for (Session s : host.liveBots()) {
+            if (s.displayName.equalsIgnoreCase(name)) {
+                found = s;
+            }
+        }
+        if (found == null) {
+            throw new BridgeException("invalid_message", name + " is not a connected bot");
+        }
+        if (found.owner.equals(owner)) {
+            return found;
+        }
+        for (CrewDecl crew : host.declarations().crews()) {
+            if (!crew.owner().equals(owner)) {
+                continue;
+            }
+            for (String bot : crew.data().bots()) {
+                if (bot.equalsIgnoreCase(name)) {
+                    return found;
+                }
+            }
+        }
+        throw new BridgeException("not_owner", name + " is not in the crew of the session that offered it");
     }
 
     /** Surface {@code chat} takes the next line for text and confirm prompts. */

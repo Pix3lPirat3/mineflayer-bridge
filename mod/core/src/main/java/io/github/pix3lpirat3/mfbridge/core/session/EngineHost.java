@@ -103,6 +103,13 @@ final class EngineHost implements SessionHost {
     }
 
     @Override
+    public void chooseAttached(Session s, boolean attached) {
+        if (s.identity != null) {
+            view.attach().setChoice(s.identity, attached);
+        }
+    }
+
+    @Override
     public boolean worldMatched(Session s) {
         return view.worldMatched(s);
     }

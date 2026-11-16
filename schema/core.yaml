@@ -269,7 +269,7 @@ structs:
     action: string          # full object key of a core:action of the sender
 
   ChatClick:
-    action: string          # run_action | run_command | suggest | copy | open_url
+    action: string          # run_action | run_command | suggest | copy | open_url | bridge
     value: string
 
   ChatSpan:

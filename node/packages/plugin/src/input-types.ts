@@ -1924,9 +1924,14 @@ export interface ChatClickAction {
    * - `command`: runs a command line of this bot, such as `mine iron 32`;
    * - `suggest`: puts `value` into the chat box;
    * - `copy`: copies `value` to the clipboard;
-   * - `url`: opens `value`, an http or https link, in the browser after the game asks the player.
+   * - `url`: opens `value`, an http or https link, in the browser after the game asks the player;
+   * - `bridge`: acts on the mod itself, by the player's click: `attach` or `detach` (this bot, so
+   *   its windows, HUD and messages show in every world, or stop showing), `attach:<bot>` or
+   *   `detach:<bot>` (a bot of this controller's crew), `menu` (opens Bridge home) or `settings`
+   *   (opens the mod's settings). The mod adds its own line to the tooltip saying what the click
+   *   does. An older mod shows the text without a click.
    */
-  action: 'action' | 'command' | 'suggest' | 'copy' | 'url';
+  action: 'action' | 'command' | 'suggest' | 'copy' | 'url' | 'bridge';
   value: string;
 }
 

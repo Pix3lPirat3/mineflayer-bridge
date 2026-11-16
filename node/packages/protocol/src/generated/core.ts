@@ -1655,7 +1655,7 @@ export const NotifyButtonCodec: Codec<NotifyButton> = {
 
 /** Struct `ChatClick`. */
 export interface ChatClick {
-  /** One of: run_action | run_command | suggest | copy | open_url. */
+  /** One of: run_action | run_command | suggest | copy | open_url | bridge. */
   action: string;
   value: string;
 }
