@@ -153,7 +153,7 @@ export function plainText(value: unknown): string | undefined {
 }
 
 /** prismarine-chat's loader: called with a registry, it gives the `ChatMessage` class. */
-export type ChatLoader = (registry: unknown) => { fromNotch(message: unknown): { toString(): string } };
+export type ChatLoader = (registry: unknown) => { fromNotch(message: unknown): { toString(): string; toMotd?(): string } };
 
 let foundLoader: ChatLoader | null | undefined;
 
@@ -161,7 +161,7 @@ let foundLoader: ChatLoader | null | undefined;
  * prismarine-chat as the bot's mineflayer has it, or `null` when neither it nor mineflayer can be
  * found from here. The plugin does not depend on either.
  */
-function findChatLoader(): ChatLoader | null {
+export function findChatLoader(): ChatLoader | null {
   if (foundLoader !== undefined) return foundLoader;
   const require = createRequire(import.meta.url);
   for (const load of [() => require('prismarine-chat'), () => createRequire(require.resolve('mineflayer'))('prismarine-chat')]) {
@@ -255,6 +255,14 @@ function legacyRuns(text: string, base: TextStyle, out: Run[]): void {
   let run = '';
   for (let i = 0; i < text.length; i++) {
     const c = text[i]!;
+    if (c === SECTION && text[i + 1] === '#' && /^[0-9a-fA-F]{6}$/.test(text.slice(i + 2, i + 8))) {
+      // A colour by its hex value, as prismarine-chat writes the ones that have no code.
+      if (run !== '') out.push({ text: run, style });
+      run = '';
+      style = { ...base, color: parseInt(text.slice(i + 2, i + 8), 16), bold: false, italic: false, underlined: false, strikethrough: false, obfuscated: false };
+      i += 7;
+      continue;
+    }
     if (c === SECTION && i + 1 < text.length) {
       const k = text[i + 1]!.toLowerCase();
       const hex = '0123456789abcdef'.indexOf(k);
@@ -328,6 +336,10 @@ export function styledText(value: unknown, base: Readonly<TextStyle> = {}): (str
   } else if (typeof v === 'object') v = untagged(v);
   const runs: Run[] = [];
   walk(v, { ...base }, runs, 0);
+  return toParts(runs);
+}
+
+function toParts(runs: Run[]): (string | ChatSpanInput)[] {
   if (runs.length === 0) return [''];
   return runs.map(({ text, style }) => {
     const span: ChatSpanInput = { text };
@@ -335,6 +347,50 @@ export function styledText(value: unknown, base: Readonly<TextStyle> = {}): (str
     for (const f of FLAGS) if (style[f] === true) span[f] = true;
     return Object.keys(span).length === 1 ? text : span;
   });
+}
+
+/** Text with legacy `§` codes (and `§#rrggbb` colours) as styled parts; never read as JSON. */
+export function styledLegacy(text: string): (string | ChatSpanInput)[] {
+  const runs: Run[] = [];
+  legacyRuns(text, {}, runs);
+  return toParts(runs);
+}
+
+/** The code of the named colour closest to an RGB value. */
+function nearestCode(rgb: number): string {
+  let best = 15;
+  let bestD = Infinity;
+  for (let i = 0; i < CODE_COLORS.length; i++) {
+    const c = CODE_COLORS[i]!;
+    const d = ((c >> 16) - (rgb >> 16 & 255)) ** 2 + ((c >> 8 & 255) - (rgb >> 8 & 255)) ** 2 + ((c & 255) - (rgb & 255)) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  }
+  return '0123456789abcdef'[best]!;
+}
+
+/**
+ * Styled parts as one string with legacy `§` codes, for text the game draws from a plain string
+ * (HUD text, boss bars, titles). Colours without a code become the closest named colour.
+ */
+export function legacyText(parts: readonly (string | ChatSpanInput)[]): string {
+  let out = '';
+  let styled = false;
+  for (const p of parts) {
+    if (typeof p === 'string') {
+      out += (styled ? `${SECTION}r` : '') + p;
+      styled = false;
+      continue;
+    }
+    let codes = styled ? `${SECTION}r` : '';
+    if (typeof p.color === 'number') codes += SECTION + nearestCode(p.color);
+    for (const [code, flag] of Object.entries(FORMAT_CODES)) if (p[flag] === true) codes += SECTION + code;
+    out += codes + p.text;
+    styled = true;
+  }
+  return out;
 }
 
 /** Vanilla shows custom names in italics, and lore lines in purple italics, unless they say otherwise. */

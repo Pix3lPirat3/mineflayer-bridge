@@ -119,10 +119,13 @@ describe('rules the mock shares with the mod', () => {
     await until(() => b.can('notify'));
     e.mod.setAttached('alice@play.example.net:25565', false);
     await until(() => !b.state.attached);
-    const refused = e.mod.waitFor('protocolError', (p) => p.code === 'not_attached');
+    // The plugin keeps lines back while the bot is not attached, and tells its history when it is.
     api.info('three');
-    await refused;
+    await sleep(50);
     expect(lines()).toEqual(['one']);
+    e.mod.setAttached('alice@play.example.net:25565', true);
+    await until(() => lines().length === 4);
+    expect(lines()).toEqual(['one', 'one', 'two', 'three']);
   });
 
   it('counts titles and action bars against effectsPerSecond with sounds and particles', async () => {

@@ -1,0 +1,11 @@
+namespace: bridge
+extension: spectate
+java: io.github.pix3lpirat3.mfbridge.common.ext.spectate.wire
+protocol: { major: 1, minor: 0 }
+
+messages:
+  bridge:spectate.watching:
+    from: mod
+    delivery: reliable
+    fields:
+      on: bool

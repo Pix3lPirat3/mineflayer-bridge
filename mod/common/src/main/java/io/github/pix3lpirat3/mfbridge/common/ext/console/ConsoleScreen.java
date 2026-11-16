@@ -1,16 +1,22 @@
 package io.github.pix3lpirat3.mfbridge.common.ext.console;
 
+import io.github.pix3lpirat3.mfbridge.common.ext.console.wire.ConsoleKind;
 import io.github.pix3lpirat3.mfbridge.common.ext.console.wire.ConsoleLevel;
 import io.github.pix3lpirat3.mfbridge.common.ext.console.wire.ConsoleLine;
+import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotItems;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.ChildScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.protocol.core.ChatSpan;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Vec3d;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
@@ -18,11 +24,15 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import org.jspecify.annotations.Nullable;
 
 /**
- * One bot's console: its lines, newest at the bottom, filtered by a search and a lowest level.
+ * One bot's console: its lines, newest at the bottom, filtered by a search, a lowest level and a
+ * kind. Lines from the server carry a tag and keep their colours.
  * Clicking a line that names a position marks it in the world; Enter in the input line sends it to the
  * bot. New lines keep the view at the bottom unless the player scrolled up. Client thread only.
  */
@@ -38,12 +48,32 @@ final class ConsoleScreen extends ChildScreen {
     private static final int POS_ARGB = 0xFF7FD4FF;
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ROOT).withZone(ZoneId.systemDefault());
     private static final List<ConsoleLevel> LEVELS = List.of(ConsoleLevel.DEBUG, ConsoleLevel.INFO, ConsoleLevel.WARN, ConsoleLevel.ERROR);
+    private static final int TAG_ARGB = 0xFF9AA7C7;
+
+    /** Which lines show, by what they are. */
+    private enum Show {
+        ALL, CHAT, SCREEN, LOG;
+
+        boolean takes(final @Nullable ConsoleKind kind) {
+            return switch (this) {
+                case ALL -> true;
+                case CHAT -> kind == ConsoleKind.CHAT || kind == ConsoleKind.SYSTEM;
+                case SCREEN -> kind == ConsoleKind.ACTION_BAR || kind == ConsoleKind.TITLE || kind == ConsoleKind.BOSS_BAR;
+                case LOG -> kind == null;
+            };
+        }
+    }
 
     private final ConsoleExtension console;
     private final String owner;
     private final List<ConsoleLine> shown = new ArrayList<>();
     private String query = "";
     private ConsoleLevel lowest = ConsoleLevel.DEBUG;
+    private Show show = Show.ALL;
+    /** The tag drawn before a line of each kind, in the player's language. */
+    private final Map<ConsoleKind, String> tags = new EnumMap<>(ConsoleKind.class);
+    /** Styled lines cut to the room they had when first drawn; emptied when the lines or the size change. */
+    private final Map<ConsoleLine, FormattedCharSequence> styled = new IdentityHashMap<>();
     /** Lines scrolled up from the bottom; 0 follows new lines. */
     private int fromBottom;
     private @Nullable EditBox input;
@@ -73,7 +103,12 @@ final class ConsoleScreen extends ChildScreen {
     protected void init() {
         final int w = Math.min(width - 20, 520);
         final int left = (width - w) / 2;
-        final EditBox search = new EditBox(font, left, 16, w - 190, 18, Component.translatable("mineflayer_bridge_console.search"));
+        tags.put(ConsoleKind.CHAT, I18n.get("mineflayer_bridge_console.kind.chat"));
+        tags.put(ConsoleKind.SYSTEM, I18n.get("mineflayer_bridge_console.kind.system"));
+        tags.put(ConsoleKind.ACTION_BAR, I18n.get("mineflayer_bridge_console.kind.action_bar"));
+        tags.put(ConsoleKind.TITLE, I18n.get("mineflayer_bridge_console.kind.title"));
+        tags.put(ConsoleKind.BOSS_BAR, I18n.get("mineflayer_bridge_console.kind.boss_bar"));
+        final EditBox search = new EditBox(font, left, 16, w - 264, 18, Component.translatable("mineflayer_bridge_console.search"));
         search.setHint(Component.translatable("mineflayer_bridge_console.search"));
         search.setValue(query);
         search.setResponder(v -> {
@@ -82,6 +117,12 @@ final class ConsoleScreen extends ChildScreen {
             refilter();
         });
         addRenderableWidget(search);
+        addRenderableWidget(CycleButton.<Show>builder(v -> Component.translatable(label(v)), show).withValues(Show.values())
+                .create(left + w - 260, 15, 72, 20, Component.translatable("mineflayer_bridge_console.show"), (b, v) -> {
+                    show = v;
+                    fromBottom = 0;
+                    refilter();
+                }));
         addRenderableWidget(CycleButton.<ConsoleLevel>builder(l -> Component.translatable(label(l)), lowest).withValues(LEVELS)
                 .create(left + w - 186, 15, 90, 20, Component.translatable("mineflayer_bridge_console.level"), (b, v) -> {
                     lowest = v;
@@ -111,11 +152,21 @@ final class ConsoleScreen extends ChildScreen {
         };
     }
 
+    private static String label(final Show v) {
+        return switch (v) {
+            case ALL -> "mineflayer_bridge_console.show.all";
+            case CHAT -> "mineflayer_bridge_console.show.chat";
+            case SCREEN -> "mineflayer_bridge_console.show.screen";
+            case LOG -> "mineflayer_bridge_console.show.log";
+        };
+    }
+
     private void refilter() {
         shown.clear();
+        styled.clear();
         final String q = query.strip().toLowerCase(Locale.ROOT);
         for (final ConsoleLine l : console.lines(owner)) {
-            if (l.level().ordinal() >= lowest.ordinal() && (q.isEmpty() || l.text().toLowerCase(Locale.ROOT).contains(q))) {
+            if (l.level().ordinal() >= lowest.ordinal() && show.takes(l.kind()) && (q.isEmpty() || l.text().toLowerCase(Locale.ROOT).contains(q))) {
                 shown.add(l);
             }
         }
@@ -206,8 +257,19 @@ final class ConsoleScreen extends ChildScreen {
             int x = left + 6 + font.width(time);
             final Vec3d p = l.pos();
             final String pos = p == null ? "" : "[" + position(p) + "]";
-            final int room = w - (x - left) - (pos.isEmpty() ? 4 : font.width(pos) + 10);
-            graphics.text(font, font.plainSubstrByWidth(l.text(), Math.max(0, room)), x, y, color(l.level()));
+            final String tag = l.kind() == null ? null : tags.get(l.kind());
+            if (tag != null) {
+                graphics.text(font, tag, x, y, TAG_ARGB);
+                x += font.width(tag) + 4;
+            }
+            final int room = Math.max(0, w - (x - left) - (pos.isEmpty() ? 4 : font.width(pos) + 10));
+            final List<ChatSpan> spans = l.spans();
+            if (spans == null || spans.isEmpty()) {
+                graphics.text(font, font.plainSubstrByWidth(l.text(), room), x, y, color(l.level()));
+            } else {
+                graphics.text(font, styled.computeIfAbsent(l, k -> Language.getInstance().getVisualOrder(font.substrByWidth(SlotItems.spans(spans), room))),
+                        x, y, color(l.level()));
+            }
             if (!pos.isEmpty()) {
                 graphics.text(font, pos, left + w - font.width(pos) - 4, y, POS_ARGB);
             }

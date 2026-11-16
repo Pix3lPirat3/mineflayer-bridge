@@ -28,8 +28,10 @@ import org.jspecify.annotations.Nullable;
 /**
  * {@code bridge:console}, the mod half: keeps the last {@link #MAX_LINES} lines
  * each bot sent as {@code bridge:console.lines}, and opens a console from the bot's row on Bridge home
- * with search, a level filter, positions the player can mark in the world, and an input line sent back
- * as {@code bridge:console.input}. Only attached sessions with the {@code notify} permission may
+ * with search, filters by level and by kind (the bot's own log, the server's chat, what the server put
+ * on the bot's screen), positions the player can mark in the world, and an input line sent back
+ * as {@code bridge:console.input}. A bot sends its history again when it is attached; those lines
+ * take the place of the ones kept from the same time on. Only attached sessions with the {@code notify} permission may
  * send lines, and a bot's lines are dropped a while after its session ended. Client thread only.
  */
 public final class ConsoleExtension implements ClientExtension {
@@ -59,12 +61,12 @@ public final class ConsoleExtension implements ClientExtension {
 
     @Override
     public SemVer version() {
-        return SemVer.parse("1.0.0");
+        return SemVer.parse("1.1.0");
     }
 
     @Override
     public void register(final ExtensionRegistrar r) {
-        r.message(ConsoleWire.CONSOLE_LINES, MessageAccess.ATTACHED.withPermission("notify"), (ctx, m) -> append(owner(ctx), m.lines()));
+        r.message(ConsoleWire.CONSOLE_LINES, MessageAccess.ATTACHED.withPermission("notify"), (ctx, m) -> append(owner(ctx), m.lines(), m.replay()));
         // Sent by the mod only; registered so connections negotiate it.
         r.message(ConsoleWire.CONSOLE_INPUT, (ctx, m) -> { });
     }
@@ -120,15 +122,22 @@ public final class ConsoleExtension implements ClientExtension {
         }
     }
 
-    private void append(final String owner, final List<ConsoleLine> added) {
+    private void append(final String owner, final List<ConsoleLine> added, final boolean replay) {
         final ArrayDeque<ConsoleLine> ring = lines.computeIfAbsent(owner, k -> new ArrayDeque<>());
+        if (replay && !added.isEmpty()) {
+            // The bot tells its history again: what was kept of it would show twice.
+            final long from = added.get(0).time();
+            while (!ring.isEmpty() && ring.peekLast().time() >= from) {
+                ring.removeLast();
+            }
+        }
         // Only the newest lines can stay, so older ones of a large batch are not even looked at.
         for (final ConsoleLine line : added.subList(Math.max(0, added.size() - MAX_LINES), added.size())) {
             if (ring.size() == MAX_LINES) {
                 ring.removeFirst();
             }
             final ConsoleLine l = line.text().length() <= MAX_LINE_CHARS ? line
-                    : new ConsoleLine(line.time(), line.level(), line.text().substring(0, MAX_LINE_CHARS), line.pos());
+                    : new ConsoleLine(line.time(), line.level(), line.text().substring(0, MAX_LINE_CHARS), line.pos(), line.kind(), null);
             ring.addLast(l);
         }
         if (Minecraft.getInstance().gui.screen() instanceof ConsoleScreen s && s.owner().equals(owner)) {

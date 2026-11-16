@@ -8,14 +8,19 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireException;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireReader;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
 
-/** Payload of message {@code bridge:console.lines} (id 0x00), sent by node with reliable delivery. */
-public record BridgeConsoleLines(List<ConsoleLine> lines) {
+/**
+ * Payload of message {@code bridge:console.lines} (id 0x00), sent by node with reliable delivery.
+ *
+ * @param replay The bot's history again: the mod drops what it kept from the first line's time on. Default {@code false}.
+ */
+public record BridgeConsoleLines(List<ConsoleLine> lines, boolean replay) {
     /** Wire codec for this record. */
     public static final WireCodec<BridgeConsoleLines> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, BridgeConsoleLines v) {
-            w.writeArrayHeader(1);
+            w.writeArrayHeader(2);
             WireCodecs.list(ConsoleLine.CODEC).write(w, v.lines());
+            w.writeBool(v.replay());
         }
 
         @Override
@@ -25,8 +30,19 @@ public record BridgeConsoleLines(List<ConsoleLine> lines) {
                 throw WireException.invalid("bridge:console.lines: expected at least 1 fields, got " + n);
             }
             List<ConsoleLine> lines = WireCodecs.list(ConsoleLine.CODEC).read(r);
-            r.skipValues(n - 1);
-            return new BridgeConsoleLines(lines);
+            boolean replay = n > 1 && !r.tryReadNil() ? r.readBool() : false;
+            r.skipValues(n - 2);
+            return new BridgeConsoleLines(lines, replay);
         }
     };
+
+    /** Creates a value from the required fields; later fields take null or their schema default. */
+    public BridgeConsoleLines(List<ConsoleLine> lines) {
+        this(lines, false);
+    }
+
+    /** Returns a copy with {@code replay} replaced. */
+    public BridgeConsoleLines withReplay(boolean replay) {
+        return new BridgeConsoleLines(lines, replay);
+    }
 }

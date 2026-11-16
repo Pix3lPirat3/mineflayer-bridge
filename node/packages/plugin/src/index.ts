@@ -35,8 +35,10 @@ export { inventoryHud, type InventoryBotLike, type InventoryHudApi } from './inv
 export { taskHud } from './task-hud.ts';
 export { tasks, type TaskEvents, type TaskOptions, type TaskRef, type TaskSnapshot, type TasksApi, type TaskStateName } from './tasks.ts';
 export { TasksKinds, TasksMessages, type TaskData, type TaskState, type TasksKindPayloads, type TasksMessagePayloads, type BridgeTaskControl, type TaskAction } from './generated/bridge-tasks.ts';
-export { botConsole, type BotConsoleApi, type ConsoleEntry, type ConsoleLevelName } from './bot-console.ts';
-export { ConsoleMessages, type ConsoleLine, type ConsoleLevel, type ConsoleMessagePayloads, type BridgeConsoleLines, type BridgeConsoleInput } from './generated/bridge-console.ts';
+export { botConsole, type BotConsoleApi, type ConsoleBossBar, type ConsoleEntry, type ConsoleKindName, type ConsoleLevelName, type ConsoleScreen } from './bot-console.ts';
+export { ConsoleMessages, type ConsoleKind, type ConsoleLine, type ConsoleLevel, type ConsoleMessagePayloads, type BridgeConsoleLines, type BridgeConsoleInput } from './generated/bridge-console.ts';
+export { spectate, type SpectateApi } from './spectate.ts';
+export { SpectateMessages, type SpectateMessagePayloads, type BridgeSpectateWatching } from './generated/bridge-spectate.ts';
 export { mapOrders, type MapBotLike, type MapOrder, type MapOrdersApi } from './map-orders.ts';
 export { MapMessages, type MapOrderType, type MapMessagePayloads, type BridgeMapOrder } from './generated/bridge-map.ts';
 export type { ExtensionChannel } from './types.ts';

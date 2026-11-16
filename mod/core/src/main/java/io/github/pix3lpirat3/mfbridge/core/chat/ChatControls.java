@@ -106,7 +106,7 @@ public interface ChatControls {
      *     {@code attach:<bot>}, {@code detach:<bot>} (a bot of the printing controller's crew),
      *     {@code menu} or {@code settings}
      * @return what the click would do
-     * @throws BridgeException {@code invalid_message} for an unknown value or a bot that is not
+     * @throws io.github.pix3lpirat3.mfbridge.api.BridgeException {@code invalid_message} for an unknown value or a bot that is not
      *     connected, {@code not_owner} for a bot the printing session may not offer
      */
     BridgeClick describeBridgeClick(String owner, String value);
@@ -118,7 +118,7 @@ public interface ChatControls {
      * @param owner owner key of the session that printed the line
      * @param value the click's value, as for {@link #describeBridgeClick}
      * @return what was done, or which screen to open
-     * @throws BridgeException as {@link #describeBridgeClick}
+     * @throws io.github.pix3lpirat3.mfbridge.api.BridgeException as {@link #describeBridgeClick}
      */
     BridgeClick runBridgeClick(String owner, String value);
 }

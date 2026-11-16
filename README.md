@@ -11,11 +11,11 @@ the mod works on any server and gives the player no advantage there.
 
 ## Status
 
-Pre-release, version 0.1.0-alpha.16, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
+Pre-release, version 0.1.0-alpha.17, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
 [GitHub Releases](https://github.com/Pix3lPirat3/mineflayer-bridge/releases) only: the Fabric and
 NeoForge jars and the plugin tarball.
 
-API reference for 0.1.0-alpha.16: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
+API reference for 0.1.0-alpha.17: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
 [mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/) and
 [client extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/client/).
 
@@ -43,12 +43,12 @@ connect. Turn on "Ask before allowing local bots" in the settings to approve eac
 Node 22.12 or newer. Install the plugin from the release tarball:
 
 ```sh
-npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.16/mineflayer-bridge-0.1.0-alpha.16.tgz
+npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.17/mineflayer-bridge-0.1.0-alpha.17.tgz
 ```
 
 npm 12 refuses tarball URLs unless `allow-remote` permits them, so later installs of the same
 project need it too: put `allow-remote=all` in the project's `.npmrc`. Or download the tarball and
-`npm install ./mineflayer-bridge-0.1.0-alpha.16.tgz`, which needs no setting.
+`npm install ./mineflayer-bridge-0.1.0-alpha.17.tgz`, which needs no setting.
 
 The package is ESM; CommonJS code can `require()` it on Node 22.12+. TypeScript users get
 `bot.bridge` on mineflayer's `Bot` type with:
@@ -682,7 +682,7 @@ All are exported from `mineflayer-bridge` and loaded with `bot.bridge.use(...)` 
 | `inventoryHud()` | Held item, hotbar and armor in a HUD panel |
 | `tasks()` | `task(name).progress(n, total).status(text).done()`: tasks the player can pause, resume and cancel from Bridge home |
 | `taskHud()` | The tasks of `tasks()` as a HUD panel and boss bar |
-| `botConsole()` | A per-bot log screen with levels, search and clickable positions |
+| `botConsole()` | A per-bot log screen with levels, search and clickable positions; it also records the server's chat, action bar, titles and boss bars, and shows them to a player who spectates the bot |
 | `mapOrders()` | Orders from the Bridge map: select bots, right-click to move them, Shift to queue |
 | `trails()` | Where the bot has been, as a fading trail with marks |
 | `schematic()` | Sponge `.schem` files as ghost blocks, with materials and build progress |
@@ -692,6 +692,7 @@ All are exported from `mineflayer-bridge` and loaded with `bot.bridge.use(...)` 
 | `recorder()` | The connection's protocol frames written to a `.mfbrec` file |
 | `ping()` | The player's pings: a key marks the block or entity they look at, up to 192 blocks away |
 | `statusTag()` | A few lines of text above the bot, such as its task and health |
+| `spectate()` | Tells the bot when the player spectates it (`active`, `on(fn)`); loaded by `botConsole()` |
 
 ```js
 await bot.bridge.use(tasks())
@@ -760,8 +761,35 @@ sel.clear()
 Options: `tool: false` (API only), `label`, `icon`, `notify: false` to stay quiet on clicks, and
 `color` for the box.
 
-The mod also ships a spectate extension: Spectate buttons on bot rows move the camera to follow
-the bot, with nothing sent to the server. The map extension has a second key, Select bots in view:
+### What the server tells a bot
+
+`botConsole()` needs no code from the bot to answer "why did that not work": it logs what the
+server sends the bot, each line with its kind and colours.
+
+```js
+await bot.bridge.use(botConsole())
+const con = bot.bridge.get('bridge:console')
+con.lines    // [{ time, level, kind, text, pos }], the last 500
+             // kind: 'log' | 'chat' | 'system' | 'action_bar' | 'title' | 'boss_bar'
+con.screen   // { actionBar, title, subtitle, bossBars: [{ title, progress, color }] } right now
+```
+
+- The Console button on a bot's row shows the lines, with filters for chat, the screen (action
+  bar, titles, boss bars) and the bot's own log. The bot sends its history again whenever you
+  attach it, so the console also shows what happened before you looked.
+- While you spectate the bot, its screen is on yours, marked with its name: its boss bars under
+  your own, its action bar line and titles where the game draws them, and its last chat lines in
+  a HUD panel (never in your chat). It all goes away when you stop.
+- A text the server keeps sending, such as an action bar HUD with changing numbers, is logged
+  once in 30 seconds, and changes reach your screen at most every 200 ms (`screenMs`).
+
+Options: `chat`, `screen` and `lifecycle` (each default true) choose what is recorded, `keep` how
+many lines, `chatRows` how many chat lines the panel shows (0 for none). The plugin reads the
+action bar and titles from their packets, so plain mineflayer is enough.
+
+The mod's spectate extension: Spectate buttons on bot rows move the camera to follow
+the bot, with nothing sent to the server, and the bot is told (`spectate()`), so your own
+extensions can show more while it is watched. The map extension has a second key, Select bots in view:
 the cursor is freed over the world, a drag boxes the bots on screen, and right-click moves them or
 offers actions for an entity, as on the map.
 
@@ -874,7 +902,7 @@ const frames = readRecording(readFileSync('./runs/today.mfbrec'))   // [{ direct
 ## API reference
 
 Every option, handle and event is documented in the reference generated from the code. It describes
-the latest release, 0.1.0-alpha.16; older versions are not kept.
+the latest release, 0.1.0-alpha.17; older versions are not kept.
 
 - [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/): the `mineflayer-bridge` package.
 - [Mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/): for mods that

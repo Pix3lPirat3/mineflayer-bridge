@@ -1,10 +1,11 @@
 namespace: bridge
 extension: console
 java: io.github.pix3lpirat3.mfbridge.common.ext.console.wire
-protocol: { major: 1, minor: 0 }
+protocol: { major: 1, minor: 1 }
 
 enums:
   ConsoleLevel: [debug, info, warn, error]
+  ConsoleKind: [chat, system, action_bar, title, boss_bar]
 
 structs:
   ConsoleLine:
@@ -12,6 +13,8 @@ structs:
     level: ConsoleLevel
     text: string
     pos: Vec3d?              # a position the line is about; the console can mark it
+    kind: ConsoleKind?       # absent for the bot's own log lines
+    spans: list<ChatSpan>?   # the text with its colours and styles, when it has any
 
 messages:
   bridge:console.lines:
@@ -19,6 +22,7 @@ messages:
     delivery: reliable
     fields:
       lines: list<ConsoleLine>
+      replay: bool = false   # the bot's history again: the mod drops what it kept from the first line's time on
 
   bridge:console.input:
     from: mod
