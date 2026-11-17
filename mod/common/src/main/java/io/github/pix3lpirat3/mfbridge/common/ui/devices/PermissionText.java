@@ -62,6 +62,7 @@ public final class PermissionText {
             case SOUND_EMITTERS -> "mineflayer_bridge.quota.sound_emitters";
             case INTERACTIVE -> "mineflayer_bridge.quota.interactive";
             case DECLARATIONS -> "mineflayer_bridge.quota.declarations";
+            case COMMANDS -> "mineflayer_bridge.quota.commands";
             case EFFECTS_PER_SECOND -> "mineflayer_bridge.quota.effects_per_second";
             case BLOB_BYTES -> "mineflayer_bridge.quota.blob_bytes";
             case RETAINED_BYTES -> "mineflayer_bridge.quota.retained_bytes";

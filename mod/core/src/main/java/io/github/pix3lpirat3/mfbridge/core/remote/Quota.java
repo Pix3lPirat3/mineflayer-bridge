@@ -25,8 +25,10 @@ public enum Quota {
     SOUND_EMITTERS("sound_emitters", "Sound emitters", 16),
     /** Interactive display elements per session. */
     INTERACTIVE("interactive", "Interactive elements", 1_024),
-    /** Keybinds, tools, commands and actions per session, each. */
-    DECLARATIONS("declarations", "Keybinds, tools, commands, actions (each)", 256),
+    /** Keybinds, tools and actions per session, each. */
+    DECLARATIONS("declarations", "Keybinds, tools, actions (each)", 256),
+    /** Commands per session, a crew's orders included. A command is small, and a bot with a large vocabulary needs many. */
+    COMMANDS("commands", "Commands", 1_024),
     /** Sound and particle calls per second. */
     EFFECTS_PER_SECOND("effects_per_second", "Effects per second", 40),
     /** Size of one blob, in bytes. */

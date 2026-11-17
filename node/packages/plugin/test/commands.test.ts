@@ -479,3 +479,20 @@ describe('lifecycle', () => {
     expect(await e.mod.complete('alice', 'mine give Steve x')).toMatchObject({ suggestions: [{ text: 'x?' }] });
   });
 });
+
+describe('the command quota', () => {
+  it('takes a vocabulary of more than 256 commands', async () => {
+    const b = await attached();
+    for (let i = 0; i < 300; i++) b.commands.register(`word${i}`, { run: () => undefined });
+    await until(() => e.mod.commands().length === 300, 10000, '300 commands');
+  });
+
+  it('refuses the commands past the session quota and keeps the rest', async () => {
+    await restart({ quotas: { commands: 3 } });
+    const b = await attached();
+    for (let i = 0; i < 5; i++) b.commands.register(`word${i}`, { run: () => undefined });
+    await until(() => e.mod.commands().length === 3, 5000, 'three commands');
+    await sleep(200);
+    expect(e.mod.commands()).toHaveLength(3);
+  });
+});

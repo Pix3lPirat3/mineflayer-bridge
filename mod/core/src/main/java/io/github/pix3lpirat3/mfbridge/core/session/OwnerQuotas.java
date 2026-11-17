@@ -39,7 +39,7 @@ final class OwnerQuotas {
         INTERACTIVE("interactive element", Quota.INTERACTIVE),
         KEYBIND("keybind", Quota.DECLARATIONS),
         TOOL("tool", Quota.DECLARATIONS),
-        COMMAND("command", Quota.DECLARATIONS),
+        COMMAND("command", Quota.COMMANDS),
         ACTION("action", Quota.DECLARATIONS);
 
         final String label;

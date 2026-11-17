@@ -392,6 +392,10 @@ export class ObjectStore {
       ['displays', isDisplay, q.displays ?? 4096],
       ['entity displays', (k) => k === 'core:display.entity', q.entityDisplays ?? 256],
       ['particle emitters', (k) => k === 'core:particle-emitter', q.emitters ?? 32],
+      ['keybinds', (k) => k === 'core:keybind', q.declarations ?? 256],
+      ['tools', (k) => k === 'core:tool', q.declarations ?? 256],
+      ['actions', (k) => k === 'core:action', q.declarations ?? 256],
+      ['commands', (k) => k === 'core:command', q.commands ?? 1024],
     ];
     for (const [what, inClass, limit] of classes) {
       if (!inClass(kind) || (prev !== undefined && inClass(prev.kindName))) continue;

@@ -276,6 +276,10 @@ export interface MockQuotas {
   soundEmitters?: number;
   /** Objects with the interactive trait. Default 1024. */
   interactive?: number;
+  /** `core:keybind`, `core:tool` and `core:action` objects of one session, each. Default 256. */
+  declarations?: number;
+  /** `core:command` objects of one session, a crew's orders included. Default 1024. */
+  commands?: number;
   /** `effect.play` calls per second of one session (sounds, particles, titles and action bars together); more are dropped without an answer. Default 40. */
   effectsPerSecond?: number;
   /** Objects one device may hold over all of its sessions, advertised as `welcome.limits.maxObjects`. Default 20000. */
