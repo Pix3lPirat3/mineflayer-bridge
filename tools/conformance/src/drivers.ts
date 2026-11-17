@@ -204,7 +204,7 @@ export async function javaDriver(options: DriverOptions = {}): Promise<ModDriver
   if (options.maxObjects !== undefined) args.push('--max-objects', String(options.maxObjects));
   if (options.surfaceCooldownsMs !== undefined) args.push('--surface-cooldowns', options.surfaceCooldownsMs.join(','));
   const child: ChildProcessWithoutNullStreams = spawn(java, ['-cp', readFileSync(JAVA_CLASSPATH_FILE, 'utf8').trim(),
-    'io.github.pix3lpirat3.mfbridge.core.ConformanceServer', ...args], { stdio: ['pipe', 'pipe', 'pipe'] });
+    'io.github.pix3lpirat3.mfbridge.core.ConformanceServer', ...args], { stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true });
   let stderr = '';
   child.stderr.on('data', (d: Buffer) => {
     stderr = (stderr + d.toString()).slice(-4000);

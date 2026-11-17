@@ -15,7 +15,7 @@ describe('examples', () => {
 
   it.each(scripts)('%s parses, explains how to run it and imports only real exports', (name) => {
     const file = join(EXAMPLES, name);
-    execFileSync(process.execPath, ['--check', file]);
+    execFileSync(process.execPath, ['--check', file], { windowsHide: true });
     const source = readFileSync(file, 'utf8');
     expect(source.startsWith(`// ${name}:`)).toBe(true);
     expect(source).toMatch(/Run it against a Minecraft client with the mineflayer-bridge mod installed/);

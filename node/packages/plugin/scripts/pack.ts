@@ -62,7 +62,7 @@ try {
   const out = resolve(args.out);
   mkdirSync(out, { recursive: true });
   const cmd = `npm pack --pack-destination "${out}"`;
-  const name = execFileSync(cmd, { cwd: stage, encoding: 'utf8', shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/sh' }).trim().split('\n').pop()!;
+  const name = execFileSync(cmd, { cwd: stage, encoding: 'utf8', shell: process.platform === 'win32' ? 'cmd.exe' : '/bin/sh', windowsHide: true }).trim().split('\n').pop()!;
   console.log(`pack: ${join(out, name)} (${rewritten} files rewritten to the bundled protocol)`);
 } finally {
   rmSync(stage, { recursive: true, force: true });
