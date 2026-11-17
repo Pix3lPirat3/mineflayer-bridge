@@ -47,15 +47,15 @@ describe('bridge:selection', () => {
     expect(api.corner1).toEqual({ x: 5, y: 64, z: -2 });
     expect(api.corner2).toBeUndefined();
     expect(api.describe()).toBe('1 x 1 x 1 (1 blocks) from 5 64 -2 to 5 64 -2; corner 2 not set yet');
-    await until(() => drawn().length === 3);
-    expect(drawn()).toEqual(['box', 'corner1', 'label1']);
+    await until(() => drawn().length === 4);
+    expect(drawn()).toEqual(['box', 'corner1', 'label1', 'title']);
 
     e.mod.toolEvent(TOOL, 'secondary', { target: block(1, 64, 4) });
     await until(() => api.corner2 !== undefined);
     expect(api.area()).toEqual({ min: { x: 1, y: 64, z: -2 }, max: { x: 5, y: 64, z: 4 } });
     expect(api.describe()).toBe('5 x 1 x 7 (35 blocks) from 1 64 -2 to 5 64 4');
-    await until(() => drawn().length === 5);
-    expect(drawn()).toEqual(['box', 'corner1', 'corner2', 'label1', 'label2']);
+    await until(() => drawn().length === 6);
+    expect(drawn()).toEqual(['box', 'corner1', 'corner2', 'label1', 'label2', 'title']);
     const box = e.mod.object(`${SCOPE}/selection/box`)!;
     expect(box).toMatchObject({ kind: 'core:box', scope: 'world', data: { min: { x: 1, y: 64, z: -2 }, size: { x: 5, y: 1, z: 7 } } });
     expect(e.mod.object(`${SCOPE}/selection/label2`)).toMatchObject({ data: { pos: { x: 1.5, y: 65.5, z: 4.5 }, text: '2' } });
@@ -92,7 +92,7 @@ describe('bridge:selection', () => {
     api.set(1, { x: 0, y: 60, z: 0 });
     expect(changes).toHaveLength(2);
     expect(api.area()).toEqual({ min: { x: 0, y: 60, z: -2 }, max: { x: 3, y: 64, z: 0 } });
-    await until(() => drawn().length === 5);
+    await until(() => drawn().length === 6);
     // The corners handed out are copies.
     (api.corner1 as { x: number }).x = 99;
     expect(api.corner1).toEqual({ x: 0, y: 60, z: 0 });
@@ -129,9 +129,36 @@ describe('bridge:selection', () => {
     const api = ctl.get(selection)!;
     await until(() => api.corner2 !== undefined);
     expect(api.describe()).toBe('3 x 3 x 3 (27 blocks) from 0 64 0 to 2 66 2');
-    await until(() => drawn(scope).length === 5);
+    await until(() => drawn(scope).length === 6);
     expect(e.mod.object(`${scope}/selection/box`)).toMatchObject({ scope: 'global' });
     expect(e.mod.notifies).toEqual([]);
+  });
+
+  it('labels the box with what it is, its size and how to use it; the bot changes the words', async () => {
+    const b = await attached();
+    await b.use(selection({ tool: false, hint: 'sel' }));
+    const api = b.get(selection)!;
+    const title = (): unknown => (e.mod.object(`${SCOPE}/selection/title`)?.data as { text?: string } | undefined)?.text;
+    expect(api.label).toBeUndefined();
+    api.set(1, [1, 64, -2]);
+    api.set(2, [5, 64, 4]);
+    expect(api.label).toBe('Selection 5×1×7 · sel');
+    await until(() => title() === 'Selection 5×1×7 · sel');
+    expect(e.mod.object(`${SCOPE}/selection/title`)).toMatchObject({ data: { pos: { x: 3.5, y: 66.1, z: 1.5 } } });
+    // The corners keep their numbers.
+    expect(e.mod.object(`${SCOPE}/selection/label1`)).toMatchObject({ data: { text: '1' } });
+
+    api.setLabel({ title: 'Editing {farm}', hint: '@eco zone save' });
+    expect(api.label).toBe('Editing {farm} 5×1×7 · @eco zone save');
+    await until(() => title() === 'Editing (farm) 5×1×7 · @eco zone save');
+    api.setLabel({ hint: '' });
+    await until(() => title() === 'Selection 5×1×7');
+    expect(thrown(() => api.setLabel({ title: 3 as never })).code).toBe('invalid_message');
+
+    api.setLabel({ title: 'farm' });
+    api.clear();
+    api.set(1, [0, 60, 0]);
+    expect(api.label).toBe('Selection 1×1×1 · sel');
   });
 
   it('removes the tool and the drawing on unload', async () => {
@@ -139,7 +166,7 @@ describe('bridge:selection', () => {
     await b.use(selection());
     const api = b.get(selection)!;
     api.set(1, [0, 64, 0]);
-    await until(() => drawn().length === 3 && e.mod.tools().length === 1);
+    await until(() => drawn().length === 4 && e.mod.tools().length === 1);
     let calls = 0;
     api.on('change', () => calls++);
     await b.unload('bridge:selection');

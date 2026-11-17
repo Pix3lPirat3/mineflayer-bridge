@@ -1,5 +1,5 @@
 import { BridgeError, Flags, Messages, type EnvelopeHeader, type MessagePayloads, type Suggestion, type Target } from '@mineflayer-bridge/protocol';
-import { filterSuggestions, isSpace, matchNode, parseLine, planCompletion, rootNode, strip, tokenize, type CompletionPlan, type Origin, type SelectorHook } from './commands.ts';
+import { filterSuggestions, isSpace, matchNode, normalizeId, parseLine, planCompletion, rootNode, strip, tokenize, type CompletionPlan, type Origin, type SelectorHook } from './commands.ts';
 import type { ModCore } from './core.ts';
 import { Pending } from './pending.ts';
 import { checkScreenItem } from './screens.ts';
@@ -33,7 +33,39 @@ interface Addressee {
   readonly chatTo: Session[];
 }
 
-type CompletionAnswer = { status: 'answered' | 'failed' | 'timeout'; suggestions: Suggestion[] };
+/** Shared kinds and the action target type each is. */
+const SHARED_TARGETS: Readonly<Record<string, string>> = { 'core:zone': 'zone', 'core:point': 'point', 'core:route': 'route' };
+
+type V3 = { x: number; y: number; z: number };
+
+/** The middle of a zone's blocks, a point's position or a route's nodes, as the mod sends it in a target. */
+function middle(kind: string, data: unknown): V3 | undefined {
+  const lo = { x: Infinity, y: Infinity, z: Infinity };
+  const hi = { x: -Infinity, y: -Infinity, z: -Infinity };
+  const add = (p: V3, size: number): void => {
+    lo.x = Math.min(lo.x, p.x);
+    lo.y = Math.min(lo.y, p.y);
+    lo.z = Math.min(lo.z, p.z);
+    hi.x = Math.max(hi.x, p.x + size);
+    hi.y = Math.max(hi.y, p.y + size);
+    hi.z = Math.max(hi.z, p.z + size);
+  };
+  if (kind === 'core:point') return { ...(data as { pos: V3 }).pos };
+  if (kind === 'core:route') for (const n of (data as { nodes: { pos: V3 }[] }).nodes) add(n.pos, 0);
+  if (kind === 'core:zone') {
+    const z = data as { boxes?: { min: V3; max: V3 }[]; polygon?: V3[]; minY?: number; maxY?: number };
+    for (const b of z.boxes ?? []) {
+      add(b.min, 1);
+      add(b.max, 1);
+    }
+    for (const v of z.polygon ?? []) add({ x: v.x, y: z.minY ?? 0, z: v.z }, 1);
+    if (z.polygon !== undefined && z.maxY !== undefined) hi.y = Math.max(hi.y, z.maxY + 1);
+  }
+  if (lo.x === Infinity) return undefined;
+  return { x: (lo.x + hi.x) / 2, y: (lo.y + hi.y) / 2, z: (lo.z + hi.z) / 2 };
+}
+
+type CompletionAnswer ={ status: 'answered' | 'failed' | 'timeout'; suggestions: Suggestion[] };
 type ArgSuggestions = { suggestions: Suggestion[]; source: string | undefined; dynamic: MockCompletion['dynamic'] };
 
 /** Commands, context actions and the chat bridge: invocations, parsing, completion and printed lines. */
@@ -107,6 +139,48 @@ export class ChatCommands {
     const a = offered.find((d) => d.key === action) ?? offered.find((d) => d.id === action);
     if (a === undefined) return Promise.reject(new BridgeError('invalid_message', `mock: ${key} offers no action ${action}; it offers ${offered.map((d) => d.id).join(', ') || 'none'}`));
     return this.invokeAction(a.key, { type: 'element', objectKey: key }, timeoutMs, { source: 'menu' });
+  }
+
+  /**
+   * The actions the radial menu offers on a shared zone, point or route: those whose target type
+   * is the object's kind and whose `ids` (its name) and `tags` filters it passes, of bots the
+   * player may see now, sorted by owner, `order` and label.
+   */
+  sharedActions(key: string): MockDeclaration<'core:action'>[] {
+    const { type, name, tags } = this.sharedTarget(key);
+    const offered = this.core.store.declarations('core:action', '~action/').filter((a) => {
+      const t = a.data.target;
+      if (t.type !== type) return false;
+      if ((t.ids?.length ?? 0) > 0 && !t.ids!.some((id) => normalizeId(id) === normalizeId(name))) return false;
+      if ((t.tags?.length ?? 0) > 0 && !t.tags!.some((tag) => tags.has(tag.replace(/^#/, '')))) return false;
+      const owner = this.core.findSession(a.owner);
+      return owner !== undefined && this.core.player.focused(owner);
+    });
+    return offered.sort((a, b) => (a.owner < b.owner ? -1 : a.owner > b.owner ? 1 : 0) || (a.data.order ?? 0) - (b.data.order ?? 0) || (a.data.label < b.data.label ? -1 : a.data.label > b.data.label ? 1 : 0));
+  }
+
+  runSharedAction(key: string, action: string, timeoutMs: number): Promise<MockInvocationResult> {
+    let offered: MockDeclaration<'core:action'>[];
+    let target: Target;
+    try {
+      offered = this.sharedActions(key);
+      const t = this.sharedTarget(key);
+      target = { type: t.type, objectKey: key, ...(t.pos === undefined ? {} : { pos: t.pos }) };
+    } catch (e) {
+      return Promise.reject(toBridgeError(e));
+    }
+    const a = offered.find((d) => d.key === action) ?? offered.find((d) => d.id === action);
+    if (a === undefined) return Promise.reject(new BridgeError('invalid_message', `mock: ${key} offers no action ${action}; it offers ${offered.map((d) => d.id).join(', ') || 'none'}`));
+    return this.invokeAction(a.key, target, timeoutMs, { source: 'menu' });
+  }
+
+  /** What a shared object is as a target: its type, name, tags and the middle of its bounds. */
+  private sharedTarget(key: string): { type: string; name: string; tags: Set<string>; pos: { x: number; y: number; z: number } | undefined } {
+    const o = this.core.store.one(key);
+    const type = o === undefined ? undefined : SHARED_TARGETS[o.kind];
+    if (o === undefined || type === undefined) throw new BridgeError('invalid_message', `mock: no zone, point or route at ${key}`);
+    const d = o.data as { name?: string; tags?: string[] };
+    return { type, name: d.name ?? '', tags: new Set((d.tags ?? []).map((t) => t.replace(/^#/, ''))), pos: middle(o.kind, o.data) };
   }
 
   screenEvent(key: string, item: string, value: boolean | number | undefined, timeoutMs: number): Promise<MockInvocationResult> {

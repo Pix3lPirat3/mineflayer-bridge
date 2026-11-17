@@ -13,6 +13,7 @@ import io.github.pix3lpirat3.mfbridge.protocol.core.ZoneData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Draw commands for zones, points and routes. Zones become
@@ -45,6 +46,12 @@ public final class SpatialShapes {
     private static final double ARROW_LENGTH = 1.2d;
     private static final double LABEL_DISTANCE = 96d;
     private static final int LABEL_BACKGROUND = 0x00000050;
+    private static final float ZONE_LABEL_SCALE = 1.5f;
+    private static final float ROUTE_LABEL_SCALE = 1f;
+    /** A point's label sits this far above it, drawn by the waypoint marker. */
+    private static final double POINT_LABEL_OFFSET = 0.6;
+    /** Blocks per font pixel at scale 1, as the renderer draws labels. */
+    private static final double TEXT_SCALE = 0.025;
 
     private SpatialShapes() {
     }
@@ -122,11 +129,10 @@ public final class SpatialShapes {
             out.add(new DrawCommand.Line(new Vec3d(e[i], e[i + 1], e[i + 2]), new Vec3d(e[i + 3], e[i + 4], e[i + 5]), line, w,
                     DepthMode.BOTH));
         }
-        if (z.showLabel() && !z.name().isEmpty()) {
-            out.add(new DrawCommand.Label(new Vec3d((item.minX() + item.maxX()) / 2,
-                    Math.min(item.maxY(), ZoneSurface.DRAW_MAX_Y + 1d) + 0.5,
-                    (item.minZ() + item.maxZ()) / 2), look == Look.PENDING ? z.name() + " (pending)" : z.name(), 1.5f,
-                    LABEL_BACKGROUND, LABEL_DISTANCE));
+        final double[] at = labelAt(item);
+        if (at != null) {
+            out.add(new DrawCommand.Label(new Vec3d(at[0], at[1], at[2]), look == Look.PENDING ? z.name() + " (pending)" : z.name(),
+                    ZONE_LABEL_SCALE, LABEL_BACKGROUND, LABEL_DISTANCE));
         }
     }
 
@@ -157,10 +163,51 @@ public final class SpatialShapes {
         for (final RouteNode n : nodes) {
             out.add(DrawCommand.Box.cube(n.pos().x(), n.pos().y(), n.pos().z(), NODE_HALF, color, 0.5f, DepthMode.BOTH));
         }
-        if (!nodes.isEmpty() && !r.name().isEmpty()) {
-            final RouteNode first = nodes.getFirst();
-            out.add(new DrawCommand.Label(new Vec3d(first.pos().x(), first.pos().y() + 0.6, first.pos().z()),
-                    look == Look.PENDING ? r.name() + " (pending)" : r.name(), 1f, LABEL_BACKGROUND, LABEL_DISTANCE));
+        final double[] at = labelAt(item);
+        if (at != null) {
+            out.add(new DrawCommand.Label(new Vec3d(at[0], at[1], at[2]), look == Look.PENDING ? r.name() + " (pending)" : r.name(),
+                    ROUTE_LABEL_SCALE, LABEL_BACKGROUND, LABEL_DISTANCE));
         }
+    }
+
+    /**
+     * Where an object's name label is drawn: x, y, z of its centre and its scale. A zone's sits
+     * above its top, a route's above its first node, a point's above the marker.
+     *
+     * @return the label, or null when the object shows none
+     */
+    public static double @Nullable [] labelAt(final SpatialIndex.Item item) {
+        switch (item.data()) {
+            case ZoneData z -> {
+                if (!z.showLabel() || z.name().isEmpty() || item.zone() == null) {
+                    return null;
+                }
+                return new double[] {(item.minX() + item.maxX()) / 2, Math.min(item.maxY(), ZoneSurface.DRAW_MAX_Y + 1d) + 0.5,
+                    (item.minZ() + item.maxZ()) / 2, ZONE_LABEL_SCALE};
+            }
+            case RouteData r -> {
+                if (r.nodes().isEmpty() || r.name().isEmpty()) {
+                    return null;
+                }
+                final RouteNode first = r.nodes().getFirst();
+                return new double[] {first.pos().x(), first.pos().y() + 0.6, first.pos().z(), ROUTE_LABEL_SCALE};
+            }
+            case PointData p -> {
+                return p.name().isEmpty() ? null : new double[] {p.pos().x(), p.pos().y() + POINT_LABEL_OFFSET, p.pos().z(), 1d};
+            }
+            default -> {
+                return null;
+            }
+        }
+    }
+
+    /** Half the width of a label in blocks, background included; font glyphs are about 6 pixels wide. */
+    public static double labelHalfWidth(final String text, final double scale) {
+        return (text.length() * 3 + 2) * TEXT_SCALE * scale + 0.1;
+    }
+
+    /** Half the height of a label in blocks, background included. */
+    public static double labelHalfHeight(final double scale) {
+        return 6 * TEXT_SCALE * scale + 0.1;
     }
 }

@@ -296,7 +296,7 @@ function coordinate(t: Token, origin: number, name: string): number | ArgError {
 }
 
 /** Adds the `minecraft` namespace to a bare id and lower-cases it. */
-function normalizeId(id: string): string {
+export function normalizeId(id: string): string {
   const lower = strip(id).toLowerCase();
   return lower.includes(':') ? lower : `minecraft:${lower}`;
 }

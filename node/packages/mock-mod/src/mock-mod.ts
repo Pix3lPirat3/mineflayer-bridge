@@ -606,6 +606,28 @@ export class MockMod {
   }
 
   /**
+   * The context actions the radial menu offers on a shared zone, point or route (its key), as
+   * when the player looks at its name label, its surface or marker: actions whose target type is
+   * the object's kind (`zone`, `point`, `route`) and whose `ids` (matched against its name) and
+   * `tags` filters it passes, of bots the player may see now, sorted by owner, `order` and label.
+   * @throws BridgeError `invalid_message` when there is no zone, point or route at `key`.
+   */
+  sharedActions(key: string): MockDeclaration<'core:action'>[] {
+    return this.core.chat.sharedActions(key);
+  }
+
+  /**
+   * Picks an action from a shared object's radial menu, as the player would, and resolves with
+   * the bot's `invocation.result`. The target is `{ type, objectKey: key, pos }` with the object's
+   * kind as `type` and the middle of its bounds as `pos`; the source is `menu`. `action` is the
+   * action's full key or its id, as in {@link sharedActions}. Rejects with `invalid_message` when
+   * the object does not offer it; otherwise as {@link invokeAction}.
+   */
+  runSharedAction(key: string, action: string, timeoutMs = ANSWER_TIMEOUT_MS): Promise<MockInvocationResult> {
+    return this.core.chat.runSharedAction(key, action, timeoutMs);
+  }
+
+  /**
    * Runs a command with parsed `args`, as from the palette. `path` names the subcommand below the
    * root, e.g. `['start']`; it is left out of `command.invoked` when empty. An order (declared under
    * `~order/`) needs `bots`, the crew bots it is for; other commands take none.

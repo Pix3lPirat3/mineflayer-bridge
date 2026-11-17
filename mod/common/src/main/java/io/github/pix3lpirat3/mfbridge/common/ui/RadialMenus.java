@@ -1,7 +1,9 @@
 package io.github.pix3lpirat3.mfbridge.common.ui;
 
 import io.github.pix3lpirat3.mfbridge.common.display.Displays;
+import io.github.pix3lpirat3.mfbridge.common.spatial.SpatialEditor;
 import io.github.pix3lpirat3.mfbridge.common.spatial.SpatialTools;
+import io.github.pix3lpirat3.mfbridge.common.spatial.logic.Gizmo;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.Crosshair;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.ToolController;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.TargetMatch;
@@ -84,10 +86,17 @@ public final class RadialMenus {
             objectActions(core, element, key);
             return;
         }
-        // Zone and point actions: the zone around the block looked at (or the player), the point near it.
-        final List<RadialMenuScreen.Entry> entries = contextEntries(core, hit, spatialAt(core, hit, SpatialIndex.Kind.ZONE),
-                spatialAt(core, hit, SpatialIndex.Kind.POINT), "menu", List.of());
-        Minecraft.getInstance().gui.setScreen(new RadialMenuScreen(Component.literal(describe(hit)), I18n.get("mineflayer_bridge.actions.empty.target"),
+        // Shared objects: one whose name label is looked at, else what the zone, point and route picks find.
+        final Gizmo.Ray ray = SpatialEditor.ray();
+        // Against the sky a label may be anywhere in range; otherwise it must be in front of what is hit.
+        final double reach = hit.type() == HitResult.Type.MISS ? Crosshair.ACTION_RANGE : hit.location().distanceTo(Crosshair.eye()) + 0.01;
+        final SpatialIndex.Item labelled = Gizmo.pickLabel(core.spatial().all(), ray, reach);
+        final SpatialIndex.Item zone = labelled != null ? kindOrNull(labelled, SpatialIndex.Kind.ZONE) : zoneAt(core, hit, ray, reach);
+        final SpatialIndex.Item point = labelled != null ? kindOrNull(labelled, SpatialIndex.Kind.POINT) : pointAt(core, hit, ray, reach);
+        final SpatialIndex.Item route = labelled != null ? kindOrNull(labelled, SpatialIndex.Kind.ROUTE) : routeAt(core, ray, reach);
+        final List<RadialMenuScreen.Entry> entries = contextEntries(core, labelled != null ? null : hit, zone, point, route, "menu", List.of());
+        final String title = labelled != null ? labelled.name() : describe(hit);
+        Minecraft.getInstance().gui.setScreen(new RadialMenuScreen(Component.literal(title), I18n.get("mineflayer_bridge.actions.empty.target"),
                 entries, key));
     }
 
@@ -112,7 +121,7 @@ public final class RadialMenus {
         }
         final Crosshair.Hit hit = entity == null ? null
                 : new Crosshair.Hit(net.minecraft.world.phys.HitResult.Type.ENTITY, null, null, null, entity, entity.position());
-        final List<RadialMenuScreen.Entry> entries = contextEntries(core, hit, zone, point, "map", bots);
+        final List<RadialMenuScreen.Entry> entries = contextEntries(core, hit, zone, point, null, "map", bots);
         if (entries.isEmpty()) {
             return false;
         }
@@ -120,9 +129,9 @@ public final class RadialMenus {
         return true;
     }
 
-    /** The actions for a hit (blocks, entities, bots, air), then for a zone and a point, in menu order. */
+    /** The actions for a hit (blocks, entities, bots, air), then for a zone, a point and a route, each group in menu order. */
     private List<RadialMenuScreen.Entry> contextEntries(final BridgeCore core, final Crosshair.@Nullable Hit hit, final SpatialIndex.@Nullable Item zone,
-            final SpatialIndex.@Nullable Item point, final String source, final List<String> bots) {
+            final SpatialIndex.@Nullable Item point, final SpatialIndex.@Nullable Item route, final String source, final List<String> bots) {
         final List<ActionDecl> matching = new ArrayList<>();
         for (final ActionDecl a : core.declarations().actions()) {
             if (hit != null && focusAllows.test(a.key()) && Crosshair.matches(a.data().target(), hit)) {
@@ -137,18 +146,87 @@ public final class RadialMenus {
                 entries.add(new RadialMenuScreen.Entry(a.data().label(), a.ownerName(), () -> actions.invoke(a, target, source, bots), false));
             }
         }
+        final List<ActionDecl> shared = new ArrayList<>();
         for (final ActionDecl a : core.declarations().actions()) {
-            final String type = a.data().target().type();
-            final SpatialIndex.Item it = type.equals("zone") ? zone : type.equals("point") ? point : null;
+            final SpatialIndex.Item it = sharedOf(a.data().target().type(), zone, point, route);
             if (it != null && focusAllows.test(a.key())
                     && TargetMatch.matchesFilter(a.data().target().ids(), a.data().target().tags(), it.name(), it.tags()::contains)) {
-                final Target target = new Target(type, null, null, null,
-                        new Vec3d((it.minX() + it.maxX()) / 2, (it.minY() + it.maxY()) / 2, (it.minZ() + it.maxZ()) / 2), null, it.key());
-                entries.add(new RadialMenuScreen.Entry(a.data().label() + ": " + it.name(), a.ownerName(),
-                        () -> actions.invoke(a, target, source, bots), false));
+                shared.add(a);
             }
         }
+        shared.sort(MENU_ORDER);
+        for (final ActionDecl a : shared) {
+            final String type = a.data().target().type();
+            final SpatialIndex.Item it = java.util.Objects.requireNonNull(sharedOf(type, zone, point, route));
+            final Target target = new Target(type, null, null, null,
+                    new Vec3d((it.minX() + it.maxX()) / 2, (it.minY() + it.maxY()) / 2, (it.minZ() + it.maxZ()) / 2), null, it.key());
+            entries.add(new RadialMenuScreen.Entry(a.data().label() + ": " + it.name(), a.ownerName(),
+                    () -> actions.invoke(a, target, source, bots), false));
+        }
         return entries;
+    }
+
+    private static SpatialIndex.@Nullable Item sharedOf(final String type, final SpatialIndex.@Nullable Item zone, final SpatialIndex.@Nullable Item point,
+            final SpatialIndex.@Nullable Item route) {
+        return switch (type) {
+            case "zone" -> zone;
+            case "point" -> point;
+            case "route" -> route;
+            default -> null;
+        };
+    }
+
+    private static SpatialIndex.@Nullable Item kindOrNull(final SpatialIndex.Item it, final SpatialIndex.Kind kind) {
+        return it.kind() == kind ? it : null;
+    }
+
+    private static List<SpatialIndex.Item> ofKind(final BridgeCore core, final SpatialIndex.Kind kind) {
+        final List<SpatialIndex.Item> out = new ArrayList<>();
+        for (final SpatialIndex.Item it : core.spatial().all()) {
+            if (it.kind() == kind) {
+                out.add(it);
+            }
+        }
+        return out;
+    }
+
+    /** The zone around the block looked at, else the zone surface in front of it, else the zone the player is in. */
+    private static SpatialIndex.@Nullable Item zoneAt(final BridgeCore core, final Crosshair.Hit hit, final Gizmo.Ray ray, final double reach) {
+        final net.minecraft.world.phys.Vec3 at = hit.block() != null ? net.minecraft.world.phys.Vec3.atCenterOf(hit.block()) : hit.location();
+        final SpatialIndex.Item around = firstZone(core.spatial().containing(at.x, at.y, at.z));
+        if (around != null) {
+            return around;
+        }
+        final SpatialIndex.Item seen = Gizmo.pickShape(ofKind(core, SpatialIndex.Kind.ZONE), ray, reach);
+        if (seen != null) {
+            return seen;
+        }
+        final LocalPlayer p = Minecraft.getInstance().player;
+        return p == null ? null : firstZone(core.spatial().containing(p.getX(), p.getY(), p.getZ()));
+    }
+
+    private static SpatialIndex.@Nullable Item firstZone(final List<SpatialIndex.Item> items) {
+        for (final SpatialIndex.Item it : items) {
+            if (it.kind() == SpatialIndex.Kind.ZONE) {
+                return it;
+            }
+        }
+        return null;
+    }
+
+    /** The point whose marker is looked at, else the point within 2.5 blocks of the block looked at. */
+    private static SpatialIndex.@Nullable Item pointAt(final BridgeCore core, final Crosshair.Hit hit, final Gizmo.Ray ray, final double reach) {
+        final SpatialIndex.Item seen = Gizmo.pickShape(ofKind(core, SpatialIndex.Kind.POINT), ray, reach);
+        if (seen != null) {
+            return seen;
+        }
+        final net.minecraft.world.phys.Vec3 at = hit.block() != null ? net.minecraft.world.phys.Vec3.atCenterOf(hit.block()) : hit.location();
+        return core.spatial().nearest(at.x, at.y, at.z, SpatialIndex.Kind.POINT, 2.5);
+    }
+
+    /** The route whose line is looked at. */
+    private static SpatialIndex.@Nullable Item routeAt(final BridgeCore core, final Gizmo.Ray ray, final double reach) {
+        return Gizmo.pickShape(ofKind(core, SpatialIndex.Kind.ROUTE), ray, reach);
     }
 
     /**
@@ -180,31 +258,6 @@ public final class RadialMenus {
         }
         Minecraft.getInstance().gui.setScreen(new RadialMenuScreen(Component.literal(e.localId()), I18n.get("mineflayer_bridge.actions.empty.object"),
                 entries, key));
-    }
-
-    /**
-     * The shared zone around the block the crosshair is on (else around the player), or the shared
-     * point within 2.5 blocks of it.
-     */
-    private static SpatialIndex.@Nullable Item spatialAt(final BridgeCore core, final Crosshair.Hit hit, final SpatialIndex.Kind kind) {
-        final net.minecraft.world.phys.Vec3 at = hit.block() != null ? net.minecraft.world.phys.Vec3.atCenterOf(hit.block()) : hit.location();
-        if (kind == SpatialIndex.Kind.POINT) {
-            return core.spatial().nearest(at.x, at.y, at.z, SpatialIndex.Kind.POINT, 2.5);
-        }
-        for (final SpatialIndex.Item it : core.spatial().containing(at.x, at.y, at.z)) {
-            if (it.kind() == SpatialIndex.Kind.ZONE) {
-                return it;
-            }
-        }
-        final LocalPlayer p = Minecraft.getInstance().player;
-        if (p != null) {
-            for (final SpatialIndex.Item it : core.spatial().containing(p.getX(), p.getY(), p.getZ())) {
-                if (it.kind() == SpatialIndex.Kind.ZONE) {
-                    return it;
-                }
-            }
-        }
-        return null;
     }
 
     private static Vec3d vec(final net.minecraft.world.phys.Vec3 v) {

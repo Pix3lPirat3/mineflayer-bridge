@@ -11,11 +11,11 @@ the mod works on any server and gives the player no advantage there.
 
 ## Status
 
-Pre-release, version 0.1.0-alpha.19, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
+Pre-release, version 0.1.0-alpha.20, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
 [GitHub Releases](https://github.com/Pix3lPirat3/mineflayer-bridge/releases) only: the Fabric and
 NeoForge jars and the plugin tarball.
 
-API reference for 0.1.0-alpha.19: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
+API reference for 0.1.0-alpha.20: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
 [mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/) and
 [client extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/client/).
 
@@ -43,12 +43,12 @@ connect. Turn on "Ask before allowing local bots" in the settings to approve eac
 Node 22.12 or newer. Install the plugin from the release tarball:
 
 ```sh
-npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.19/mineflayer-bridge-0.1.0-alpha.19.tgz
+npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.20/mineflayer-bridge-0.1.0-alpha.20.tgz
 ```
 
 npm 12 refuses tarball URLs unless `allow-remote` permits them, so later installs of the same
 project need it too: put `allow-remote=all` in the project's `.npmrc`. Or download the tarball and
-`npm install ./mineflayer-bridge-0.1.0-alpha.19.tgz`, which needs no setting.
+`npm install ./mineflayer-bridge-0.1.0-alpha.20.tgz`, which needs no setting.
 
 The package is ESM; CommonJS code can `require()` it on Node 22.12+. TypeScript users get
 `bot.bridge` on mineflayer's `Bot` type with:
@@ -340,8 +340,19 @@ bot.bridge.actions.register('attack', {
   run: (target, ctx) => attack(target.entity, ctx.bots),
 })
 
+// Shared zones, points and routes: ids match the object's name, tags its tags.
+bot.bridge.actions.register('harvest', {
+  label: 'Harvest',
+  target: { type: 'zone', tags: ['farm'] },
+  run: (target) => harvest(bot.bridge.shared.zones.get(target.objectKey)),
+})
+
 bot.bridge.keybinds.register('stop', { label: 'Stop', keys: ['g'], onPress: () => bot.pathfinder.stop() })
 ```
+
+A `zone`, `point` or `route` action shows in the R menu while the player looks at that object's
+name label, its outline or marker, or a block inside the zone, or stands in the zone; the target
+carries the object's `objectKey`.
 
 Completion can come from client-side sources (`'players'`, `'entities'`, `'block-ids'`, ...) or
 from a function in the bot. Selectors such as `@looked` and `@nearest[type=zombie]` are resolved by
@@ -742,7 +753,8 @@ view of a window.
 
 `selection()` adds a *Region select* tool to the tool wheel: left click sets corner 1 on the block
 you look at, right click corner 2. The box and its numbered corners are drawn on the `selection`
-layer, and the bot reads the result. It loads into a controller as well as a bot.
+layer with a label over the box, such as `Selection 5×1×7 · sel`, and the bot reads the result. It
+loads into a controller as well as a bot.
 
 ```js
 await bot.bridge.use(selection())
@@ -755,11 +767,12 @@ bot.bridge.commands.register('farm', {
   },
 })
 sel.set(1, [0, 64, 0])   // corners can also be set from code
+sel.setLabel({ title: 'Editing farm', hint: 'farm save' })   // until clear()
 sel.clear()
 ```
 
-Options: `tool: false` (API only), `label`, `icon`, `notify: false` to stay quiet on clicks, and
-`color` for the box.
+Options: `tool: false` (API only), `label`, `icon`, `notify: false` to stay quiet on clicks,
+`color` for the box, and `title` (default `Selection`) and `hint` (default none) for its label.
 
 #### Schematics
 
@@ -925,7 +938,7 @@ const frames = readRecording(readFileSync('./runs/today.mfbrec'))   // [{ direct
 ## API reference
 
 Every option, handle and event is documented in the reference generated from the code. It describes
-the latest release, 0.1.0-alpha.19; older versions are not kept.
+the latest release, 0.1.0-alpha.20; older versions are not kept.
 
 - [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/): the `mineflayer-bridge` package.
 - [Mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/): for mods that

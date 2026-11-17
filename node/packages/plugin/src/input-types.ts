@@ -46,10 +46,12 @@ export interface SurfaceOptions {
 
 /**
  * What a target is: `block`, `entity`, `item`, `bot` (a connected bot's player entity), `zone`,
- * `point`, `waypoint`, `element` (an interactive display), `notification`, `air` (nothing under the
- * crosshair), `none` (no target at all, see `NO_TARGET`), or a type an extension defines.
+ * `point` and `route` (shared objects: looked at by their name label, outline or marker, and a
+ * zone also by a block inside it or by standing in it), `waypoint`, `element` (an interactive
+ * display), `notification`, `air` (nothing under the crosshair), `none` (no target at all, see
+ * `NO_TARGET`), or a type an extension defines.
  */
-export type TargetType = 'block' | 'entity' | 'item' | 'bot' | 'zone' | 'point' | 'waypoint' | 'element' | 'notification' | 'air' | 'none' | (string & {});
+export type TargetType = 'block' | 'entity' | 'item' | 'bot' | 'zone' | 'point' | 'route' | 'waypoint' | 'element' | 'notification' | 'air' | 'none' | (string & {});
 
 /** A plain position or vector in blocks, as returned by picks and targets. */
 export interface Vec3Value {
@@ -64,10 +66,13 @@ export interface Vec3Value {
 export interface TargetFilter {
   /** Target type. Picks default it to their own kind. */
   type?: TargetType;
-  /** Registry ids or entity types, e.g. `minecraft:chest` or `minecraft:cow`; for `bot` targets, bot usernames. */
+  /**
+   * Registry ids or entity types, e.g. `minecraft:chest` or `minecraft:cow`; for `bot` targets, bot
+   * usernames; for `zone`, `point` and `route` targets, the object's name.
+   */
   ids?: readonly string[];
   /**
-   * Block, item or entity tags, e.g. `c:chests`; any one matches. Entities also have kind tags the
+   * Block, item or entity tags, e.g. `c:chests`, or a shared object's tags; any one matches. Entities also have kind tags the
    * game lacks: `mineflayer_bridge:player` (not a bot), `mineflayer_bridge:bot`,
    * `mineflayer_bridge:hostile`, `mineflayer_bridge:animal` (other living mobs) and
    * `mineflayer_bridge:item` (items on the ground).
@@ -724,7 +729,7 @@ export interface Target {
   pos?: Vec3Value;
   /** Item id for `item`. */
   item?: string;
-  /** Object key for `bot` (its owner prefix), `zone`, `point`, `waypoint` and `element`. */
+  /** Object key for `bot` (its owner prefix), `zone`, `point`, `route`, `waypoint` and `element`. */
   objectKey?: string;
 }
 

@@ -189,6 +189,35 @@ class GizmoTest {
     }
 
     @Test
+    void shapeAndLabelPicksTakeObjectsThatCannotBeEdited() {
+        final ZoneData z = box(0, 60, 0, 9, 69, 9);
+        final SpatialIndex.Item locked = item("shared/bridge:zones/a", CoreKinds.ZONE,
+                new ZoneData("Farm", z.boxes(), null, null, null, null, z.color(), z.fill(), true, false));
+        final Gizmo.Ray atWall = new Gizmo.Ray(5, 65, 25, 0, 0, -1);
+        assertNull(Gizmo.pick(List.of(locked), atWall, 64));
+        assertEquals(locked, Gizmo.pickShape(List.of(locked), atWall, 64));
+
+        final double[] label = SpatialShapes.labelAt(locked);
+        assertNotNull(label);
+        assertEquals(70.5, label[1], 1e-9, "half a block above the top");
+        final Gizmo.Ray atLabel = new Gizmo.Ray(label[0] + 0.3, label[1] + 0.1, 25, 0, 0, -1);
+        assertNull(Gizmo.pickShape(List.of(locked), atLabel, 64), "the ray passes above the zone");
+        assertEquals(locked, Gizmo.pickLabel(List.of(locked), atLabel, 64));
+        assertNull(Gizmo.pickLabel(List.of(locked), atLabel, 10), "the label is behind the block");
+        assertNull(Gizmo.pickLabel(List.of(locked), new Gizmo.Ray(label[0] + 3, label[1], 25, 0, 0, -1), 64), "beside the label");
+        assertNull(Gizmo.pickLabel(List.of(locked), new Gizmo.Ray(label[0], label[1] + 1, 25, 0, 0, -1), 64), "above the label");
+
+        final SpatialIndex.Item hidden = item("shared/bridge:zones/b", CoreKinds.ZONE,
+                new ZoneData("Farm", z.boxes(), null, null, null, null, z.color(), z.fill(), false, true));
+        assertNull(SpatialShapes.labelAt(hidden), "a zone that shows no label has none to pick");
+
+        final SpatialIndex.Item point = item("shared/bridge:zones/p", CoreKinds.POINT, new PointData("Home", new Vec3d(5, 65, 15)));
+        final double[] above = SpatialShapes.labelAt(point);
+        assertNotNull(above);
+        assertEquals(point, Gizmo.pickLabel(List.of(point), new Gizmo.Ray(5, above[1], 25, 0, 0, -1), 64));
+    }
+
+    @Test
     void shapesMergeZonesAndHideTheEditedObject() {
         final SpatialIndex index = SpatialIndex.build(1, List.of(
                 new RenderEntry(1, "shared/bridge:zones/a", "shared", "bridge:zones", "a", null, CoreKinds.ZONE,

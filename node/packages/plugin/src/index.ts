@@ -44,7 +44,7 @@ export { MapMessages, type MapOrderType, type MapMessagePayloads, type BridgeMap
 export type { ExtensionChannel } from './types.ts';
 export { trails, type TrailMark, type TrailPoint, type TrailsApi } from './trails.ts';
 export { ping, type Ping, type PingApi } from './ping.ts';
-export { selection, selectionArea, type SelectionApi, type SelectionArea } from './selection.ts';
+export { selection, selectionArea, type SelectionApi, type SelectionArea, type SelectionLabel } from './selection.ts';
 export { PingMessages, type PingMessagePayloads, type BridgePingMark } from './generated/bridge-ping.ts';
 export { statusTag, type StatusTagApi } from './status-tag.ts';
 export {

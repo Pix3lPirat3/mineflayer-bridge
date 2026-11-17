@@ -224,27 +224,89 @@ public final class Gizmo {
         SpatialIndex.Item best = null;
         double bestT = maxDistance;
         for (final SpatialIndex.Item it : items) {
-            if (!it.editable()) {
-                continue;
-            }
-            final double t = switch (it.kind()) {
-                case POINT -> GizmoMath.raySphere(r.ox(), r.oy(), r.oz(), r.dx(), r.dy(), r.dz(), it.minX(), it.minY(), it.minZ(), 0.45);
-                case ZONE -> {
-                    final ZoneShape shape = it.zone();
-                    yield shape == null ? -1 : surface(ZoneSurface.of(shape).quads(), r);
-                }
-                case ROUTE -> {
-                    final SpatialEdits.Insertion near = it.data() instanceof RouteData route ? SpatialEdits.insertion(route, r) : null;
-                    yield near == null ? -1 : (near.pos().x() - r.ox()) * r.dx() + (near.pos().y() - r.oy()) * r.dy()
-                            + (near.pos().z() - r.oz()) * r.dz();
-                }
-            };
+            final double t = it.editable() ? shapeDistance(it, r) : -1;
             if (t >= 0 && t < bestT) {
                 bestT = t;
                 best = it;
             }
         }
         return best;
+    }
+
+    /**
+     * Returns the object whose shape a ray meets first, editable or not: a zone surface, point
+     * marker or route line in front of {@code maxDistance}.
+     *
+     * @param maxDistance ray length, usually the distance to the block under the crosshair
+     * @return the object, or null
+     */
+    public static SpatialIndex.@Nullable Item pickShape(final List<SpatialIndex.Item> items, final Ray r, final double maxDistance) {
+        SpatialIndex.Item best = null;
+        double bestT = maxDistance;
+        for (final SpatialIndex.Item it : items) {
+            final double t = shapeDistance(it, r);
+            if (t >= 0 && t < bestT) {
+                bestT = t;
+                best = it;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Returns the object whose name label a ray passes through first, in front of
+     * {@code maxDistance}. Labels are read as the flat boxes they are drawn as.
+     *
+     * @param maxDistance ray length
+     * @return the object, or null
+     */
+    public static SpatialIndex.@Nullable Item pickLabel(final List<SpatialIndex.Item> items, final Ray r, final double maxDistance) {
+        SpatialIndex.Item best = null;
+        double bestT = maxDistance;
+        for (final SpatialIndex.Item it : items) {
+            final double[] at = SpatialShapes.labelAt(it);
+            if (at == null) {
+                continue;
+            }
+            final double t = labelDistance(at, it.name(), r);
+            if (t >= 0 && t < bestT) {
+                bestT = t;
+                best = it;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Distance along the ray to a label's centre when the ray passes through it, else -1.
+     *
+     * @param at x, y, z and scale of the label, from {@link SpatialShapes#labelAt}
+     */
+    static double labelDistance(final double[] at, final String text, final Ray r) {
+        final double t = (at[0] - r.ox()) * r.dx() + (at[1] - r.oy()) * r.dy() + (at[2] - r.oz()) * r.dz();
+        if (t <= 0) {
+            return -1;
+        }
+        final double[] p = r.at(t);
+        final double dx = at[0] - p[0];
+        final double dz = at[2] - p[2];
+        final double halfWidth = SpatialShapes.labelHalfWidth(text, at[3]);
+        return Math.abs(at[1] - p[1]) <= SpatialShapes.labelHalfHeight(at[3]) && dx * dx + dz * dz <= halfWidth * halfWidth ? t : -1;
+    }
+
+    private static double shapeDistance(final SpatialIndex.Item it, final Ray r) {
+        return switch (it.kind()) {
+            case POINT -> GizmoMath.raySphere(r.ox(), r.oy(), r.oz(), r.dx(), r.dy(), r.dz(), it.minX(), it.minY(), it.minZ(), 0.45);
+            case ZONE -> {
+                final ZoneShape shape = it.zone();
+                yield shape == null ? -1 : surface(ZoneSurface.of(shape).quads(), r);
+            }
+            case ROUTE -> {
+                final SpatialEdits.Insertion near = it.data() instanceof RouteData route ? SpatialEdits.insertion(route, r) : null;
+                yield near == null ? -1 : (near.pos().x() - r.ox()) * r.dx() + (near.pos().y() - r.oy()) * r.dy()
+                        + (near.pos().z() - r.oz()) * r.dz();
+            }
+        };
     }
 
     private static double surface(final double[] q, final Ray r) {

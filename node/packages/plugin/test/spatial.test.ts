@@ -173,6 +173,37 @@ describe('shared spatial views', () => {
   });
 });
 
+describe('context actions on shared objects', () => {
+  it('offers zone, point and route actions on the object by its name and tags, and runs them with its key', async () => {
+    const a = await alice();
+    // The player is in the bot's world, so the bot is attached and its actions show.
+    e.mod.setPlayerContext(OVERWORLD);
+    const seen: unknown[] = [];
+    a.actions.register('edit', { label: 'Edit', target: { type: 'zone' }, order: 1, run: (t, ctx) => void seen.push([t.type, t.objectKey, t.pos, ctx.source]) });
+    a.actions.register('harvest', { label: 'Harvest', target: { type: 'zone', tags: ['farm'] }, run: () => 'harvesting' });
+    a.actions.register('settings', { label: 'Settings', target: { type: 'zone', ids: ['Barn'] }, order: -1, run: () => undefined });
+    a.actions.register('go', { label: 'Go there', target: { type: 'point' }, run: () => 'going' });
+    a.actions.register('walk', { label: 'Walk it', target: { type: 'route' }, run: () => 'walking' });
+    a.actions.register('mine', { label: 'Mine', target: { type: 'block' }, run: () => undefined });
+    const { key } = await a.shared.zones.create(farm, { id: 'farm' });
+    const barn = e.mod.playerCreateShared('core:zone', { name: 'Barn', boxes: [{ min: { x: 20, y: 60, z: 0 }, max: { x: 23, y: 63, z: 3 } }] }, { id: 'barn' }).key;
+    const spawn = e.mod.playerCreateShared('core:point', { name: 'Spawn', pos: { x: 0, y: 64, z: 0 } }, { id: 'spawn' }).key;
+    const lane = e.mod.playerCreateShared('core:route', { name: 'Lane', nodes: [{ pos: { x: 0, y: 64, z: 0 } }, { pos: { x: 4, y: 64, z: 0 } }] }, { id: 'lane' }).key;
+    await until(() => e.mod.sharedActions(key).length === 2);
+
+    expect(e.mod.sharedActions(key).map((d) => d.id)).toEqual(['harvest', 'edit']);
+    expect(e.mod.sharedActions(barn).map((d) => d.id)).toEqual(['settings', 'edit']);
+    expect(e.mod.sharedActions(spawn).map((d) => d.id)).toEqual(['go']);
+    expect(e.mod.sharedActions(lane).map((d) => d.id)).toEqual(['walk']);
+
+    expect(await e.mod.runSharedAction(key, 'harvest')).toMatchObject({ ok: true, message: 'harvesting' });
+    await e.mod.runSharedAction(barn, 'edit');
+    expect(seen).toEqual([['zone', barn, { x: 22, y: 62, z: 2 }, 'menu']]);
+    await expect(e.mod.runSharedAction(barn, 'harvest')).rejects.toThrow(/offers no action harvest/);
+    expect(() => e.mod.sharedActions('shared/bridge:zones/none')).toThrow(/no zone, point or route/);
+  });
+});
+
 describe('private definitions', () => {
   it('declares zones, points and routes on layers as handles with geometry', async () => {
     const a = await alice();

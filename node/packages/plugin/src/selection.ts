@@ -13,6 +13,14 @@ export interface SelectionArea {
   readonly max: Vec3Value;
 }
 
+/** What the label over the box says: `<title> 5×1×7 · <hint>`. */
+export interface SelectionLabel {
+  /** Before the size, such as `Selection` or `Editing farm`. Default: the `title` option. */
+  readonly title?: string;
+  /** After the size, how to use it, such as `sel` or `@eco zone save`. Default: the `hint` option; none when empty. */
+  readonly hint?: string;
+}
+
 /** Public API of `bridge:selection`, from `bot.bridge.get(selection)`. */
 export interface SelectionApi {
   /** The first corner (left click), as a block position, or `undefined`. */
@@ -26,8 +34,16 @@ export interface SelectionApi {
    * @throws BridgeError `invalid_message` when `which` is not 1 or 2 or `pos` is not three finite numbers.
    */
   set(which: 1 | 2, pos: Vec3Like): void;
-  /** Forgets both corners and removes the drawing. */
+  /** Forgets both corners, removes the drawing and puts the label back to the options. */
   clear(): void;
+  /** The text over the box, such as `Selection 5×1×7 · sel`, or `undefined` with nothing selected. */
+  readonly label: string | undefined;
+  /**
+   * Changes what the label over the box says, for this selection: `clear` puts it back. Left out,
+   * or a field left out, is the option's text.
+   * @throws BridgeError `invalid_message` when a field is not a string.
+   */
+  setLabel(label?: SelectionLabel): void;
   /**
    * The selection in words: `5 x 1 x 7 (35 blocks) from 1 64 -2 to 5 64 4`, with `; corner 2 not
    * set yet` while one corner is missing, or `nothing selected`.
@@ -54,11 +70,21 @@ function sizeOf(a: SelectionArea): Vec3Value {
 
 const at = (p: Vec3Value): string => `${p.x} ${p.y} ${p.z}`;
 
+/** Labels read `{var}` as templates; the text here is shown as given. */
+const literal = (s: string): string => s.replaceAll('{', '(').replaceAll('}', ')');
+
+/** The label over the box: the title, the size and the hint. */
+function selectionLabel(a: SelectionArea, title: string, hint: string): string {
+  const s = sizeOf(a);
+  return [title, `${s.x}×${s.y}×${s.z}`].filter((t) => t !== '').join(' ') + (hint === '' ? '' : ` · ${hint}`);
+}
+
 /**
  * `bridge:selection`: a region the player selects with two corners. It adds a tool to the tool
  * wheel (left click sets corner 1 on the block under the crosshair, right click corner 2), draws
- * the box and its numbered corners on the `selection` layer, and keeps the corners for the bot to
- * read, such as the area of a job. It works in a controller session as well as for a bot; a bot's
+ * the box and its numbered corners on the `selection` layer, with a label over the box that says
+ * what it is, its size and how to use it ({@link SelectionApi.setLabel}), and keeps the corners
+ * for the bot to read, such as the area of a job. It works in a controller session as well as for a bot; a bot's
  * drawing is bound to the bot's world, a controller's shows in whatever world the player is in.
  *
  * Options:
@@ -68,21 +94,26 @@ const at = (p: Vec3Value): string => `${p.x} ${p.y} ${p.z}`;
  * - `notify` (default true): tell the player what each click selected, and how the tool works
  *   when they pick it.
  * - `color` (default `#ffaa00`): colour of the box. Corner 1 is green, corner 2 red.
+ * - `title` (default `Selection`) and `hint` (default empty): the label over the box,
+ *   `<title> 5×1×7 · <hint>`; the hint is left out when empty.
  */
 export const selection = defineExtension({
   id: 'bridge:selection',
-  version: '1.0.0',
+  version: '1.1.0',
   options: {
     tool: { type: 'boolean', default: true },
     label: { type: 'string', default: 'Region select' },
     icon: { type: 'string', default: 'minecraft:golden_hoe' },
     notify: { type: 'boolean', default: true },
     color: { type: 'string', default: '#ffaa00' },
+    title: { type: 'string', default: 'Selection' },
+    hint: { type: 'string', default: '' },
   },
   setup(ctx, options): SelectionApi {
     const corners: [Vec3Value | undefined, Vec3Value | undefined] = [undefined, undefined];
     const listeners = new Set<(area: SelectionArea | undefined) => void>();
     const layer = ctx.layer('selection', { category: 'planning' });
+    let labelled: SelectionLabel = {};
 
     const area = (): SelectionArea | undefined => selectionArea(corners[0], corners[1]);
     const describe = (): string => {
@@ -94,12 +125,19 @@ export const selection = defineExtension({
       return missing === undefined ? text : `${text}; corner ${missing} not set yet`;
     };
 
-    const changed = (): void => {
+    const label = (): string | undefined => {
+      const a = area();
+      return a === undefined ? undefined : selectionLabel(a, labelled.title ?? options.title, labelled.hint ?? options.hint);
+    };
+
+    const draw = (): void => {
       const a = area();
       ctx.transaction(() => {
         layer.clear();
         if (a === undefined) return;
         layer.box('box', a.min, sizeOf(a), { color: options.color });
+        // Above the corner numbers, so neither hides the other.
+        layer.label('title', { x: (a.min.x + a.max.x + 1) / 2, y: a.max.y + 2.1, z: (a.min.z + a.max.z + 1) / 2 }, literal(label()!), { color: options.color });
         corners.forEach((c, i) => {
           if (c === undefined) return;
           const color = CORNER_COLORS[i]!;
@@ -107,6 +145,11 @@ export const selection = defineExtension({
           layer.label(`label${i + 1}`, { x: c.x + 0.5, y: c.y + 1.5, z: c.z + 0.5 }, String(i + 1), { color });
         });
       });
+    };
+
+    const changed = (): void => {
+      draw();
+      const a = area();
       for (const fn of [...listeners]) {
         try {
           fn(a);
@@ -158,10 +201,22 @@ export const selection = defineExtension({
       area,
       set,
       clear() {
+        labelled = {};
         if (corners[0] === undefined && corners[1] === undefined) return;
         corners[0] = undefined;
         corners[1] = undefined;
         changed();
+      },
+      get label() {
+        return label();
+      },
+      setLabel(l = {}) {
+        if (typeof l !== 'object' || l === null) throw new BridgeError('invalid_message', 'selection label must be an object with title and hint');
+        for (const k of ['title', 'hint'] as const) {
+          if (l[k] !== undefined && typeof l[k] !== 'string') throw new BridgeError('invalid_message', `selection label ${k} must be a string`);
+        }
+        labelled = { ...(l.title === undefined ? {} : { title: l.title }), ...(l.hint === undefined ? {} : { hint: l.hint }) };
+        draw();
       },
       describe,
       on(_event, fn) {
