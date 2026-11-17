@@ -584,6 +584,28 @@ export class MockMod {
   }
 
   /**
+   * The context actions the radial menu offers on an object (its key under the crosshair): the
+   * ones its `traits.actions` name, then `element` actions of the focused bot whose tag filter
+   * matches its `interactive.tags` (an action with no filter matches every object), sorted by
+   * owner, `order` and label.
+   * @throws BridgeError `invalid_message` when there is no object at `key`.
+   */
+  objectActions(key: string): MockDeclaration<'core:action'>[] {
+    return this.core.chat.objectActions(key);
+  }
+
+  /**
+   * Picks an action from an object's radial menu, as the player looking at it would, and resolves
+   * with the bot's `invocation.result`. The target is `{ type: 'element', objectKey: key }` and
+   * the source `menu`. `action` is the action's full key or its id, as in {@link objectActions}.
+   * Rejects with `invalid_message` when the object does not offer it; otherwise as
+   * {@link invokeAction}.
+   */
+  runObjectAction(key: string, action: string, timeoutMs = ANSWER_TIMEOUT_MS): Promise<MockInvocationResult> {
+    return this.core.chat.runObjectAction(key, action, timeoutMs);
+  }
+
+  /**
    * Runs a command with parsed `args`, as from the palette. `path` names the subcommand below the
    * root, e.g. `['start']`; it is left out of `command.invoked` when empty. An order (declared under
    * `~order/`) needs `bots`, the crew bots it is for; other commands take none.

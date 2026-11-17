@@ -307,6 +307,21 @@ export interface SchematicProgress {
   readonly total: number;
 }
 
+/**
+ * What the player can do to a placement from the context menu (R by default) while looking at its
+ * frame: turn it a quarter clockwise or counter-clockwise, as {@link SchematicHandle.rotate} with 1
+ * or -1, or remove it, as {@link SchematicHandle.remove}. The handle's `rotated` and `removed`
+ * events follow as for the bot's own calls.
+ */
+export type SchematicAction = 'rotate-cw' | 'rotate-ccw' | 'remove';
+
+const ACTIONS: readonly { readonly id: SchematicAction; readonly label: string; readonly icon?: string }[] = [
+  { id: 'rotate-cw', label: 'Turn clockwise' },
+  { id: 'rotate-ccw', label: 'Turn counter-clockwise' },
+  { id: 'remove', label: 'Remove', icon: 'mineflayer_bridge:trash' },
+];
+const ACTION_IDS: ReadonlySet<string> = new Set(ACTIONS.map((a) => a.id));
+
 /** Options of `load` and `place`. */
 export interface SchematicPlaceOptions {
   /** World position of the minimum corner. Floored. Default: the block the bot stands in. */
@@ -320,6 +335,12 @@ export interface SchematicPlaceOptions {
   rotation?: number;
   /** Shift+click on the frame moves the placement with the gizmo. Default: the extension's `editable` option. */
   editable?: boolean;
+  /**
+   * Actions offered in the context menu on the frame. Default: all three when the
+   * placement is editable, none otherwise. A placement that is neither editable nor has actions
+   * draws no frame.
+   */
+  actions?: readonly SchematicAction[];
 }
 
 /** Events of a placement. */
@@ -420,6 +441,12 @@ function placementName(name: string): string {
   return name;
 }
 
+function actionList(list: unknown): SchematicAction[] {
+  if (!Array.isArray(list)) throw new BridgeError('invalid_message', 'schematic actions must be a list');
+  for (const a of list) if (!ACTION_IDS.has(a as string)) throw new BridgeError('invalid_message', `unknown schematic action ${String(a)}; use ${[...ACTION_IDS].join(', ')}`);
+  return [...new Set(list as SchematicAction[])];
+}
+
 /** Templates read `{var}`; names are shown literally. */
 const literal = (s: string): string => s.replaceAll('{', '(').replaceAll('}', ')');
 
@@ -429,8 +456,11 @@ const literal = (s: string): string => s.replaceAll('{', '(').replaceAll('}', ')
  *
  * Each placement is a ghost-block shape in layer `schematic` (id: the placement name) plus an
  * outline box (`<name>~frame`) with `min` editable through the move gizmo: Shift+click the frame
- * and drag, and the ghost blocks follow. `moveTo` only changes the shape's origin, so no blocks are
- * sent again; `rotate` rebuilds the volume. With `hud`, a panel `schematics` shows a bar per
+ * and drag, and the ghost blocks follow. Looking at the frame, the context menu key (R by default)
+ * offers the placement's {@link SchematicAction}s: turn it or remove it. They are context actions
+ * of this extension's scope (`<name>~rotate-cw` and so on) bound to the frame through its
+ * `actions` trait, so they show on that frame only. `moveTo` only changes the shape's origin, so
+ * no blocks are sent again; `rotate` rebuilds the volume. With `hud`, a panel `schematics` shows a bar per
  * placement, updated by `progress()`. When `bridge:tasks` is loaded (optional), `progress()` also
  * reports through `task('Build <name>')`.
  *
@@ -504,6 +534,8 @@ export const schematic = defineExtension({
       private live = true;
       private readonly ghost: GhostBlocks;
       private readonly frame: BoxHandle | undefined;
+      /** Unregisters the frame's actions. */
+      private readonly unregister: (() => void)[] = [];
       /** The frame's declared `min`, which differs from {@link at} right after a gizmo edit. */
       private frameAt: Vec3i;
       private readonly listeners = new Map<string, Set<(...args: never[]) => void>>();
@@ -521,18 +553,26 @@ export const schematic = defineExtension({
         this.at = o.origin !== undefined ? blockPos(o.origin, 'origin') : this.botOrigin();
         this.frameAt = this.at;
         this.data = base.rotated(this.turns);
+        const editable = o.editable ?? options.editable;
+        const offered = actionList(o.actions ?? (editable ? ACTIONS.map((a) => a.id) : []));
         this.ghost = layer.ghostBlocks(name, this.volume(), { origin: this.at, alpha: options.alpha, diffAgainstWorld: true, hideMatching: options.hideMatching });
-        if (o.editable ?? options.editable) {
+        if (editable || offered.length > 0) {
           try {
             this.frame = layer.box(`${name}~frame`, this.at, this.data.size, {
               color: '#4fc3f7',
-              editable: [{ field: 'min', editor: 'gizmo', label: 'Origin' }],
+              ...(editable ? { editable: [{ field: 'min', editor: 'gizmo', label: 'Origin' }] } : {}),
               hover: { glow: '#4fc3f7' },
+              actions: offered.map((id) => `${name}~${id}`),
             });
+            for (const id of offered) this.unregister.push(this.registerAction(id));
           } catch (e) {
+            for (const off of this.unregister) off();
+            this.frame?.remove();
             this.ghost.remove();
             throw e;
           }
+        }
+        if (this.frame !== undefined && editable) {
           this.frame.onEdit((proposed, _current, info) => {
             if (info.fields.some((f) => f !== 'min')) return 'only the origin can be moved';
             const m = proposed.min;
@@ -543,6 +583,21 @@ export const schematic = defineExtension({
             if (this.live) this.moveTo(d.min);
           });
         }
+      }
+
+      private registerAction(id: SchematicAction): () => void {
+        const a = ACTIONS.find((x) => x.id === id)!;
+        return ctx.actions.register(`${this.name}~${id}`, {
+          label: a.label,
+          ...(a.icon === undefined ? {} : { icon: a.icon }),
+          // Bound to the frame by its trait; the tag keeps it off other objects' menus.
+          target: { type: 'element', tags: ['bridge:schematic'] },
+          order: ACTIONS.indexOf(a),
+          run: () => {
+            if (id === 'remove') this.remove();
+            else this.rotate(id === 'rotate-cw' ? 1 : -1);
+          },
+        });
       }
 
       private botOrigin(): Vec3i {
@@ -701,6 +756,7 @@ export const schematic = defineExtension({
         this.live = false;
         this.ghost.remove();
         this.frame?.remove();
+        for (const off of this.unregister) off();
         if (placements.get(this.name) === this) placements.delete(this.name);
         if (this.taskOpen) tasks()?.task(`Build ${this.name}`).done?.(`Removed ${this.name}`);
         this.taskOpen = false;

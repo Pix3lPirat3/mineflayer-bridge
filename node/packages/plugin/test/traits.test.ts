@@ -42,6 +42,26 @@ describe('object traits', () => {
     expect(hits[0]).toMatchObject({ id: 'site', layer: 'plan', input: 'primary', modifiers: { shift: true, ctrl: false, alt: false } });
   });
 
+  it('offers bound actions and element actions matching the tags on an object, and runs them on it', async () => {
+    const b = await attached();
+    const layer = b.layer('plan');
+    const targets: unknown[] = [];
+    const run = (t: unknown): void => void targets.push(t);
+    b.actions.register('inspect', { label: 'Inspect', target: { type: 'entity' }, order: 2, run });
+    b.actions.register('any', { label: 'Any', target: { type: 'element' }, order: 1, run });
+    b.actions.register('farm', { label: 'Farm', target: { type: 'element', tags: ['acme:farm'] }, run });
+    b.actions.register('mine', { label: 'Mine', target: { type: 'element', tags: ['acme:mine'] }, run });
+    layer.box('site', [0, 64, 0], 4, { actions: ['inspect'], interactive: { tags: ['acme:farm'], on: { primary: () => undefined } } });
+    const key = `${ALICE_PREFIX}/plan/site`;
+    await object(key);
+    await until(() => e.mod.objectActions(key).length === 3);
+    expect(e.mod.objectActions(key).map((a) => a.id)).toEqual(['farm', 'any', 'inspect']);
+    expect(await e.mod.runObjectAction(key, 'inspect')).toMatchObject({ ok: true });
+    expect(targets).toEqual([{ type: 'element', objectKey: key }]);
+    await expect(e.mod.runObjectAction(key, 'mine')).rejects.toThrow(/offers no action mine/);
+    expect(() => e.mod.objectActions(`${ALICE_PREFIX}/plan/none`)).toThrow(/no object/);
+  });
+
   it('replaces traits with a patch, clears them with a full write, and validates them', async () => {
     const b = await attached();
     const layer = b.layer('ui');

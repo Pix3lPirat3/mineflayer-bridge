@@ -55,6 +55,7 @@ export {
   schematic,
   type BlockLookup,
   type Schematic,
+  type SchematicAction,
   type SchematicApi,
   type SchematicBotLike,
   type SchematicHandle,

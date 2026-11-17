@@ -76,6 +76,39 @@ export class ChatCommands {
     );
   }
 
+  /**
+   * The actions the radial menu offers on an object: those its `traits.actions` name, then
+   * `element` actions of the focused bot whose tags match its `interactive.tags`, sorted by owner,
+   * `order` and label.
+   */
+  objectActions(key: string): MockDeclaration<'core:action'>[] {
+    const o = this.core.store.one(key);
+    if (o === undefined) throw new BridgeError('invalid_message', `mock: no object at ${key}`);
+    const bound = new Set(o.traits?.actions ?? []);
+    const tags = new Set((o.traits?.interactive?.tags ?? []).map((t) => t.replace(/^#/, '')));
+    const offered = this.core.store.declarations('core:action', '~action/').filter((a) => {
+      if (bound.has(a.key)) return true;
+      const t = a.data.target;
+      if (t.type !== 'element' || (t.ids?.length ?? 0) > 0) return false;
+      const owner = this.core.findSession(a.owner);
+      if (owner === undefined || !this.core.player.focused(owner)) return false;
+      return (t.tags ?? []).length === 0 || (t.tags ?? []).some((tag) => tags.has(tag.replace(/^#/, '')));
+    });
+    return offered.sort((a, b) => (a.owner < b.owner ? -1 : a.owner > b.owner ? 1 : 0) || (a.data.order ?? 0) - (b.data.order ?? 0) || (a.data.label < b.data.label ? -1 : a.data.label > b.data.label ? 1 : 0));
+  }
+
+  runObjectAction(key: string, action: string, timeoutMs: number): Promise<MockInvocationResult> {
+    let offered: MockDeclaration<'core:action'>[];
+    try {
+      offered = this.objectActions(key);
+    } catch (e) {
+      return Promise.reject(toBridgeError(e));
+    }
+    const a = offered.find((d) => d.key === action) ?? offered.find((d) => d.id === action);
+    if (a === undefined) return Promise.reject(new BridgeError('invalid_message', `mock: ${key} offers no action ${action}; it offers ${offered.map((d) => d.id).join(', ') || 'none'}`));
+    return this.invokeAction(a.key, { type: 'element', objectKey: key }, timeoutMs, { source: 'menu' });
+  }
+
   screenEvent(key: string, item: string, value: boolean | number | undefined, timeoutMs: number): Promise<MockInvocationResult> {
     const s = this.core.ownerSession(key, 'core:screen');
     checkScreenItem(this.core, key, item);

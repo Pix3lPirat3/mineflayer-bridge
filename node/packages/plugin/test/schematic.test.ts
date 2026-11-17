@@ -264,6 +264,56 @@ describe('bridge:schematic', () => {
     expect(api.placed).toEqual([]);
   });
 
+  it('offers turn and remove on the frame, which the handle events follow', async () => {
+    const { api } = await start();
+    const h = api.place(parseSchematic(schem(HOUSE)), { origin: [0, 64, 0], name: 'hut' });
+    const frameKey = shapeKey('hut~frame');
+    await until(() => e.mod.object(frameKey), 5000, 'frame');
+    await until(() => e.mod.objectActions(frameKey).length === 3, 5000, 'actions');
+    expect(e.mod.objectActions(frameKey).map((a) => [a.id, a.data.label])).toEqual([
+      ['hut~rotate-cw', 'Turn clockwise'],
+      ['hut~rotate-ccw', 'Turn counter-clockwise'],
+      ['hut~remove', 'Remove'],
+    ]);
+    const turns: number[] = [];
+    let removed = 0;
+    h.on('rotated', (r) => turns.push(r));
+    h.on('removed', () => removed++);
+
+    expect(await e.mod.runObjectAction(frameKey, 'hut~rotate-cw')).toMatchObject({ ok: true });
+    expect(h.rotation).toBe(1);
+    await e.mod.runObjectAction(frameKey, 'hut~rotate-ccw');
+    await e.mod.runObjectAction(frameKey, 'hut~rotate-ccw');
+    expect(turns).toEqual([1, 0, 3]);
+    await until(() => (e.mod.object(frameKey)?.data as { size: { z: number } }).size.z === 3, 5000, 'frame turned');
+
+    // Another placement's frame offers only its own actions.
+    api.place(parseSchematic(schem(HOUSE)), { origin: [9, 64, 0], name: 'shed', actions: ['remove'] });
+    await until(() => e.mod.object(shapeKey('shed~frame')), 5000, 'shed frame');
+    expect(e.mod.objectActions(shapeKey('shed~frame')).map((a) => a.id)).toEqual(['shed~remove']);
+    await expect(e.mod.runObjectAction(shapeKey('shed~frame'), 'hut~remove')).rejects.toThrow(/offers no action/);
+
+    await e.mod.runObjectAction(frameKey, 'hut~remove');
+    expect(h.alive).toBe(false);
+    expect(removed).toBe(1);
+    await until(() => e.mod.object(frameKey) === undefined && !e.mod.actions().some((a) => a.id.startsWith('hut~')), 5000, 'gone');
+    expect(api.placed.map((p) => p.name)).toEqual(['shed']);
+  });
+
+  it('draws a frame for actions alone, and none without either', async () => {
+    const { api } = await start();
+    api.place(parseSchematic(schem(HOUSE)), { origin: [0, 64, 0], name: 'a', editable: false, actions: ['rotate-cw'] });
+    api.place(parseSchematic(schem(HOUSE)), { origin: [0, 64, 0], name: 'b', editable: false });
+    const frame = await until(() => e.mod.object(shapeKey('a~frame')), 5000, 'frame');
+    expect(frame.traits?.editable).toBeUndefined();
+    await until(() => e.mod.objectActions(shapeKey('a~frame')).length === 1, 5000, 'action');
+    await until(() => e.mod.ghost(shapeKey('b')), 5000, 'ghost');
+    expect(e.mod.object(shapeKey('b~frame'))).toBeUndefined();
+    expect(e.mod.actions().filter((a) => a.id.startsWith('b~'))).toEqual([]);
+    expect(thrown(() => api.place(parseSchematic(schem(HOUSE)), { origin: [0, 0, 0], name: 'c', actions: ['flip' as never] })).message).toMatch(/unknown schematic action flip/);
+    expect(e.mod.ghost(shapeKey('c'))).toBeUndefined();
+  });
+
   it('lists materials, remaining blocks and progress, with a HUD bar', async () => {
     const bot = new BuilderBot('Alice');
     const { api } = await start(bot);

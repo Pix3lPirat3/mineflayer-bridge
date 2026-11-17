@@ -11,11 +11,11 @@ the mod works on any server and gives the player no advantage there.
 
 ## Status
 
-Pre-release, version 0.1.0-alpha.18, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
+Pre-release, version 0.1.0-alpha.19, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
 [GitHub Releases](https://github.com/Pix3lPirat3/mineflayer-bridge/releases) only: the Fabric and
 NeoForge jars and the plugin tarball.
 
-API reference for 0.1.0-alpha.18: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
+API reference for 0.1.0-alpha.19: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
 [mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/) and
 [client extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/client/).
 
@@ -43,12 +43,12 @@ connect. Turn on "Ask before allowing local bots" in the settings to approve eac
 Node 22.12 or newer. Install the plugin from the release tarball:
 
 ```sh
-npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.18/mineflayer-bridge-0.1.0-alpha.18.tgz
+npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.19/mineflayer-bridge-0.1.0-alpha.19.tgz
 ```
 
 npm 12 refuses tarball URLs unless `allow-remote` permits them, so later installs of the same
 project need it too: put `allow-remote=all` in the project's `.npmrc`. Or download the tarball and
-`npm install ./mineflayer-bridge-0.1.0-alpha.18.tgz`, which needs no setting.
+`npm install ./mineflayer-bridge-0.1.0-alpha.19.tgz`, which needs no setting.
 
 The package is ESM; CommonJS code can `require()` it on Node 22.12+. TypeScript users get
 `bot.bridge` on mineflayer's `Bot` type with:
@@ -761,6 +761,29 @@ sel.clear()
 Options: `tool: false` (API only), `label`, `icon`, `notify: false` to stay quiet on clicks, and
 `color` for the box.
 
+#### Schematics
+
+`schematic()` places Sponge `.schem` files (versions 1 to 3) as ghost blocks compared with your
+world: missing and wrong blocks are coloured, matching ones hidden. Each placement has a blue frame.
+Shift+click the frame and drag to move it; hold R while looking at the frame to turn it a quarter
+clockwise or counter-clockwise, or remove it. The bot hears every change through the handle's
+events, whether the player or the bot made it.
+
+```js
+await bot.bridge.use(schematic())
+const house = await bot.bridge.get(schematic).load('house.schem', { origin: [10, 64, -5] })
+house.on('moved', (origin) => replan(origin))
+house.on('rotated', (turns) => replan(house.origin))
+house.on('removed', () => stopBuilding())
+console.log(house.materials(), house.progress())   // { 'minecraft:stone': 6, ... } { placed: 5, total: 8 }
+```
+
+`actions` picks what the frame offers (`rotate-cw`, `rotate-ccw`, `remove`; all three by default
+while the placement is editable), and `editable: false` stops the gizmo. `rotate(steps)`,
+`moveTo(pos)` and `remove()` do the same from code. Options: `alpha`, `hideMatching`, `hud` (a
+progress bar per placement) and the rest in the API reference; `progress()` also reports to `tasks()`
+when it is loaded.
+
 ### What the server tells a bot
 
 `botConsole()` needs no code from the bot to answer "why did that not work": it logs what the
@@ -902,7 +925,7 @@ const frames = readRecording(readFileSync('./runs/today.mfbrec'))   // [{ direct
 ## API reference
 
 Every option, handle and event is documented in the reference generated from the code. It describes
-the latest release, 0.1.0-alpha.18; older versions are not kept.
+the latest release, 0.1.0-alpha.19; older versions are not kept.
 
 - [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/): the `mineflayer-bridge` package.
 - [Mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/): for mods that

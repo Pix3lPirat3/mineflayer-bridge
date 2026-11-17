@@ -36,6 +36,9 @@ public final class RadialMenus {
 
     /** Actions live under {@code ~action/<id>}. */
     private static final String ACTION_PREFIX = "~action/";
+    /** Menu order: by bot, then the action's {@code order}, then label. */
+    private static final Comparator<ActionDecl> MENU_ORDER = Comparator.comparing(ActionDecl::ownerName)
+            .thenComparingInt((ActionDecl a) -> a.data().order()).thenComparing(a -> a.data().label());
 
     private final UiContext ui;
     private final Predicate<String> focusAllows;
@@ -126,8 +129,7 @@ public final class RadialMenus {
                 matching.add(a);
             }
         }
-        matching.sort(Comparator.comparing(ActionDecl::ownerName).thenComparingInt((ActionDecl a) -> a.data().order())
-                .thenComparing(a -> a.data().label()));
+        matching.sort(MENU_ORDER);
         final List<RadialMenuScreen.Entry> entries = new ArrayList<>();
         for (final ActionDecl a : matching) {
             final Target target = Crosshair.target(java.util.Objects.requireNonNull(hit), a.data().target().type());
@@ -160,7 +162,7 @@ public final class RadialMenus {
         final var spec = e.interactive();
         final List<String> tags = spec == null || spec.tags() == null ? List.of() : spec.tags();
         final Target target = new Target("element", null, null, null, vec(Crosshair.eye().add(Crosshair.look().scale(2))), null, e.key());
-        final List<RadialMenuScreen.Entry> entries = new ArrayList<>();
+        final List<ActionDecl> offered = new ArrayList<>();
         for (final ActionDecl a : core.declarations().actions()) {
             final String local = a.key().startsWith(scope) ? a.key().substring(scope.length()) : null;
             final boolean isBound = bound.contains(a.key()) || local != null
@@ -168,8 +170,13 @@ public final class RadialMenus {
             final boolean byTag = a.data().target().type().equals("element")
                     && TargetMatch.matches(a.data().target(), "element", null, tags::contains);
             if (isBound || byTag && focusAllows.test(a.key())) {
-                entries.add(new RadialMenuScreen.Entry(a.data().label(), a.ownerName(), () -> actions.invoke(a, target, "menu"), false));
+                offered.add(a);
             }
+        }
+        offered.sort(MENU_ORDER);
+        final List<RadialMenuScreen.Entry> entries = new ArrayList<>();
+        for (final ActionDecl a : offered) {
+            entries.add(new RadialMenuScreen.Entry(a.data().label(), a.ownerName(), () -> actions.invoke(a, target, "menu"), false));
         }
         Minecraft.getInstance().gui.setScreen(new RadialMenuScreen(Component.literal(e.localId()), I18n.get("mineflayer_bridge.actions.empty.object"),
                 entries, key));
