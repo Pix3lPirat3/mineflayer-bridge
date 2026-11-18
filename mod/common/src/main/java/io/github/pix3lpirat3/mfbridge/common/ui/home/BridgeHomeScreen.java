@@ -10,6 +10,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.CommandPalette;
 import io.github.pix3lpirat3.mfbridge.common.ui.declared.DeclaredScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.declared.ScreenView;
 import io.github.pix3lpirat3.mfbridge.common.ui.devices.PairScreen;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.CrewRoster;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.DisplayText;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.TargetMatch;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 import net.minecraft.client.gui.screens.Screen;
@@ -232,14 +234,39 @@ public final class BridgeHomeScreen extends ScreenView implements io.github.pix3
         }
         offeredMenus(core, rows);
         final List<Presence> bots = core.presence().all();
-        if (bots.isEmpty()) {
+        final List<CrewRoster.Unseen> unseen = CrewRoster.unseen(core.declarations().crews(), bots);
+        if (bots.isEmpty() && unseen.isEmpty()) {
             rows.add(row(text(I18n.get("screen.mineflayer_bridge.home.bots.empty"), UiColors.LABEL)));
         }
         final long now = System.currentTimeMillis();
         for (final Presence p : bots) {
             botRows(rows, core, p, now);
         }
+        for (final CrewRoster.Unseen u : unseen) {
+            unseenRows(rows, core.declarations(), u);
+        }
         return rows;
+    }
+
+    /** A crew bot that has not connected in this game: its controller's buttons for it, such as one to connect it. */
+    private void unseenRows(final List<ScreenRow> rows, final DeclarationSnapshot decl, final CrewRoster.Unseen u) {
+        rows.add(row(heading(u.name())));
+        rows.add(row(text("§7" + I18n.get("screen.mineflayer_bridge.home.bot.unseen", u.controller()), UiColors.LABEL)));
+        if (!inWorld()) {
+            return;
+        }
+        final String owner = DisplayText.botOwner(u.name().toLowerCase(Locale.ROOT) + "@crew");
+        final List<ScreenItem> buttons = new ArrayList<>();
+        for (final ActionDecl a : decl.actions()) {
+            if (a.key().startsWith("ctl:") && a.scope() == Scope.GLOBAL && TargetMatch.matches(a.data().target(), "bot", u.name(), tag -> false)
+                    && a.data().target() != null && a.data().target().ids() != null) {
+                buttons.add(button(a.data().label(), a.data().icon(), I18n.get("mineflayer_bridge.from", a.ownerName()),
+                        font.width(a.data().label()) + (a.data().icon() == null ? 12 : 30), true, () -> ui.actions().runOnBot(a, owner)));
+            }
+        }
+        if (!buttons.isEmpty()) {
+            rows.add(new ScreenRow(buttons));
+        }
     }
 
     /** Offered menus are listed until the player picks one. */

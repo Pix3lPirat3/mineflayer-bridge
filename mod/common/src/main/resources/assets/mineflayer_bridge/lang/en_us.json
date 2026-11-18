@@ -299,6 +299,7 @@
   "screen.mineflayer_bridge.home.menu.use.tooltip": "The primary menu key opens it; Bridge home stays a button away",
   "screen.mineflayer_bridge.home.bot.online": "bot, online",
   "screen.mineflayer_bridge.home.bot.offline": "bot, offline, seen %s",
+  "screen.mineflayer_bridge.home.bot.unseen": "bot, not connected in this game; in the crew of %s",
   "screen.mineflayer_bridge.home.bot.same_world": "same world",
   "screen.mineflayer_bridge.home.bot.other_world": "other world",
   "screen.mineflayer_bridge.home.bot.not_listed": "not in the player list",
