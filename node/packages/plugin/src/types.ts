@@ -715,12 +715,23 @@ export interface NotifyOptions {
   sound?: string;
 }
 
-/** A button on a notification. */
-export interface NotifyButton {
+/** A button on a notification: it runs code, or puts a line into the chat box. */
+export type NotifyButton = NotifyRunButton | NotifySuggestButton;
+
+/** A notification button that runs code when clicked. */
+export interface NotifyRunButton {
   /** 1 to 32 characters. */
   label: string;
   /** Runs when the player clicks it; returns like an action, so a string shows as the reply. */
   run(ctx: InvocationContext): InvocationReturn;
+}
+
+/** A notification button that puts a line into the chat box, for the player to change or send. */
+export interface NotifySuggestButton {
+  /** 1 to 32 characters. */
+  label: string;
+  /** The line, 1 to 256 characters, such as `@Miner mine stone 64`. */
+  suggest: string;
 }
 
 /** Live session state, read through `bot.bridge.state`. */

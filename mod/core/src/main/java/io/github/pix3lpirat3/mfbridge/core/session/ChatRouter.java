@@ -351,6 +351,66 @@ final class ChatRouter implements ChatControls {
         return new BridgeClick(attach ? BridgeClick.Kind.ATTACHED : BridgeClick.Kind.DETACHED, target.displayName);
     }
 
+    @Override
+    public String describeOrderClick(String owner, String value) {
+        orderRuns(owner, value);
+        String v = value.strip();
+        int space = whitespaceAt(v);
+        return prefix + v.substring(0, space) + " " + v.substring(space).strip();
+    }
+
+    @Override
+    public ChatRoute.CapturedCommand runOrderClick(String owner, String value) {
+        List<CommandEngine.Run> found = orderRuns(owner, value);
+        List<ChatRoute.Run> runs = new ArrayList<>();
+        for (CommandEngine.Run r : found) {
+            runs.add(new ChatRoute.Run(r.set().name(), commands.invoke(r.invocation(), "chat")));
+        }
+        return new ChatRoute.CapturedCommand(found.getFirst().invocation().command().data().name(), runs);
+    }
+
+    /** What an order click runs: the addressed line, against the printing session's sets only. */
+    private List<CommandEngine.Run> orderRuns(String owner, String value) {
+        Session s = host.writer(owner);
+        if (s == null) {
+            throw new BridgeException("disconnected", "the session that printed this line is gone");
+        }
+        if (!host.permitted(s, Permission.CHAT)) {
+            throw new BridgeException("permission_denied", s.displayName + " runs on a device without the chat permission");
+        }
+        String v = value.strip();
+        int space = whitespaceAt(v);
+        String text = space < 0 ? "" : v.substring(space).strip();
+        if (space <= 0 || text.isEmpty()) {
+            throw new BridgeException("invalid_message", "an order click is <name> <command line>, not " + value);
+        }
+        String name = v.substring(0, space);
+        Addressee to = CommandEngine.find(commands.addressees(), name);
+        if (to == null) {
+            throw new BridgeException("invalid_message", name + " is not a bot, group or controller the player can address");
+        }
+        List<BotCommands> own = new ArrayList<>();
+        for (BotCommands b : to.commands()) {
+            if (b.owner().equals(owner)) {
+                own.add(b);
+            }
+        }
+        if (own.isEmpty()) {
+            throw new BridgeException("invalid_message", name + " takes no command or order of " + s.displayName);
+        }
+        CommandEngine.Parsed parsed = CommandEngine.parseAll(own, text, commands.context());
+        if (!parsed.runs().isEmpty()) {
+            return parsed.runs();
+        }
+        ParseResult.Help h = parsed.help();
+        if (h != null) {
+            throw new BridgeException("invalid_message", String.join(" ", words(h)) + ": choose a subcommand");
+        }
+        ParseResult.Failure f = parsed.failure();
+        throw new BridgeException("invalid_message", f == null ? "no command of " + s.displayName + " in " + text
+                : f.command() == null ? f.message() : f.command().data().name() + ": " + f.message());
+    }
+
     /** The printing session itself, which must be a bot. */
     private Session ownBot(String owner) {
         for (Session s : host.liveBots()) {

@@ -724,7 +724,11 @@ export abstract class SessionImpl implements BridgeSession, ScopeHost {
     if (buttons.length > MAX_NOTIFY_BUTTONS) throw new BridgeError('invalid_message', `a notification takes at most ${MAX_NOTIFY_BUTTONS} buttons`);
     for (const b of buttons) {
       if (typeof b.label !== 'string' || b.label.trim() === '' || b.label.length > 32) throw new BridgeError('invalid_message', 'a notification button needs a label of 1 to 32 characters');
-      if (typeof b.run !== 'function') throw new BridgeError('invalid_message', 'a notification button needs a run function');
+      const run = 'run' in b ? b.run : undefined;
+      const suggest = 'suggest' in b ? b.suggest : undefined;
+      if ((run === undefined) === (suggest === undefined)) throw new BridgeError('invalid_message', 'a notification button needs a run function or a line to suggest');
+      if (run !== undefined && typeof run !== 'function') throw new BridgeError('invalid_message', 'a notification button needs a run function');
+      if (suggest !== undefined && (typeof suggest !== 'string' || suggest.trim() === '' || suggest.length > 256)) throw new BridgeError('invalid_message', 'a notification button suggests a line of 1 to 256 characters');
     }
     const owner = this.core.owner;
     // A notification is about now, so nothing is kept for a session that is not open.
@@ -734,6 +738,7 @@ export abstract class SessionImpl implements BridgeSession, ScopeHost {
     }
     if (buttons.length > 0) {
       p.buttons = buttons.map((b) => {
+        if ('suggest' in b) return { label: b.label, suggest: b.suggest };
         const id = `bridge-notify-${++this.notifySeq}`;
         this.defaultFeatures.actions.register(id, { label: b.label, target: { type: 'notification' }, scope: 'global', run: (_t, ctx) => b.run(ctx) });
         this.notifyActions.push(id);

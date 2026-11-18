@@ -31,6 +31,7 @@ import type {
   IssuedDevice,
   LayerToggle,
   MockBlob,
+  MockChatDelivery,
   MockChatLine,
   MockChatOutcome,
   MockClickOptions,
@@ -932,6 +933,28 @@ export class MockMod {
    */
   sendChat(line: string): Promise<MockChatOutcome> {
     return this.core.chat.sendChat(line);
+  }
+
+  /**
+   * What the mod shows for an `order` chat click (`run_order`) on a line `owner` printed: the line
+   * it runs, with the chat prefix. The value is `<name> <command line>`, addressed as in
+   * {@link sendChat}, and reaches only the printing session's own commands and the orders it gives.
+   * @param owner Owner key of the session that printed the line, as in {@link printed}.
+   * @throws BridgeError `disconnected` when that session is gone, `permission_denied` when its device
+   *   lacks the `chat` permission, `invalid_message` for a name nobody answers to or a line that runs
+   *   none of its commands or orders (never sent as chat). The mod then shows the span without a click.
+   */
+  describeOrderClick(owner: string, value: string): string {
+    return this.core.chat.describeOrderClick(owner, value);
+  }
+
+  /**
+   * Runs an `order` chat click as the player's click does: every command set of the printing
+   * session that the addressed line parses in runs it, with the source `chat`. Rejects as
+   * {@link describeOrderClick} throws, sending nothing.
+   */
+  runOrderClick(owner: string, value: string): Promise<MockChatDelivery[]> {
+    return this.core.chat.runOrderClick(owner, value);
   }
 
   /**

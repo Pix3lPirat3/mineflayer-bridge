@@ -36,6 +36,7 @@ import io.github.pix3lpirat3.mfbridge.protocol.core.PromptKind;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PromptRequest;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PromptResult;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SessionKind;
+import io.github.pix3lpirat3.mfbridge.protocol.core.SessionClose;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SessionOpen;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -199,6 +200,65 @@ class ChatBridgeTest {
 
             assertEquals(new BridgeClick(BridgeClick.Kind.MENU, null), chat.runBridgeClick(eco, "menu"));
             assertEquals(new BridgeClick(BridgeClick.Kind.SETTINGS, null), chat.describeBridgeClick(InputTestSupport.OWNER, "settings"));
+        }
+    }
+
+    @Test
+    void orderClicksRunOnlyThePrintingSessionsCommandsAndOrders() throws Exception {
+        try (Harness h = ResumeTest.always(dir, b -> {}); FakePlugin p = FakePlugin.ready(h, "dev")) {
+            int miner = declare(h, p);
+            long req = p.request(0, CoreMessages.SESSION_OPEN, new SessionOpen(SessionKind.CONTROLLER, "eco", null, List.of()));
+            int ctl = p.await("opened", f -> f.is(CoreMessages.SESSION_OPENED) && f.env().req() == req)
+                    .decode(CoreMessages.SESSION_OPENED).sessionId();
+            String stop = "ctl:dev/eco/user:default/~order/stop";
+            String jobs = "ctl:dev/eco/user:default/~cmd/jobs";
+            p.upsert(ctl, obj(stop, CoreKinds.COMMAND, new CommandData("stop", null,
+                    List.of(new CommandArg("job", ArgType.INT, true, null, null, null, null, null, null)), null, null, true, true)));
+            p.upsert(ctl, obj(jobs, CoreKinds.COMMAND, new CommandData("jobs", null, List.of())));
+            p.upsert(ctl, obj("ctl:dev/eco/user:default/~crew/crew", CoreKinds.CREW, new CrewData(List.of("Miner"), List.of())));
+            p.sync();
+            h.tick();
+            ChatControls chat = h.core.chat();
+            String eco = h.core.declarations().crews().get(0).owner();
+
+            // Describing sends nothing; the tooltip shows the line with the player's prefix.
+            assertEquals("@Miner stop 3", chat.describeOrderClick(eco, " Miner  stop 3 "));
+            p.sync();
+            assertFalse(p.poll(f -> f.is(CoreMessages.COMMAND_INVOKED)), "describing runs nothing");
+
+            ChatRoute.CapturedCommand run = chat.runOrderClick(eco, "Miner stop 3");
+            assertEquals("stop", run.command());
+            CommandInvoked order = p.await(CoreMessages.COMMAND_INVOKED, ctl);
+            assertEquals(stop, order.command());
+            assertEquals(List.of("Miner"), order.bots());
+            assertEquals("{job=3}", order.args().toString());
+            assertEquals("chat", order.source());
+
+            chat.runOrderClick(eco, "all stop");
+            assertEquals(List.of("Miner"), p.await(CoreMessages.COMMAND_INVOKED, ctl).bots());
+            chat.runOrderClick(eco, "eco jobs");
+            assertEquals(jobs, p.await(CoreMessages.COMMAND_INVOKED, ctl).command());
+
+            // Another session's commands, free text, unknown names and bad lines are refused, never sent as chat.
+            assertEquals("invalid_message", assertThrows(BridgeException.class, () -> chat.runOrderClick(eco, "Miner mine stone 3")).code());
+            assertEquals("invalid_message", assertThrows(BridgeException.class, () -> chat.runOrderClick(InputTestSupport.OWNER, "Miner stop")).code());
+            assertEquals("invalid_message", assertThrows(BridgeException.class, () -> chat.runOrderClick(InputTestSupport.OWNER, "eco jobs")).code());
+            assertEquals("invalid_message", assertThrows(BridgeException.class, () -> chat.runOrderClick(eco, "Miner hello there")).code());
+            assertEquals("invalid_message", assertThrows(BridgeException.class, () -> chat.runOrderClick(eco, "Miner stop soon")).code());
+            assertEquals("invalid_message", assertThrows(BridgeException.class, () -> chat.runOrderClick(eco, "Nobody stop")).code());
+            assertEquals("invalid_message", assertThrows(BridgeException.class, () -> chat.describeOrderClick(eco, "stop")).code());
+            p.sync();
+            assertFalse(p.poll(f -> f.is(CoreMessages.CHAT_MESSAGE) || f.is(CoreMessages.COMMAND_INVOKED)), "refused clicks send nothing");
+
+            // A bot's line runs its own commands.
+            chat.runOrderClick(InputTestSupport.OWNER, "miner mine stone 3");
+            assertEquals(COMMAND, p.await(CoreMessages.COMMAND_INVOKED, miner).command());
+
+            // Once the printing session is gone, its lines run nothing.
+            p.control(ctl, CoreMessages.SESSION_CLOSE, new SessionClose("bye"));
+            p.sync();
+            h.tick();
+            assertEquals("disconnected", assertThrows(BridgeException.class, () -> chat.runOrderClick(eco, "Miner stop")).code());
         }
     }
 

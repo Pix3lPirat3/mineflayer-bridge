@@ -22,10 +22,24 @@ describe('notify', () => {
     const n = e.mod.notifies[0]!;
     expect(n).toMatchObject({ owner: ALICE, text: 'Inventory full', level: 'warn', sound: 'block.note_block.bell' });
     expect(n.buttons.map((x) => x.label)).toEqual(['Dump', 'Ignore']);
-    expect(n.buttons[0]!.action.startsWith(`${ALICE}/user:default/~action/`)).toBe(true);
-    await until(() => e.mod.object(n.buttons[0]!.action));
-    expect(await e.mod.invokeAction(n.buttons[0]!.action, { type: 'notification' })).toEqual({ ok: true, message: 'dumping' });
+    const action = n.buttons[0]!.action!;
+    expect(action.startsWith(`${ALICE}/user:default/~action/`)).toBe(true);
+    await until(() => e.mod.object(action));
+    expect(await e.mod.invokeAction(action, { type: 'notification' })).toEqual({ ok: true, message: 'dumping' });
     expect(clicks).toEqual(['dump']);
+  });
+
+  it('sends buttons that fill the chat box, next to ones that run', async () => {
+    const b = await attached();
+    b.notify('mine stone 3: done', { buttons: [{ label: 'Again', suggest: '@Alice mine stone 3' }, { label: 'Jobs', run: () => 'none' }] });
+    await until(() => e.mod.notifies.length === 1);
+    const [again, jobs] = e.mod.notifies[0]!.buttons;
+    expect(again).toEqual({ label: 'Again', action: undefined, suggest: '@Alice mine stone 3' });
+    expect(jobs).toMatchObject({ label: 'Jobs', suggest: undefined });
+    expect(() => b.notify('x', { buttons: [{ label: 'Go', suggest: '' }] })).toThrow(/1 to 256/);
+    expect(() => b.notify('x', { buttons: [{ label: 'Go', suggest: 'x'.repeat(257) }] })).toThrow(/1 to 256/);
+    expect(() => b.notify('x', { buttons: [{ label: 'Go', suggest: '@a', run: () => undefined } as never] })).toThrow(/run function or a line/);
+    expect(() => b.notify('x', { buttons: [{ label: 'Go' } as never] })).toThrow(/run function or a line/);
   });
 
   it('keeps only the latest notifications clickable and checks buttons', async () => {
@@ -33,8 +47,8 @@ describe('notify', () => {
     const b = await attached();
     for (let i = 0; i < 34; i++) b.notify(`n${i}`, { buttons: [{ label: 'Go', run: () => undefined }] });
     await until(() => e.mod.notifies.length === 34);
-    const first = e.mod.notifies[0]!.buttons[0]!.action;
-    const last = e.mod.notifies[33]!.buttons[0]!.action;
+    const first = e.mod.notifies[0]!.buttons[0]!.action!;
+    const last = e.mod.notifies[33]!.buttons[0]!.action!;
     await until(() => e.mod.object(last) !== undefined && e.mod.object(first) === undefined);
     expect(() => b.notify('x', { buttons: [{ label: '', run: () => undefined }] })).toThrow(/label/);
     const five = Array.from({ length: 5 }, () => ({ label: 'b', run: () => undefined }));

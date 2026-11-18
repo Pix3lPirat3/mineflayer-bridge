@@ -1,6 +1,6 @@
 {
   "name": "@mineflayer-bridge/protocol",
-  "version": "0.1.0-alpha.20",
+  "version": "0.1.0-alpha.21",
   "private": true,
   "description": "Wire protocol of mineflayer-bridge: MessagePack reader and writer, envelope, pairing helpers and the message and object codecs generated from the schema.",
   "keywords": [

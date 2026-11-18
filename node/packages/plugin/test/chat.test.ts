@@ -23,6 +23,7 @@ describe('chat.print', () => {
       { text: '12 diamonds', color: '#55ffff', bold: true, hover: 'at y -58' },
       { text: ' [go]', color: 0x00ff00, italic: true, click: { action: 'action', value: 'go' } },
       { text: ' [again]', click: { action: 'command', value: 'mine diamond_ore 12' } },
+      { text: ' [stop]', click: { action: 'order', value: 'Alice stop' } },
       { text: ' [say]', click: { action: 'suggest', value: '@alice ' } },
       { text: ' [copy]', click: { action: 'copy', value: '1 -58 3' } },
       { text: ' [link]', click: { action: 'url', value: 'https://example.net/a' } },
@@ -40,6 +41,7 @@ describe('chat.print', () => {
       { text: '12 diamonds', color: 0xff55ffff, bold: true, hover: 'at y -58' },
       { text: ' [go]', color: 0xff00ff00, italic: true, click: { action: 'run_action', value: `${ALICE}/user:default/~action/go` } },
       { text: ' [again]', click: { action: 'run_command', value: 'mine diamond_ore 12' } },
+      { text: ' [stop]', click: { action: 'run_order', value: 'Alice stop' } },
       { text: ' [say]', click: { action: 'suggest', value: '@alice ' } },
       { text: ' [copy]', click: { action: 'copy', value: '1 -58 3' } },
       { text: ' [link]', click: { action: 'open_url', value: 'https://example.net/a' } },
@@ -58,6 +60,9 @@ describe('chat.print', () => {
     expect(() => b.chat.print({ text: 'x', click: { action: 'action', value: 'a/b' } })).toThrow(/without \//);
     expect(() => b.chat.print({ text: 'x', click: { action: 'copy', value: '' } })).toThrow(/non-empty value/);
     expect(() => b.chat.print({ text: 'x', click: { action: 'url', value: 'javascript:alert(1)' } })).toThrow(/http or https/);
+    for (const value of ['stop', ' Alice ', 'Alice	']) {
+      expect(() => b.chat.print({ text: 'x', click: { action: 'order', value } })).toThrow(/an order click is <name> <command line>/);
+    }
     for (const value of ['fly', 'attach:', 'settings:x', 'menu now']) {
       expect(() => b.chat.print({ text: 'x', click: { action: 'bridge', value } })).toThrow(/a bridge click is attach, detach/);
     }
@@ -247,6 +252,47 @@ describe('chat capture', () => {
     ctl.crew.clear();
     await until(() => !e.mod.addresses().some((a) => a.name === 'pair'), 5000, 'crew cleared');
     expect(await e.mod.sendChat('@alice go home')).toMatchObject({ deliveries: [{ owner: ALICE, routed: 'message' }] });
+  });
+
+  it('runs an order click against the printing session only, as if the player typed it', async () => {
+    const h = hub();
+    const alice = await attached('Alice', h);
+    const ctl = h.controller({ name: 'Eco' });
+    await until(() => ctl.state.connected, 5000, 'controller session');
+    const seen: { job: unknown; bots: readonly string[] | undefined; source: string | undefined }[] = [];
+    ctl.orders.register('stop', { args: [{ name: 'job', type: 'int', optional: true }], run: ({ job }, ctx) => (seen.push({ job, bots: ctx.bots, source: ctx.source }), `stopped ${String(job)}`) });
+    ctl.commands.register('jobs', { run: () => 'no jobs' });
+    alice.commands.register('mine', { args: [{ name: 'block', type: 'string' }], run: ({ block }) => `mining ${String(block)}` });
+    ctl.crew.set({ bots: ['Alice'] });
+    await until(() => e.mod.objects().filter((o) => o.kind === 'core:command').length === 3 && e.mod.objects().some((o) => o.kind === 'core:crew'), 5000, 'crew');
+    ctl.chat.print(['mine stone 3: started ', { text: '[Stop]', click: { action: 'order', value: 'Alice stop 3' } }]);
+    await until(() => e.mod.printed().length === 1);
+    const line = e.mod.printed()[0]!;
+    expect(line.spans[1]!.click).toEqual({ action: 'run_order', value: 'Alice stop 3' });
+    const eco = line.owner;
+
+    expect(e.mod.describeOrderClick(eco, 'Alice stop 3')).toBe('@Alice stop 3');
+    expect(seen).toEqual([]);
+    expect(await e.mod.runOrderClick(eco, 'Alice stop 3')).toMatchObject([{ owner: eco, routed: 'command', bots: ['Alice'], result: { ok: true, message: 'stopped 3' } }]);
+    expect(seen).toEqual([{ job: 3, bots: ['Alice'], source: 'chat' }]);
+    expect(await e.mod.runOrderClick(eco, 'all stop')).toMatchObject([{ bots: ['Alice'] }]);
+    expect(await e.mod.runOrderClick(eco, 'eco jobs')).toMatchObject([{ result: { message: 'no jobs' } }]);
+
+    // Another session's commands, free text and unknown names are refused, and nothing reaches the bot as chat.
+    const toAlice = inbox(alice);
+    for (const value of ['Alice mine stone', 'Alice hello there', 'Alice stop soon', 'Nobody stop', 'stop']) {
+      await expect(e.mod.runOrderClick(eco, value)).rejects.toMatchObject({ code: 'invalid_message' });
+      expect(() => e.mod.describeOrderClick(eco, value)).toThrow();
+    }
+    await expect(e.mod.runOrderClick(ALICE, 'eco jobs')).rejects.toMatchObject({ code: 'invalid_message' });
+    expect(await e.mod.runOrderClick(ALICE, 'alice mine dirt')).toMatchObject([{ owner: ALICE, result: { message: 'mining dirt' } }]);
+    expect(seen).toHaveLength(2);
+    await sleep(50);
+    expect(toAlice).toEqual([]);
+
+    await h.close();
+    await until(() => !e.mod.addresses().some((a) => a.kind === 'controller'), 5000, 'controller gone');
+    await expect(e.mod.runOrderClick(eco, 'Alice stop')).rejects.toMatchObject({ code: 'disconnected' });
   });
 
   it('checks crew definitions', async () => {

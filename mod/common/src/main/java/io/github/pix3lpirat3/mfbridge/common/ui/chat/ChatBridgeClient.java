@@ -47,9 +47,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Incoming: {@code chat.print} lines are added with {@code ChatComponent.addClientSystemMessage},
  * which only displays them. Clickable spans use vanilla suggest and copy click events, which act on
- * the client; {@code run_action} and {@code run_command} use custom click events in the mod's
- * namespace that {@link #onClick} handles before vanilla would send them to the server (the packet
- * guard drops them as well). Client thread only.
+ * the client; {@code run_action}, {@code run_command}, {@code run_order} and {@code bridge} use
+ * custom click events in the mod's namespace that {@link #onClick} handles before vanilla would
+ * send them to the server (the packet guard drops them as well). Client thread only.
  */
 public final class ChatBridgeClient {
 
@@ -231,13 +231,24 @@ public final class ChatBridgeClient {
                 if (i == lines.length - 1) {
                     for (final Notifier.Button b : buttons) {
                         line.append(Component.literal(" "));
-                        line.append(Component.literal("[" + b.label() + "]").withStyle(style -> style.withColor(ChatFormatting.AQUA)
-                                .withClickEvent(register(() -> runAction(source, b.action(), "notification")))));
+                        line.append(Component.literal("[" + b.label() + "]").withStyle(style -> buttonStyle(style, source, b)));
                     }
                 }
                 local(line);
             }
         });
+    }
+
+    /** A notification button runs the sender's action, or puts its line into the chat box. */
+    private Style buttonStyle(final Style style, final String source, final Notifier.Button b) {
+        final Style s = style.withColor(ChatFormatting.AQUA);
+        final String suggest = b.suggest();
+        if (suggest != null) {
+            return s.withClickEvent(new ClickEvent.SuggestCommand(suggest)).withHoverEvent(new HoverEvent.ShowText(
+                    Component.translatable("mineflayer_bridge.chat.click.suggest", suggest).withStyle(ChatFormatting.GRAY)));
+        }
+        final String action = b.action();
+        return action == null ? s : s.withClickEvent(register(() -> runAction(source, action, "notification")));
     }
 
     private static void local(final Component line) {
@@ -259,27 +270,33 @@ public final class ChatBridgeClient {
             s = s.withColor(span.color() & 0xFFFFFF);
         }
         final ChatClick click = span.click();
-        // What a click on the mod itself does is said by the mod, under whatever the bot wrote.
-        final Component own = click != null && "bridge".equals(click.action()) ? bridgeTooltip(p, click.value()) : null;
+        // What a click on the mod itself, or an order click, does is said by the mod, under whatever the bot wrote.
+        final Component own = click == null ? null : switch (click.action()) {
+            case "bridge" -> bridgeTooltip(p, click.value());
+            case "run_order" -> orderTooltip(p, click.value());
+            default -> null;
+        };
         if (own != null) {
             s = s.withHoverEvent(new HoverEvent.ShowText(span.hover() == null ? own : Component.literal(span.hover() + "\n").append(own)));
         } else if (span.hover() != null) {
             s = s.withHoverEvent(new HoverEvent.ShowText(Component.literal(span.hover())));
         }
         if (click != null) {
-            s = s.withClickEvent(clickEvent(p, click));
+            s = s.withClickEvent(clickEvent(p, click, own != null));
         }
         return s;
     }
 
-    private @Nullable ClickEvent clickEvent(final ChatPrint p, final ChatClick click) {
+    /** {@code described}: the mod could say what a bridge or order click does; only then is it clickable. */
+    private @Nullable ClickEvent clickEvent(final ChatPrint p, final ChatClick click, final boolean described) {
         return switch (click.action()) {
             case "suggest" -> new ClickEvent.SuggestCommand(click.value());
             case "copy" -> new ClickEvent.CopyToClipboard(click.value());
             case "open_url" -> openUrl(click.value());
             case "run_action" -> register(() -> runAction(p.ownerName(), click.value(), "air"));
             case "run_command" -> register(() -> runCommand(p, click.value()));
-            case "bridge" -> bridgeTooltip(p, click.value()) == null ? null : register(() -> runBridgeClick(p, click.value()));
+            case "run_order" -> described ? register(() -> runOrder(p, click.value())) : null;
+            case "bridge" -> described ? register(() -> runBridgeClick(p, click.value())) : null;
             default -> null;
         };
     }
@@ -371,6 +388,37 @@ public final class ChatBridgeClient {
                 case DETACHED -> ui.toastInfo(String.valueOf(c.bot()), I18n.get("mineflayer_bridge.chat.clicked.detached"));
                 case MENU -> ui.openHome();
                 case SETTINGS -> ui.openSettings();
+            }
+        } catch (final BridgeException e) {
+            ui.toastError(p.ownerName(), String.valueOf(e.getMessage()));
+        }
+    }
+
+    /** The mod's own line for an {@code order} click: the line it runs, or null when it runs nothing of the printer's. */
+    private @Nullable Component orderTooltip(final ChatPrint p, final String value) {
+        final BridgeCore core = ui.core();
+        if (core == null) {
+            return null;
+        }
+        try {
+            return Component.translatable("mineflayer_bridge.chat.click.order", core.chat().describeOrderClick(p.owner(), value))
+                    .withStyle(ChatFormatting.GRAY);
+        } catch (final BridgeException e) {
+            Constants.LOG.debug("Ignoring an order click {}: {}", value, e.getMessage());
+            return null;
+        }
+    }
+
+    /** {@code run_order}: runs the line as if the player typed it, against the printing session's commands and orders only. */
+    private void runOrder(final ChatPrint p, final String value) {
+        final BridgeCore core = ui.core();
+        if (core == null) {
+            return;
+        }
+        try {
+            final ChatRoute.CapturedCommand c = core.chat().runOrderClick(p.owner(), value);
+            for (final ChatRoute.Run run : c.runs()) {
+                ui.trackInChat(c.command(), run.ownerName(), run.result());
             }
         } catch (final BridgeException e) {
             ui.toastError(p.ownerName(), String.valueOf(e.getMessage()));

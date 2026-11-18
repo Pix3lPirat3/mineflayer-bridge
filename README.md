@@ -11,11 +11,11 @@ the mod works on any server and gives the player no advantage there.
 
 ## Status
 
-Pre-release, version 0.1.0-alpha.20, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
+Pre-release, version 0.1.0-alpha.21, for Minecraft 26.3 on Fabric and NeoForge. Releases are on
 [GitHub Releases](https://github.com/Pix3lPirat3/mineflayer-bridge/releases) only: the Fabric and
 NeoForge jars and the plugin tarball.
 
-API reference for 0.1.0-alpha.20: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
+API reference for 0.1.0-alpha.21: [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/),
 [mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/) and
 [client extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/client/).
 
@@ -43,12 +43,12 @@ connect. Turn on "Ask before allowing local bots" in the settings to approve eac
 Node 22.12 or newer. Install the plugin from the release tarball:
 
 ```sh
-npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.20/mineflayer-bridge-0.1.0-alpha.20.tgz
+npm install --allow-remote=all mineflayer https://github.com/Pix3lPirat3/mineflayer-bridge/releases/download/v0.1.0-alpha.21/mineflayer-bridge-0.1.0-alpha.21.tgz
 ```
 
 npm 12 refuses tarball URLs unless `allow-remote` permits them, so later installs of the same
 project need it too: put `allow-remote=all` in the project's `.npmrc`. Or download the tarball and
-`npm install ./mineflayer-bridge-0.1.0-alpha.20.tgz`, which needs no setting.
+`npm install ./mineflayer-bridge-0.1.0-alpha.21.tgz`, which needs no setting.
 
 The package is ESM; CommonJS code can `require()` it on Node 22.12+. TypeScript users get
 `bot.bridge` on mineflayer's `Bot` type with:
@@ -466,7 +466,8 @@ as typed. A line for a bot or group the mod knows but cannot reach now (in anoth
 offline) is not sent either; the mod says why.
 
 Chat spans can carry a click: `action` (a context action of the bot), `command` (one of its command
-lines), `suggest` (text for the chat box), `copy` (to the clipboard), `url` (an http or https link,
+lines), `order` (a line run as if the player typed it after the prefix, see below), `suggest` (text
+for the chat box), `copy` (to the clipboard), `url` (an http or https link,
 opened after the game asks the player) or `bridge` (acts on the mod itself by the player's click:
 `attach` and `detach` for the bot that printed the line, `attach:<bot>` and `detach:<bot>` for a bot
 of a controller's crew, `menu` for Bridge home, `settings` for the mod's settings). The mod adds its
@@ -475,6 +476,20 @@ own line to the tooltip of a `bridge` click, saying what it does:
 ```js
 bot.bridge.chat.print(['My window cannot show here. ', { text: '[Attach]', color: '#55ffff', click: { action: 'bridge', value: 'attach' } }])
 ```
+
+An `order` click's value is what the player would type after the prefix, `<name> <command line>`,
+and it reaches only the commands and orders of the session that printed the line. A controller can
+put Stop and Pause buttons on its own job lines:
+
+```js
+controller.chat.print(['mine stone 3: started ', { text: '[Stop]', click: { action: 'order', value: 'miner-01 stop 3' } }])
+```
+
+The click runs `@miner-01 stop 3` as if typed, for that controller's orders only: a bot's own
+commands, another controller's orders and free text are never run or sent from it, and the reply
+shows as for a typed line. The mod adds the line it runs to the tooltip; a value that runs nothing
+of the printing session (an unknown name, a line that does not parse) shows without a click, and a
+click after the session ended does nothing but say so. The click never touches the chat box.
 
 Notifications go to chat by default; the player can switch them to toasts in Settings (Bot
 messages). A notification can carry buttons, and then always goes to chat so they can be clicked:
@@ -486,6 +501,9 @@ bot.bridge.notify('Inventory full', {
   buttons: [{ label: 'Dump', run: () => dumpToChest() }, { label: 'Ignore', run: () => {} }],
 })
 ```
+
+A button with `suggest` in place of `run` puts a line into the chat box instead, for the player to
+change or send: `{ label: 'Again', suggest: '@miner-01 mine stone 64' }`.
 
 The player's state comes with every session: `bot.bridge.players[0]` has `inWorld`, `alive`, `away`
 (no input for the time the player set, 5 minutes by default) and `windowFocused`, and the `player`
@@ -938,7 +956,7 @@ const frames = readRecording(readFileSync('./runs/today.mfbrec'))   // [{ direct
 ## API reference
 
 Every option, handle and event is documented in the reference generated from the code. It describes
-the latest release, 0.1.0-alpha.20; older versions are not kept.
+the latest release, 0.1.0-alpha.21; older versions are not kept.
 
 - [Node plugin](https://pix3lpirat3.github.io/mineflayer-bridge/node/): the `mineflayer-bridge` package.
 - [Mod extension API (Java)](https://pix3lpirat3.github.io/mineflayer-bridge/java/api/): for mods that

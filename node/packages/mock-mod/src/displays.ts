@@ -2,7 +2,7 @@ import { BridgeError, decodeKind, KindsById, Messages, type ElementInput, type I
 import type { ModCore } from './core.ts';
 import type { Session } from './session.ts';
 import { parseSnbt } from './snbt.ts';
-import type { MockDisplay, MockEffect, MockElementEventOptions, MockEntityProps, MockGroup, MockPlaced, MockPose } from './types.ts';
+import type { MockDisplay, MockEffect, MockElementEventOptions, MockEntityProps, MockGroup, MockNotifyButton, MockPlaced, MockPose } from './types.ts';
 import { isDisplay } from './util.ts';
 
 const POSE_PARTS = ['head', 'body', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const;
@@ -26,8 +26,8 @@ export interface Notification {
   text: string;
   level: string;
   icon: string | undefined;
-  /** Buttons, each with the full key of the action it runs. */
-  buttons: { label: string; action: string }[];
+  /** Buttons, each with the full key of the action it runs, or the line it puts into the chat box. */
+  buttons: MockNotifyButton[];
   sound: string | undefined;
 }
 
@@ -136,7 +136,9 @@ export class Displays {
     if (buttons.length > 4) throw new BridgeError('invalid_message', 'a notification takes at most 4 buttons');
     for (const b of buttons) {
       if (b.label.trim() === '' || b.label.length > 32) throw new BridgeError('invalid_message', 'a notification button needs a label of 1 to 32 characters');
-      if (!b.action.startsWith(s.prefix)) throw new BridgeError('invalid_message', `a notification button runs one of the sender's own actions: ${b.action}`);
+      if ((b.action === undefined) === (b.suggest === undefined)) throw new BridgeError('invalid_message', 'a notification button has an action or a line to suggest, not both');
+      if (b.action !== undefined && !b.action.startsWith(s.prefix)) throw new BridgeError('invalid_message', `a notification button runs one of the sender's own actions: ${b.action}`);
+      if (b.suggest !== undefined && (b.suggest.trim() === '' || b.suggest.length > 256)) throw new BridgeError('invalid_message', 'a notification button suggests a line of 1 to 256 characters');
     }
     if (p.sound !== undefined && !/^[a-z0-9_.-]+(:[a-z0-9_./-]+)?$/.test(p.sound)) throw new BridgeError('invalid_message', `bad sound id ${p.sound}`);
     // As the mod: only an attached bot may notify, at most 10 times a second.
@@ -148,7 +150,7 @@ export class Displays {
     if (window.count >= (this.core.opts.quotas?.notifiesPerSecond ?? 10)) return this.core.sendSessionError(s, 'rate_limited', 'more than 10 notifications a second', undefined, Messages.notify.id, undefined, true);
     window.count++;
     const text = clampText(p.text);
-    const n = { owner: s.owner, text, level, icon: p.icon, buttons: buttons.map((b) => ({ label: b.label, action: b.action })), sound: p.sound };
+    const n = { owner: s.owner, text, level, icon: p.icon, buttons: buttons.map((b): MockNotifyButton => ({ label: b.label, action: b.action, suggest: b.suggest })), sound: p.sound };
     this.notifications.push(n);
     this.core.emit('notify', { session: this.core.info(s), text, level, icon: p.icon, buttons: n.buttons, sound: p.sound });
   }

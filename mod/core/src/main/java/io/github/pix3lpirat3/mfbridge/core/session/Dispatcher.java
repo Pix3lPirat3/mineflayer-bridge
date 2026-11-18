@@ -92,6 +92,8 @@ final class Dispatcher {
 
     /** Most buttons one notification may carry. */
     private static final int MAX_NOTIFY_BUTTONS = 4;
+    /** The chat box holds 256 characters. */
+    private static final int MAX_SUGGEST_CHARS = 256;
 
     private final HostEnvironment host;
     private final Logger log;
@@ -347,10 +349,18 @@ final class Dispatcher {
                 if (b.label().isBlank() || b.label().length() > 32) {
                     throw new BridgeException("invalid_message", "a notification button needs a label of 1 to 32 characters");
                 }
-                if (!b.action().startsWith(s.owner + "/")) {
-                    throw new BridgeException("invalid_message", "a notification button runs one of the sender's own actions: " + b.action());
+                String action = b.action();
+                String suggest = b.suggest();
+                if ((action == null) == (suggest == null)) {
+                    throw new BridgeException("invalid_message", "a notification button has an action or a line to suggest, not both");
                 }
-                buttons.add(new Notifier.Button(b.label(), b.action()));
+                if (action != null && !action.startsWith(s.owner + "/")) {
+                    throw new BridgeException("invalid_message", "a notification button runs one of the sender's own actions: " + action);
+                }
+                if (suggest != null && (suggest.isBlank() || suggest.length() > MAX_SUGGEST_CHARS)) {
+                    throw new BridgeException("invalid_message", "a notification button suggests a line of 1 to " + MAX_SUGGEST_CHARS + " characters");
+                }
+                buttons.add(new Notifier.Button(b.label(), action, suggest));
             }
         }
         String sound = n.sound();

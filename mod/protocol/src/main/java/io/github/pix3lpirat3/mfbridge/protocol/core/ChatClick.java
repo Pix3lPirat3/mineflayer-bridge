@@ -9,7 +9,7 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
 /**
  * Struct {@code ChatClick}.
  *
- * @param action One of: run_action | run_command | suggest | copy | open_url | bridge.
+ * @param action One of: run_action | run_command | run_order | suggest | copy | open_url | bridge.
  */
 public record ChatClick(String action, String value) {
     /** Wire codec for this record. */

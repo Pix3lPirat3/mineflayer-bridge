@@ -11,12 +11,24 @@ public interface Notifier {
     Notifier NONE = n -> {};
 
     /**
-     * A button on a notification.
+     * A button on a notification: it runs an action, or fills the chat box.
      *
      * @param label the label, untrusted
-     * @param action full key of one of the sender's actions, run when clicked
+     * @param action full key of one of the sender's actions, run when clicked; null for a suggest button
+     * @param suggest the line put into the chat box when clicked, untrusted; null for an action button
      */
-    record Button(String label, String action) {}
+    record Button(String label, @Nullable String action, @Nullable String suggest) {
+
+        /**
+         * A button that runs an action.
+         *
+         * @param label the label
+         * @param action full key of one of the sender's actions
+         */
+        public Button(String label, String action) {
+            this(label, action, null);
+        }
+    }
 
     /**
      * A notification request.
@@ -26,7 +38,7 @@ public interface Notifier {
      * @param text the text, untrusted
      * @param level severity such as {@code info}, {@code warn} or {@code error}
      * @param icon optional icon id, or null
-     * @param buttons buttons, each naming an action under {@code owner}; empty for none
+     * @param buttons buttons, each naming an action under {@code owner} or a line to suggest; empty for none
      * @param sound optional sound event id to play with it, or null
      */
     record Notification(String source, String owner, String text, String level, @Nullable String icon, List<Button> buttons,

@@ -1927,6 +1927,13 @@ export interface ChatClickAction {
   /**
    * - `action`: runs a context action of this scope; `value` is its id;
    * - `command`: runs a command line of this bot, such as `mine iron 32`;
+   * - `order`: runs a line as if the player typed it after the chat prefix, `<name> <command line>`
+   *   such as `Miner stop 3`, `all pause` or `<controller> jobs`, but only against this session's own
+   *   commands and the orders it gives: a controller's orders for a bot or group of its crew, its own
+   *   commands under its own name. A line that runs none of them is refused, never sent as chat. The
+   *   mod adds a line to the tooltip with the line it runs, and shows the reply as for a typed line;
+   *   when the mod cannot run it (an unknown name, a line that does not parse) the text shows
+   *   without a click. A click after the session ended does nothing but say so;
    * - `suggest`: puts `value` into the chat box;
    * - `copy`: copies `value` to the clipboard;
    * - `url`: opens `value`, an http or https link, in the browser after the game asks the player;
@@ -1936,7 +1943,7 @@ export interface ChatClickAction {
    *   (opens the mod's settings). The mod adds its own line to the tooltip saying what the click
    *   does. An older mod shows the text without a click.
    */
-  action: 'action' | 'command' | 'suggest' | 'copy' | 'url' | 'bridge';
+  action: 'action' | 'command' | 'order' | 'suggest' | 'copy' | 'url' | 'bridge';
   value: string;
 }
 

@@ -121,4 +121,32 @@ public interface ChatControls {
      * @throws io.github.pix3lpirat3.mfbridge.api.BridgeException as {@link #describeBridgeClick}
      */
     BridgeClick runBridgeClick(String owner, String value);
+
+    /**
+     * Checks an {@code order} click without running it, for the tooltip the mod shows on it. The
+     * value is what the player would type after the prefix, {@code <name> <command line>}, such as
+     * {@code Miner stop} or {@code all pause}. It reaches only the printing session's own commands
+     * and the orders it gives: a line that runs nothing of that session is refused, never sent as
+     * a chat message.
+     *
+     * @param owner owner key of the session that printed the line
+     * @param value the click's value
+     * @return the line as the player would type it, with the current prefix
+     * @throws io.github.pix3lpirat3.mfbridge.api.BridgeException {@code disconnected} when the session is
+     *     gone, {@code permission_denied} when its device lost the {@code chat} permission, {@code
+     *     invalid_message} for a name nobody answers to, or a line that runs none of the session's
+     *     commands or orders, stops at a node that only groups subcommands, or does not parse
+     */
+    String describeOrderClick(String owner, String value);
+
+    /**
+     * Runs an {@code order} click the player made, as if the player had typed the line, but only
+     * against the printing session's own commands and orders.
+     *
+     * @param owner owner key of the session that printed the line
+     * @param value the click's value, as for {@link #describeOrderClick}
+     * @return the runs, each completing like {@code BridgeCore.invokeCommand}
+     * @throws io.github.pix3lpirat3.mfbridge.api.BridgeException as {@link #describeOrderClick}
+     */
+    ChatRoute.CapturedCommand runOrderClick(String owner, String value);
 }

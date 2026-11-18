@@ -266,10 +266,11 @@ structs:
 
   NotifyButton:
     label: string
-    action: string          # full object key of a core:action of the sender
+    action: string?         # full object key of a core:action of the sender; or suggest
+    suggest: string?        # line put into the chat box when clicked
 
   ChatClick:
-    action: string          # run_action | run_command | suggest | copy | open_url | bridge
+    action: string          # run_action | run_command | run_order | suggest | copy | open_url | bridge
     value: string
 
   ChatSpan:

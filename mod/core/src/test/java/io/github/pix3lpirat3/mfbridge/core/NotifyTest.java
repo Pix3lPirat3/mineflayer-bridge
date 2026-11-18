@@ -28,17 +28,23 @@ class NotifyTest {
             int s = matchedBot(h, p, "Miner");
             String action = InputTestSupport.OWNER + "/user:default/~action/dump";
             p.reliable(s, CoreMessages.NOTIFY, new Notify("Inventory full", "warn", null,
-                    List.of(new NotifyButton("Dump", action)), "block.note_block.bell"));
+                    List.of(new NotifyButton("Dump", action, null), new NotifyButton("Again", null, "@Miner mine stone")), "block.note_block.bell"));
             h.tickUntil("notified", () -> !h.notifications.isEmpty());
             Notifier.Notification n = h.notifications.get(0);
             assertEquals("Miner", n.source());
             assertEquals(InputTestSupport.OWNER, n.owner());
             assertEquals("warn", n.level());
-            assertEquals(List.of(new Notifier.Button("Dump", action)), n.buttons());
+            assertEquals(List.of(new Notifier.Button("Dump", action), new Notifier.Button("Again", null, "@Miner mine stone")), n.buttons());
             assertEquals("block.note_block.bell", n.sound());
 
             p.reliable(s, CoreMessages.NOTIFY, new Notify("Click me", "info", null,
-                    List.of(new NotifyButton("Steal", "bot:other@example.com/user:default/~action/x")), null));
+                    List.of(new NotifyButton("Steal", "bot:other@example.com/user:default/~action/x", null)), null));
+            assertEquals("invalid_message", p.await(CoreMessages.ERROR, s).error().code());
+            p.reliable(s, CoreMessages.NOTIFY, new Notify("Both", "info", null, List.of(new NotifyButton("Go", action, "@Miner go")), null));
+            assertEquals("invalid_message", p.await(CoreMessages.ERROR, s).error().code());
+            p.reliable(s, CoreMessages.NOTIFY, new Notify("Neither", "info", null, List.of(new NotifyButton("Go", null, null)), null));
+            assertEquals("invalid_message", p.await(CoreMessages.ERROR, s).error().code());
+            p.reliable(s, CoreMessages.NOTIFY, new Notify("Long", "info", null, List.of(new NotifyButton("Go", null, "x".repeat(257))), null));
             assertEquals("invalid_message", p.await(CoreMessages.ERROR, s).error().code());
             p.reliable(s, CoreMessages.NOTIFY, new Notify("Loud", "info", null, null, "Not A Sound"));
             assertEquals("invalid_message", p.await(CoreMessages.ERROR, s).error().code());

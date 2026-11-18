@@ -467,7 +467,7 @@ export interface MockModEvents {
   snapshotEnd: [{ session: MockSessionInfo; removed: string[] }];
   objectChanged: [{ key: string; object: MockObject; write: 'full' | 'patch' | 'shared' }];
   objectRemoved: [{ key: string; reason: 'remove' | 'ttl' | 'snapshot' | 'expired' | 'shared' }];
-  notify: [{ session: MockSessionInfo; text: string; level: string; icon: string | undefined; buttons: { label: string; action: string }[]; sound: string | undefined }];
+  notify: [{ session: MockSessionInfo; text: string; level: string; icon: string | undefined; buttons: MockNotifyButton[]; sound: string | undefined }];
   message: [MockInbound];
   /** An extension message from the plugin, as raw payload bytes. */
   extensionMessage: [{ session: MockSessionInfo; type: string; payload: Uint8Array }];
@@ -733,6 +733,16 @@ export interface MockEntityProps {
   readonly data: string | undefined;
   /** The SNBT parsed: compounds as objects, lists as arrays, numbers without their type suffix. */
   readonly nbt: unknown;
+}
+
+/**
+ * A notification button: `action` is the full key of the sender's action it runs (run it with
+ * `invokeAction(action, { type: 'notification' })`), or `suggest` the line it puts into the chat box.
+ */
+export interface MockNotifyButton {
+  readonly label: string;
+  readonly action: string | undefined;
+  readonly suggest: string | undefined;
 }
 
 /** A chat line a bot printed. */

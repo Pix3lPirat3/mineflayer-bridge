@@ -6,6 +6,7 @@ import { toColor } from './util.ts';
 const CLICK_ACTIONS: Readonly<Record<ChatClickAction['action'], string>> = {
   action: 'run_action',
   command: 'run_command',
+  order: 'run_order',
   suggest: 'suggest',
   copy: 'copy',
   url: 'open_url',
@@ -45,12 +46,15 @@ function toSpan(input: string | ChatSpanInput): PendingSpan {
   let action: string | undefined;
   if (input.click !== undefined) {
     const wire = CLICK_ACTIONS[input.click.action];
-    if (wire === undefined) throw new BridgeError('invalid_message', `unknown chat click action ${String(input.click.action)}; use action, command, suggest, copy, url or bridge`);
+    if (wire === undefined) throw new BridgeError('invalid_message', `unknown chat click action ${String(input.click.action)}; use action, command, order, suggest, copy, url or bridge`);
     const value = input.click.value;
     if (typeof value !== 'string' || value === '') throw new BridgeError('invalid_message', 'a chat click needs a non-empty value');
     if (input.click.action === 'url' && !/^https?:\/\/\S+$/i.test(value)) throw new BridgeError('invalid_message', `a url click needs an http or https link: ${value}`);
     if (input.click.action === 'bridge' && !/^(menu|settings|(attach|detach)(:\S.*)?)$/.test(value)) {
       throw new BridgeError('invalid_message', `a bridge click is attach, detach, attach:<bot>, detach:<bot>, menu or settings: ${value}`);
+    }
+    if (input.click.action === 'order' && !/^\s*\S+\s+\S/.test(value)) {
+      throw new BridgeError('invalid_message', `an order click is <name> <command line>, such as Miner stop: ${value}`);
     }
     if (input.click.action === 'action') {
       if (value.includes('/')) throw new BridgeError('invalid_message', `a chat click action names an action id of this scope, without /: ${value}`);

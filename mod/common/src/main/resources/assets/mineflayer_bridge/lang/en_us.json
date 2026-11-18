@@ -503,6 +503,8 @@
   "mineflayer_bridge.chat.click.detach": "Click: detach %s; it stays connected",
   "mineflayer_bridge.chat.click.menu": "Click: open the Bridge menu",
   "mineflayer_bridge.chat.click.settings": "Click: open the Bridge settings",
+  "mineflayer_bridge.chat.click.order": "Click: run %s, as if you typed it",
+  "mineflayer_bridge.chat.click.suggest": "Click: put in the chat box: %s",
   "mineflayer_bridge.chat.clicked.attached": "Attached, in every world",
   "mineflayer_bridge.chat.clicked.detached": "Detached",
   "mineflayer_bridge.status.attached": "attached",

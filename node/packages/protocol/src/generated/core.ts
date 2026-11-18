@@ -1633,29 +1633,33 @@ export const SlotEntryCodec: Codec<SlotEntry> = {
 /** Struct `NotifyButton`. */
 export interface NotifyButton {
   label: string;
-  /** Full object key of a core:action of the sender. */
-  action: string;
+  /** Full object key of a core:action of the sender; or suggest. */
+  action?: string | undefined;
+  /** Line put into the chat box when clicked. */
+  suggest?: string | undefined;
 }
 /** Wire codec for {@link NotifyButton}. */
 export const NotifyButtonCodec: Codec<NotifyButton> = {
   write(w, v) {
-    w.arrayHeader(2);
+    w.arrayHeader(3);
     w.str(v.label);
-    w.str(v.action);
+    if (v.action === undefined || v.action === null) w.nil(); else w.str(v.action);
+    if (v.suggest === undefined || v.suggest === null) w.nil(); else w.str(v.suggest);
   },
   read(r) {
     const n = r.arrayHeader();
-    if (n < 2) throw new WireError('invalid_message', 'NotifyButton: expected at least 2 fields, got ' + n);
+    if (n < 1) throw new WireError('invalid_message', 'NotifyButton: expected at least 1 fields, got ' + n);
     const label = r.str();
-    const action = r.str();
-    for (let i = 2; i < n; i++) r.skip();
-    return { label, action };
+    const action = n > 1 && !r.tryNil() ? r.str() : undefined;
+    const suggest = n > 2 && !r.tryNil() ? r.str() : undefined;
+    for (let i = 3; i < n; i++) r.skip();
+    return { label, action, suggest };
   },
 };
 
 /** Struct `ChatClick`. */
 export interface ChatClick {
-  /** One of: run_action | run_command | suggest | copy | open_url | bridge. */
+  /** One of: run_action | run_command | run_order | suggest | copy | open_url | bridge. */
   action: string;
   value: string;
 }

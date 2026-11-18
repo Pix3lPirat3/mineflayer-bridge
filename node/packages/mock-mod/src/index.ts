@@ -16,6 +16,7 @@ export type {
   MockChatLine,
   MockChatOutcome,
   MockMistyped,
+  MockNotifyButton,
   MockClickOptions,
   MockCommandOutcome,
   MockCompletion,

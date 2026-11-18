@@ -316,6 +316,46 @@ export class ChatCommands {
     return { captured: true, broadcast, deliveries, ...(commandError === undefined ? {} : { commandError }) };
   }
 
+  /** An `order` click of a line `owner` printed: the line as the player would type it, or throws as the mod refuses it. */
+  describeOrderClick(owner: string, value: string): string {
+    const { name, text } = this.orderRuns(owner, value);
+    return `${this.core.opts.chatPrefix ?? '@'}${name} ${text}`;
+  }
+
+  /** Runs an `order` click as the mod does: the line, against the printing session's commands and orders only. */
+  async runOrderClick(owner: string, value: string): Promise<MockChatDelivery[]> {
+    const { runs } = this.orderRuns(owner, value);
+    return Promise.all(runs.map((r) => this.deliverCommand(r.set, r.cmd, r.path, r.args)));
+  }
+
+  private orderRuns(owner: string, value: string): { name: string; text: string; runs: { set: CommandSet; cmd: MockDeclaration<'core:command'>; path: string[]; args: Record<string, unknown> }[] } {
+    const s = [...this.core.sessions.values()].find((x) => x.owner === owner && x.conn !== null && isLive(x));
+    if (s === undefined) throw new BridgeError('disconnected', 'the session that printed this line is gone');
+    if (!this.core.devices.granted(s, 'chat')) throw new BridgeError('permission_denied', `${s.name} runs on a device without the chat permission`);
+    const v = strip(value);
+    let space = 0;
+    while (space < v.length && !isSpace(v[space]!)) space++;
+    const name = v.slice(0, space);
+    const text = strip(v.slice(space));
+    if (name === '' || text === '') throw new BridgeError('invalid_message', `an order click is <name> <command line>, not ${value}`);
+    const to = this.addressees().find((a) => a.name.toLowerCase() === name.toLowerCase());
+    if (to === undefined) throw new BridgeError('invalid_message', `${name} is not a bot, group or controller the player can address`);
+    const sets = to.sets.filter((set) => set.session.owner === owner);
+    if (sets.length === 0) throw new BridgeError('invalid_message', `${name} takes no command or order of ${s.name}`);
+    const word = tokenize(text)[0];
+    const runs: { set: CommandSet; cmd: MockDeclaration<'core:command'>; path: string[]; args: Record<string, unknown> }[] = [];
+    let why: string | undefined;
+    for (const set of sets) {
+      const cmd = word === undefined ? undefined : this.commandIn(set, word.text);
+      if (cmd === undefined) continue;
+      const parsed = parseLine(rootNode(cmd.data), text, this.selectorHook(set.session, cmd.key), this.origin());
+      if (parsed.kind === 'invoke') runs.push({ set, cmd, path: parsed.path, args: parsed.args });
+      else why ??= parsed.kind === 'usage' ? `${[cmd.data.name, ...parsed.path].join(' ')}: choose a subcommand` : `${cmd.data.name}: ${parsed.error}`;
+    }
+    if (runs.length === 0) throw new BridgeError('invalid_message', why ?? `no command of ${s.name} in ${text}`);
+    return { name, text, runs };
+  }
+
   /** While a `chat` surface prompt for text or a confirmation is active, the next line answers it. */
   private answerPrompt(line: string): MockChatOutcome | undefined {
     const active = this.core.inputs.active();
