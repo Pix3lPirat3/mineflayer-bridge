@@ -7,6 +7,7 @@ import io.github.pix3lpirat3.mfbridge.api.event.EventType;
 import io.github.pix3lpirat3.mfbridge.api.thread.ClientThread;
 import io.github.pix3lpirat3.mfbridge.core.BridgeClock;
 import io.github.pix3lpirat3.mfbridge.core.BridgeConfig;
+import io.github.pix3lpirat3.mfbridge.core.Presence;
 import io.github.pix3lpirat3.mfbridge.core.persist.BotSettingsStore;
 import io.github.pix3lpirat3.mfbridge.core.remote.InstanceIdentity;
 import io.github.pix3lpirat3.mfbridge.core.remote.Permission;
@@ -16,6 +17,7 @@ import io.github.pix3lpirat3.mfbridge.core.world.PresenceRegistry;
 import io.github.pix3lpirat3.mfbridge.core.world.ServerKeys;
 import io.github.pix3lpirat3.mfbridge.protocol.core.BotIdentity;
 import io.github.pix3lpirat3.mfbridge.protocol.core.CoreMessages;
+import io.github.pix3lpirat3.mfbridge.protocol.core.SessionClose;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SessionKind;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SessionOpen;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SessionOpened;
@@ -145,6 +147,9 @@ final class SessionLifecycle {
         if (previous != null && previous != s) {
             supersede(previous);
         }
+        if (identity != null) {
+            replaceSameName(s);
+        }
         outbox.sendControl(c, 0, null, CoreMessages.SESSION_OPENED, new SessionOpened(s.id, token), Envelope.RESPONSE, req);
         view.visibilityChanged();
         post(BridgeEvents.SESSION_OPENED, s, "");
@@ -208,6 +213,30 @@ final class SessionLifecycle {
         s.conn = null;
         if (s.identity != null) {
             presence.sessionStopped(s.identity, clock.currentTimeMillis());
+        }
+    }
+
+    /**
+     * A bot of the same name from the same device under another identity, as when it moved to
+     * another server, is the same bot: its older sessions end and its old entry is forgotten, so
+     * orders, completion and Bridge home reach the new one only.
+     */
+    private void replaceSameName(Session s) {
+        for (Session old : new ArrayList<>(table.writers.values())) {
+            if (old != s && old.kind == SessionKind.BOT && old.identity != null && !old.identity.equals(s.identity)
+                    && old.deviceId.equals(s.deviceId) && old.displayName.equalsIgnoreCase(s.displayName)) {
+                Connection oc = old.conn;
+                if (oc != null) {
+                    outbox.sendControl(oc, old.id, old, CoreMessages.SESSION_CLOSE, new SessionClose("replaced"), 0, Envelope.NONE);
+                }
+                endSession(old, "replaced");
+            }
+        }
+        for (Presence p : presence.all()) {
+            if (!p.connected() && !p.identity().equals(s.identity) && p.displayName().equalsIgnoreCase(s.displayName)
+                    && s.deviceId.equals(botStore.device(p.identity()))) {
+                presence.forget(p.identity());
+            }
         }
     }
 

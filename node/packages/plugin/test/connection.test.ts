@@ -273,6 +273,91 @@ describe('declared state', () => {
   });
 });
 
+describe('one bot, one session, across reconnects and servers', () => {
+  /** Owners of every session the mod opened, and the sessions still open. */
+  const watch = (): { owners: string[]; live: () => string[] } => {
+    const owners: string[] = [];
+    e.mod.on('sessionOpened', (s) => void owners.push(s.owner));
+    return { owners, live: () => e.mod.sessions().filter((s) => s.kind === 'bot').map((s) => s.owner) };
+  };
+  /** A Microsoft-account bot as mineflayer has it right after login: a sign-in, no player entry yet. */
+  const signedIn = (): FakeBot => Object.assign(new FakeBot('Alice'), { _client: Object.assign(new EventEmitter(), { session: { selectedProfile: { id: '0123456789abcdef0123456789abcdef', name: 'Alice' } } }) });
+  const UUID = '01234567-89ab-cdef-0123-456789abcdef';
+
+  it('a Microsoft account is one bot on every server it joins, by its UUID', async () => {
+    const seen = watch();
+    const h = hub();
+    const first = signedIn();
+    load(h.plugin(), first, { host: 'one.example.net', auth: 'microsoft' });
+    await until(() => first.b.state.connected);
+    first.emit('end');
+    await until(() => seen.live().length === 0);
+    const second = signedIn();
+    load(h.plugin(), second, { host: 'two.example.net', auth: 'microsoft' });
+    await until(() => second.b.state.connected);
+    expect(seen.owners).toEqual([`bot:${UUID}`, `bot:${UUID}`]);
+    expect(seen.live()).toEqual([`bot:${UUID}`]);
+  });
+
+  it('identityServer keeps an offline bot one bot across addresses', async () => {
+    const seen = watch();
+    const h = hub();
+    for (const host of ['127.0.0.1', 'localhost', 'play.example.net']) {
+      const bot = new FakeBot('Alice');
+      load(h.plugin({ identityServer: 'follow-me' }), bot, { host });
+      await until(() => bot.b.state.connected);
+      bot.emit('end');
+      await until(() => seen.live().length === 0);
+    }
+    expect(new Set(seen.owners)).toEqual(new Set(['bot:alice@follow-me']));
+    expect(() => h.plugin({ identityServer: 'a/b' })).toThrow(/identityServer/);
+  });
+
+  it('a bot of the same name on another server replaces the older session, and completion reaches the new one', async () => {
+    const seen = watch();
+    const h = hub();
+    // The old connection's bot never said it ended: its session is still open.
+    const old = new FakeBot('Alice');
+    load(h.plugin(), old, { host: 'one.example.net' });
+    await until(() => old.b.state.connected);
+    old.b.commands.register('where', { args: [{ name: 'at', type: 'string', complete: () => ['one'] }], run: () => 'one' });
+    const replaced = e.mod.waitFor('sessionClosed', (s) => s.owner === 'bot:alice@one.example.net:25565');
+    const now = new FakeBot('Alice');
+    load(h.plugin(), now, { host: 'two.example.net' });
+    await until(() => now.b.state.connected);
+    now.b.commands.register('where', { args: [{ name: 'at', type: 'string', complete: () => ['two'] }], run: () => 'two' });
+    expect((await replaced)[0].reason).toBe('replaced');
+    await until(() => e.mod.commands().some((c) => c.key.startsWith('bot:alice@two.example.net:25565/')));
+    expect((await e.mod.complete('Alice', 'where ')).suggestions.map((x) => x.text)).toEqual(['two']);
+    // The replaced session does not open again and take it back.
+    await sleep(200);
+    expect(old.b.state.connected).toBe(false);
+    expect(seen.live()).toEqual(['bot:alice@two.example.net:25565']);
+  });
+
+  it('a login the server refuses opens nothing, and a bot that ends while its session opens leaves none', async () => {
+    const seen = watch();
+    const h = hub();
+    // Kicked before login: no name yet, so no identity and no session.
+    const kicked = new FakeBot(undefined);
+    load(h.plugin(), kicked);
+    kicked.emit('kicked', 'You are logging in too fast!');
+    kicked.emit('end');
+    // Ends in the same turn as its login, before the mod has answered the open.
+    const brief = new FakeBot('Alice');
+    // Just after the open went out: the link sends it once everyone has heard it is connected.
+    const opening = new Promise<void>((resolve) => h.on('connected', () => queueMicrotask(() => (brief.emit('end'), resolve()))));
+    load(h.plugin(), brief);
+    await opening;
+    await e.mod.waitFor('sessionClosed');
+    expect(seen.live()).toEqual([]);
+    const stays = new FakeBot('Alice');
+    load(h.plugin(), stays);
+    await until(() => stays.b.state.connected);
+    expect(seen.live()).toEqual([ALICE]);
+  });
+});
+
 describe('world, attach and interest', () => {
   it('reports the world by its own name, which servers give worlds on the overworld type', async () => {
     const bot = new FakeBot('Alice');

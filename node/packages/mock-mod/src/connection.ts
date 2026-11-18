@@ -311,6 +311,13 @@ export class Connections {
       if (old.conn !== null) this.core.sendSessionError(old, 'superseded', 'a newer session took over this identity', undefined);
       else this.core.forgetSession(old);
     }
+    // A bot of the same name from the same device under another identity, as after a move to
+    // another server, is the same bot: its older sessions end.
+    if (p.kind === 'bot') {
+      for (const old of [...this.core.sessions.values()]) {
+        if (old.kind === 'bot' && !old.closed && old.owner !== owner && old.deviceId === conn.deviceId && old.name.toLowerCase() === p.name.toLowerCase()) this.core.closeSession(old, 'replaced', true);
+      }
+    }
     const s = createSession(conn, p.kind, p.name, p.identity, owner, p.extensions);
     conn.sessions.set(s.sessionId, s);
     this.core.sessions.set(s.token, s);

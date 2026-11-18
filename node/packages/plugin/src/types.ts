@@ -73,7 +73,10 @@ export interface BotLike extends EmitterLike {
    * the bot is in, which `game.dimension` does not: a server can run worlds such as `minecraft:creative`
    * on the overworld dimension type.
    */
-  _client?: EmitterLike;
+  _client?: EmitterLike & {
+    /** The signed-in account (node-minecraft-protocol `client.session`), for online-mode bots. */
+    readonly session?: { readonly selectedProfile?: { readonly id?: string } } | null;
+  };
   /** The player inventory window, read by `bridge:window`. Emits `updateSlot(slot, oldItem, newItem)`. */
   inventory?: InventoryLike;
   /** Drops a whole stack (mineflayer `bot.tossStack`). */
@@ -398,6 +401,12 @@ export interface BridgeOptions extends HubOptions {
   name?: string;
   /** Send `tick_end` after every physics tick, like the exported `tickEnd` plugin. Default: true. */
   tickEnd?: boolean;
+  /**
+   * The server part of the bot's identity, instead of the address it joined. A bot that follows its
+   * player from server to server passes one name for all of them, so the mod knows it as one bot.
+   * No `/`. Ignored for a Microsoft account, whose UUID is its identity everywhere.
+   */
+  identityServer?: string;
 }
 
 /** Per-bot options for {@link BridgeHub.plugin}. */
@@ -408,6 +417,12 @@ export interface BotPluginOptions {
   extensions?: readonly ExtensionUse[];
   /** Send `tick_end` after every physics tick, like the exported `tickEnd` plugin. Default: true. */
   tickEnd?: boolean;
+  /**
+   * The server part of the bot's identity, instead of the address it joined. A bot that follows its
+   * player from server to server passes one name for all of them, so the mod knows it as one bot.
+   * No `/`. Ignored for a Microsoft account, whose UUID is its identity everywhere.
+   */
+  identityServer?: string;
 }
 
 /** Options for {@link BridgeHub.controller}. */

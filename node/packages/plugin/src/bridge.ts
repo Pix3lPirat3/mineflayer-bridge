@@ -1068,11 +1068,21 @@ export function serverKey(options: BotOptionsLike | undefined): string {
   return `${host}:${options?.port ?? 25565}`;
 }
 
+/** The signed-in account's UUID with dashes, or `undefined` without a sign-in. */
+function accountUuid(bot: BotLike): string | undefined {
+  const id = bot._client?.session?.selectedProfile?.id;
+  if (typeof id !== 'string' || !/^[0-9a-f]{32}$/i.test(id.replace(/-/g, ''))) return undefined;
+  const hex = id.replace(/-/g, '').toLowerCase();
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 /** `bot.bridge`: a bot session plus world reporting. */
 export class BotBridgeImpl extends SessionImpl implements BotBridge {
   readonly bot: BotLike;
   private readonly botOptions: BotOptionsLike | undefined;
   private readonly server: string;
+  /** The server part of its identity: the address, unless the bot named one. */
+  private readonly identityServer: string;
   private botWorld: WorldKey | undefined;
   /** The world's name from the last login or respawn packet, such as `minecraft:creative`. */
   private levelName: string | undefined;
@@ -1080,11 +1090,12 @@ export class BotBridgeImpl extends SessionImpl implements BotBridge {
   private positionTimer: NodeJS.Timeout | undefined;
   private readonly offs: (() => void)[] = [];
 
-  constructor(hub: HubContext, bot: BotLike, botOptions: BotOptionsLike | undefined, name: string | undefined, uses: readonly ExtensionUse[]) {
+  constructor(hub: HubContext, bot: BotLike, botOptions: BotOptionsLike | undefined, name: string | undefined, uses: readonly ExtensionUse[], identityServer?: string) {
     super(hub, 'bot', name ?? bot.username ?? botOptions?.username ?? 'bot', uses, tagLogger(hub.logger, `[${name ?? bot.username ?? botOptions?.username ?? 'bot'}]`));
     this.bot = bot;
     this.botOptions = botOptions;
     this.server = serverKey(botOptions);
+    this.identityServer = identityServer ?? this.server;
     const listen = (event: string, fn: (...args: any[]) => void): void => {
       bot.on(event, fn);
       this.offs.push(() => {
@@ -1135,11 +1146,12 @@ export class BotBridgeImpl extends SessionImpl implements BotBridge {
     if (this.core.identity !== undefined) return;
     const username = this.bot.username ?? this.botOptions?.username;
     if (username === undefined || username === '') return;
-    const identity: BotIdentity = { username, server: this.server };
-    // The UUID identifies online-mode bots; offline UUIDs are derived from the name and add nothing.
-    const uuid = this.bot.player?.uuid;
-    if (this.botOptions?.auth === 'microsoft' && uuid !== undefined) identity.uuid = uuid;
-    const owner = `bot:${identity.uuid ?? `${username.toLowerCase()}@${this.server}`}`;
+    const identity: BotIdentity = { username, server: this.identityServer };
+    // The account's UUID identifies online-mode bots on every server; offline UUIDs are derived from
+    // the name and add nothing. At login mineflayer has no player entry yet: the sign-in has the UUID.
+    const uuid = this.botOptions?.auth === 'microsoft' ? (accountUuid(this.bot) ?? this.bot.player?.uuid) : undefined;
+    if (uuid !== undefined) identity.uuid = uuid;
+    const owner = `bot:${identity.uuid ?? `${username.toLowerCase()}@${this.identityServer}`}`;
     this.attachPersistence(owner);
     this.core.setIdentity(identity);
   }

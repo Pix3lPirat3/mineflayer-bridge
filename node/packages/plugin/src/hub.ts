@@ -169,11 +169,13 @@ class Hub implements BridgeHub {
   }
 
   plugin(options: BotPluginOptions = {}): BridgePlugin {
+    const server = options.identityServer;
+    if (server !== undefined && (server === '' || server.includes('/'))) throw new BridgeError('invalid_message', 'identityServer must be non-empty and without /');
     return (bot: BotLike, botOptions?: BotOptionsLike) => {
       const uses = [...(this.options.extensions ?? []), ...(options.extensions ?? [])];
       for (const e of options.extensions ?? []) this.register([toInstance(e).definition]);
       if (options.tickEnd !== false) tickEnd(bot as unknown as TickEndBotLike);
-      const session = new BotBridgeImpl(this.ctx, bot, botOptions, options.name, uses);
+      const session = new BotBridgeImpl(this.ctx, bot, botOptions, options.name, uses, options.identityServer);
       this.sessions.add(session);
       bot.bridge = session;
     };

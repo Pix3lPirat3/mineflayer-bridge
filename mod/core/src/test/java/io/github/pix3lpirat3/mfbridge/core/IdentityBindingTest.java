@@ -9,6 +9,7 @@ import io.github.pix3lpirat3.mfbridge.core.remote.PairingSession;
 import io.github.pix3lpirat3.mfbridge.protocol.core.BotIdentity;
 import io.github.pix3lpirat3.mfbridge.protocol.core.CoreMessages;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ErrorMessage;
+import io.github.pix3lpirat3.mfbridge.protocol.core.SessionClose;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SessionKind;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SessionOpen;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.Envelope;
@@ -96,6 +97,20 @@ class IdentityBindingTest {
             assertEquals("dev-1", h.core.devices().botDevice(IDENTITY));
             assertEquals("identity_taken", refused(other));
             first.openBot("Miner", "example.com");
+        }
+    }
+
+    @Test
+    void aBotOfTheSameNameOnAnotherServerReplacesTheOldOne() throws Exception {
+        try (Harness h = new Harness(dir); FakePlugin p = FakePlugin.ready(h, "dev-1"); FakePlugin other = FakePlugin.ready(h, "dev-2")) {
+            p.openBot("Miner", "example.com");
+            other.openBot("Smelter", "example.com");
+            p.openBot("Miner", "other.example.com");
+            SessionClose closed = p.await(CoreMessages.SESSION_CLOSE);
+            assertEquals("replaced", closed.reason());
+            assertEquals(List.of("miner@other.example.com", "smelter@example.com"),
+                    h.core.presence().all().stream().map(Presence::identity).toList(), "one entry per bot name");
+            assertEquals(2, h.core.sessionStats().size());
         }
     }
 

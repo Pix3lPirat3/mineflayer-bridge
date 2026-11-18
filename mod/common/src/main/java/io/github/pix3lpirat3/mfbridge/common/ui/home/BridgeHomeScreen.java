@@ -11,6 +11,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.declared.DeclaredScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.declared.ScreenView;
 import io.github.pix3lpirat3.mfbridge.common.ui.devices.PairScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.DisplayText;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.TargetMatch;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.Presence;
@@ -287,7 +288,7 @@ public final class BridgeHomeScreen extends ScreenView implements io.github.pix3
         buttons.add(button(I18n.get(focused ? "screen.mineflayer_bridge.home.focused" : "screen.mineflayer_bridge.home.focus"), null, null, 52, !focused && core.attach().isAttached(identity) && p.connected(),
                 () -> ui.focus(owner)));
         if (inWorld()) {
-            for (final ActionDecl a : botButtons(decl, owner)) {
+            for (final ActionDecl a : botButtons(decl, owner, p.displayName())) {
                 buttons.add(button(a.data().label(), a.data().icon(), a.ownerName().equals(p.displayName()) ? null : I18n.get("mineflayer_bridge.from", a.ownerName()),
                         font.width(a.data().label()) + (a.data().icon() == null ? 12 : 30), true, () -> ui.actions().runOnBot(a, owner)));
             }
@@ -311,11 +312,11 @@ public final class BridgeHomeScreen extends ScreenView implements io.github.pix3
         rows.add(new ScreenRow(buttons));
     }
 
-    /** The bot's own bot-target actions, then those of controllers. */
-    private static List<ActionDecl> botButtons(final DeclarationSnapshot decl, final String owner) {
+    /** The bot's own bot-target actions, then those of controllers; an action that names bots shows on theirs only. */
+    private static List<ActionDecl> botButtons(final DeclarationSnapshot decl, final String owner, final String name) {
         final List<ActionDecl> out = new ArrayList<>();
         for (final ActionDecl a : decl.actions()) {
-            if (a.data().target().type().equals("bot")
+            if (TargetMatch.matches(a.data().target(), "bot", name, tag -> false)
                     && (DisplayText.ownedBy(a.key(), owner) || a.key().startsWith("ctl:") && a.scope() == Scope.GLOBAL)) {
                 out.add(a);
             }

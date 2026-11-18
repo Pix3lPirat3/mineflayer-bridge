@@ -109,10 +109,20 @@ public final class CommandPalette {
             }
         }
         for (final ActionDecl a : decl.actions()) {
-            if (a.scope() == Scope.GLOBAL && (owner == null ? focusAllows.test(a.key()) : DisplayText.ownedBy(a.key(), owner))) {
-                out.add(new PaletteScreen.Entry(a.data().label(), I18n.get("screen.mineflayer_bridge.palette.action"), a.ownerName(),
-                        () -> actions.runGlobal(a)));
+            if (a.scope() != Scope.GLOBAL || !(owner == null ? focusAllows.test(a.key()) : DisplayText.ownedBy(a.key(), owner))) {
+                continue;
             }
+            // An action on a bot needs one: from a bot's list it runs on that bot, elsewhere it is on the bots' rows.
+            final Runnable run;
+            if (!"bot".equals(a.data().target().type())) {
+                run = () -> actions.runGlobal(a);
+            } else if (owner != null) {
+                final String bot = owner;
+                run = () -> actions.runOnBot(a, bot);
+            } else {
+                continue;
+            }
+            out.add(new PaletteScreen.Entry(a.data().label(), I18n.get("screen.mineflayer_bridge.palette.action"), a.ownerName(), run));
         }
     }
 

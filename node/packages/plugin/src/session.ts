@@ -286,6 +286,7 @@ export class SessionCore {
     }
     this.state = 'opening';
     this.link.requestConn('session.resume', { resumeToken: this.resumeToken, lastApplied: this.inApplied }, (error, response) => {
+      if (this.state === 'closed' && error === undefined) return this.closeLate((response as MessagePayloads['session.resumed']).sessionId);
       if (this.state !== 'opening') return;
       if (error === undefined) {
         this.onResumed(response as MessagePayloads['session.resumed']);
@@ -320,6 +321,7 @@ export class SessionCore {
     this.resetSequencing();
     const payload: MessagePayloads['session.open'] = { kind: this.kind, name: this.name, identity: this.identity, extensions: this.extensionRefs() };
     this.link.requestConn('session.open', payload, (error, response) => {
+      if (this.state === 'closed' && error === undefined) return this.closeLate((response as MessagePayloads['session.opened']).sessionId);
       if (this.state !== 'opening') return;
       if (error !== undefined) {
         this.state = 'idle';
@@ -862,6 +864,17 @@ export class SessionCore {
           this.handlers.superseded();
           return;
         }
+        // A newer session of this bot's name from this device took over: opening again would take it back.
+        if (reason === 'replaced') {
+          this.link.unbind(this.sessionId);
+          this.sessionId = 0;
+          this.resumeToken = undefined;
+          this.state = 'idle';
+          this.openRefused = true;
+          this.link.log.warn('session replaced by a newer one of the same bot name', { name: this.name });
+          this.handlers.lost();
+          return;
+        }
         this.restartFresh();
         return;
       }
@@ -929,6 +942,12 @@ export class SessionCore {
     this.state = 'idle';
     this.handlers.lost();
     this.maybeOpen();
+  }
+
+  /** The mod opened the session after it was closed here, as when a bot ends during the open: close it there too. */
+  private closeLate(sessionId: number): void {
+    if (this.link.state !== 'ready') return;
+    this.link.sendFrame({ flags: 0, type: Messages['session.close'].id, session: sessionId }, this.link.encode('session.close', { reason: 'closed' }));
   }
 
   /** Ends the session with `session.close`; the mod drops its objects. */
