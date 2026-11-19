@@ -1,5 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, watch, type FSWatcher } from 'node:fs';
+import { basename, dirname } from 'node:path';
+import { endpointFileOf } from './files.ts';
 import { extensionMessage } from './ext-wire.ts';
 import { hostname } from 'node:os';
 import { WebSocket, type ClientOptions, type RawData } from 'ws';
@@ -176,6 +178,8 @@ export class Link {
   /** What the mod must prove in `welcome`: it knows the secret this connection authenticated with. */
   private auth: { secret: Uint8Array | undefined; nonce: Uint8Array; connectionId: number } | undefined;
   private reconnectTimer: NodeJS.Timeout | undefined;
+  /** Watches the endpoint file while waiting to reconnect, so a game that starts is reached at once. */
+  private endpointWatch: FSWatcher | undefined;
   private heartbeatTimer: NodeJS.Timeout | undefined;
   private writableTimer: NodeJS.Timeout | undefined;
   private readonly writableWaiters = new Set<() => void>();
@@ -386,6 +390,7 @@ export class Link {
     for (const core of [...this.cores]) await core.close('shutdown');
     this.state = 'closed';
     clearTimeout(this.reconnectTimer);
+    this.unwatchEndpoint();
     clearTimeout(this.renegotiateTimer);
     clearTimeout(this.stableTimer);
     // An attempt may be reading the endpoint or credentials; let it observe the closed state.
@@ -566,7 +571,36 @@ export class Link {
     // Exponential backoff with full jitter.
     const ceiling = Math.min(max, initial * 2 ** this.attempt);
     this.attempt++;
-    this.reconnectTimer = setTimeout(() => this.beginConnect(), Math.random() * ceiling);
+    this.reconnectTimer = setTimeout(() => this.reconnectNow(), Math.random() * ceiling);
+    this.watchEndpoint();
+  }
+
+  private reconnectNow(): void {
+    clearTimeout(this.reconnectTimer);
+    this.unwatchEndpoint();
+    if (this.state !== 'closed') this.beginConnect();
+  }
+
+  /** The mod writes a new endpoint file on every start; a change to it ends the wait. */
+  private watchEndpoint(): void {
+    if (this.endpointWatch !== undefined) return;
+    const file = endpointFileOf(this.opts);
+    if (file === undefined) return;
+    try {
+      const name = basename(file);
+      const w = watch(dirname(file), { persistent: false }, (_event, changed) => {
+        if (changed === null || changed === name) this.reconnectNow();
+      });
+      w.on('error', () => this.unwatchEndpoint());
+      this.endpointWatch = w;
+    } catch {
+      // No folder yet: the timer still retries.
+    }
+  }
+
+  private unwatchEndpoint(): void {
+    this.endpointWatch?.close();
+    this.endpointWatch = undefined;
   }
 
   private onFrame(bytes: Uint8Array): void {

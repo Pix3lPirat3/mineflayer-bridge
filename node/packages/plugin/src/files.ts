@@ -78,6 +78,15 @@ export async function resolveEndpoint(options: { endpoint?: string | EndpointInf
   return readEndpointFile(defaultEndpointFile());
 }
 
+/** The endpoint file a connection reads, or undefined when it is given a URL. */
+export function endpointFileOf(options: { endpoint?: string | EndpointInfo; endpointFile?: string }, env = process.env): string | undefined {
+  if (options.endpoint !== undefined) return undefined;
+  if (options.endpointFile !== undefined) return options.endpointFile;
+  const fromEnv = env[ENDPOINT_ENV];
+  if (fromEnv !== undefined && fromEnv !== '') return /^wss?:\/\//i.test(fromEnv) ? undefined : fromEnv;
+  return defaultEndpointFile();
+}
+
 /** Writes JSON readable only by the current user, atomically through a temporary file. */
 async function writePrivateJson(path: string, value: unknown): Promise<void> {
   await mkdir(dirname(path), { recursive: true });

@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import { rm } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { BridgeError, FileCredentialStore } from '../src/index.ts';
 import { ALICE, ALICE_PREFIX, BOT_OPTIONS, FakeBot, fixture, load, OVERWORLD, sleep, until, within, type Env } from './helpers.ts';
@@ -18,6 +19,16 @@ describe('handshake and session', () => {
     expect(b.session.owner).toBe(ALICE);
     expect(b.supports('core:box@^1')).toBe(true);
     expect(b.supports('test:never-advertised')).toBe(false);
+  });
+
+  it('connects as soon as the game writes its endpoint file, not when the backoff ends', async () => {
+    await rm(e.endpointFile);
+    const h = hub({ reconnect: { initialDelayMs: 60_000, maxDelayMs: 60_000 } });
+    const waiting = new Promise<{ reason: string }>((resolve) => h.on('disconnected', resolve));
+    const b = load(h.plugin(), new FakeBot('Alice'));
+    expect((await waiting).reason).toBe('endpoint unavailable');
+    await e.mod.writeEndpointFile(e.endpointFile);
+    await until(() => b.state.connected, 3000, 'connect after the file came');
   });
 
   it('keeps a stable device id in the credentials file', async () => {
