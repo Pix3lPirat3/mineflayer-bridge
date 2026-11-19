@@ -19,6 +19,9 @@ public interface CommandControls {
     /** How long {@link #completeDynamic} waits after the last call for an argument before asking the bot, in ms. */
     long DEBOUNCE_MS = 100;
 
+    /** How long a bot's completion answer is reused without asking again, in ms. */
+    long CACHE_FRESH_MS = 1500;
+
     /**
      * Installs the game context used by chat commands and by callers that pass {@link #context()}.
      *
@@ -103,10 +106,12 @@ public interface CommandControls {
      * <p>The core does the debouncing: the request goes out on the first tick at least {@link
      * #DEBOUNCE_MS} after the call, and a newer call for the same command, path and argument within
      * that window replaces it (the older future then completes with the cached fallback). Answers
-     * are cached per input prefix and earlier arguments until the command's declaration revision
-     * changes; a cache hit completes right away. The request gives up after its 300 ms timeout and
-     * completes with the suggestions cached for the longest shorter prefix (filtered by the input),
-     * or an empty list; answers that arrive later are dropped. The future therefore completes at
+     * are cached per input prefix, earlier arguments and bots; an answer younger than {@link
+     * #CACHE_FRESH_MS} completes right away, an older one is asked for again, since what a bot
+     * offers (its items, what is near it) changes. A new declaration revision drops the command's
+     * answers, and {@link #forgetCompletions} drops them all. The request gives up after its 300 ms
+     * timeout and completes with the suggestions cached for the input or its longest shorter prefix,
+     * of any age (filtered by the input), or an empty list; answers that arrive later are dropped. The future therefore completes at
      * most about 400 ms after the call, always on the client thread, and never fails.
      *
      * @param commandKey full object key of the {@code core:command}
@@ -119,6 +124,9 @@ public interface CommandControls {
      */
     CompletableFuture<List<Suggestion>> completeDynamic(String commandKey, List<String> path, String arg, String input,
             Map<String, Object> args, List<String> bots);
+
+    /** Drops every cached completion answer; the client calls it when a chat or command screen closes. */
+    void forgetCompletions();
 
     /**
      * Asks for suggestions outside any order.

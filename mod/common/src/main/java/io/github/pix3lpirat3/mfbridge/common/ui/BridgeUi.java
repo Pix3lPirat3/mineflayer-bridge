@@ -123,6 +123,7 @@ public final class BridgeUi implements UiContext {
     private boolean showAllHud;
     private boolean showAllToggled;
     private @Nullable BridgeCore lastCore;
+    private @Nullable Screen lastScreen;
 
     /**
      * Creates the UI layer and makes it the instance the input mixins call.
@@ -543,6 +544,14 @@ public final class BridgeUi implements UiContext {
         if (core == null) {
             keys.drain();
             return;
+        }
+        final Screen screen = Minecraft.getInstance().gui.screen();
+        if (screen != lastScreen) {
+            // What bots offer goes stale (items dropped, blocks broken): a closed chat asks again.
+            if (lastScreen != null) {
+                core.commands().forgetCompletions();
+            }
+            lastScreen = screen;
         }
         keybinds.sync(core.declarations());
         surfaces.sync(core);

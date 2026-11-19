@@ -3,9 +3,11 @@ package io.github.pix3lpirat3.mfbridge.common.ui.container;
 import io.github.pix3lpirat3.mfbridge.common.ui.BridgeUi;
 import io.github.pix3lpirat3.mfbridge.common.ui.UiContext;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.ContainerLayout;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.PanelLayout;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.SlotGestures;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.ChildScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiText;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.container.SlotStorage;
 import io.github.pix3lpirat3.mfbridge.core.decl.ContainerViewDecl;
@@ -348,12 +350,12 @@ public final class ContainerViewScreen extends ChildScreen {
         lastMouseY = mouseY;
         final long now = ui.nowMs();
         if (layout.background() == ContainerLayout.Background.LECTERN) {
-            renderPages(graphics);
+            renderPages(graphics, mouseX, mouseY);
         } else if (layout.background() == ContainerLayout.Background.INVENTORY) {
             // The inventory texture has the armour and the model where a title would go: draw it above.
-            graphics.centeredText(font, title, width / 2, top - 12, 0xFFFFFFFF);
+            UiText.line(graphics, font, title.getString(), width / 2, top - 12, width - 2 * PanelLayout.MARGIN, 0xFFFFFFFF, true, true, mouseX, mouseY);
         } else {
-            graphics.text(font, title, left + 8, top + 6, UiColors.CONTAINER_LABEL, false);
+            UiText.line(graphics, font, title.getString(), left + 8, top + 6, layout.width() - 16, UiColors.CONTAINER_LABEL, false, false, mouseX, mouseY);
         }
         if (layout.inventoryLabelY() >= 0) {
             graphics.text(font, inventoryTitle, left + 8, top + layout.inventoryLabelY(), UiColors.CONTAINER_LABEL, false);
@@ -437,11 +439,11 @@ public final class ContainerViewScreen extends ChildScreen {
     }
 
     /** Lectern pages with the 26.3 {@code BookViewScreen} geometry: page indicator and 14 lines. */
-    private void renderPages(final GuiGraphicsExtractor graphics) {
+    private void renderPages(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY) {
         final ContainerViewData data = shown;
         final List<String> pages = data == null ? null : data.pages();
         final int count = pages == null ? 0 : pages.size();
-        graphics.centeredText(font, title, width / 2, top - 12, 0xFFFFFFFF);
+        UiText.line(graphics, font, title.getString(), width / 2, top - 12, width - 2 * PanelLayout.MARGIN, 0xFFFFFFFF, true, true, mouseX, mouseY);
         if (pages == null || count == 0) {
             return;
         }

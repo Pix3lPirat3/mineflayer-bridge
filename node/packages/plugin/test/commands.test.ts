@@ -321,6 +321,22 @@ describe('completion', () => {
     expect(await e.mod.complete('alice', 'pick Steve d')).toMatchObject({ dynamic: 'answered', suggestions: [{ text: 'd-4' }] });
   });
 
+  it('asks the bot again once a cached answer is old, so changed items show', async () => {
+    await restart({ completionCacheMs: 50 });
+    const b = await attached();
+    let items = ['dirt', 'diamond'];
+    b.commands.register('drop', {
+      args: [{ name: 'item', type: 'item-id', complete: (input) => items.filter((i) => i.startsWith(input)) }],
+      run: () => undefined,
+    });
+    await until(() => e.mod.commands().length === 1);
+    expect(await e.mod.complete('alice', 'drop d')).toMatchObject({ dynamic: 'answered', suggestions: [{ text: 'dirt' }, { text: 'diamond' }] });
+    items = ['diamond'];
+    expect(await e.mod.complete('alice', 'drop d')).toMatchObject({ dynamic: 'cached', suggestions: [{ text: 'dirt' }, { text: 'diamond' }] });
+    await sleep(60);
+    expect(await e.mod.complete('alice', 'drop d')).toMatchObject({ dynamic: 'answered', suggestions: [{ text: 'diamond' }] });
+  });
+
   it('answers an empty list for a throwing or malformed completion and reports it as an error event', async () => {
     const b = await attached();
     const errors: Error[] = [];

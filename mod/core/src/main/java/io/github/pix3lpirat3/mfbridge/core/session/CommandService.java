@@ -42,8 +42,8 @@ import org.jspecify.annotations.Nullable;
 final class CommandService implements CommandControls {
     private static final int CACHE_ENTRIES = 256;
 
-    /** A cached answer, valid while the command's declaration revision is {@code rev}. */
-    private record Cached(long rev, List<Suggestion> suggestions) {}
+    /** A cached answer for revision {@code rev}, received at {@code atMs}. */
+    private record Cached(long rev, long atMs, List<Suggestion> suggestions) {}
 
     /** A request waiting out its debounce. */
     private record Waiting(String slot, String prefixKey, String input, long rev, CommandComplete message,
@@ -331,11 +331,10 @@ final class CommandService implements CommandControls {
         // The answer depends on who the order is for, such as the items those bots carry.
         String prefixKey = slot + '\u0000' + new TreeMap<>(args) + '\u0000' + String.join(",", bots) + '\u0000';
         Cached hit = cache.get(prefixKey + input);
-        if (hit != null && hit.rev() == rev) {
-            return CompletableFuture.completedFuture(hit.suggestions());
-        }
-        if (hit != null) {
+        if (hit != null && hit.rev() != rev) {
             invalidate(commandKey);
+        } else if (hit != null && host.nowMs() - hit.atMs() < CACHE_FRESH_MS) {
+            return CompletableFuture.completedFuture(hit.suggestions());
         }
         Waiting previous = waiting.remove(slot);
         if (previous != null) {
@@ -387,7 +386,7 @@ final class CommandService implements CommandControls {
                     List<Suggestion> list = List.copyOf(answer.suggestions());
                     StoredObject now = interactions.declaration(w.message().command(), CommandData.class);
                     if (now != null && now.state().rev() == w.rev()) {
-                        cache.put(w.prefixKey() + w.input(), new Cached(w.rev(), list));
+                        cache.put(w.prefixKey() + w.input(), new Cached(w.rev(), host.nowMs(), list));
                     }
                     w.future().complete(list);
                 });
@@ -413,6 +412,11 @@ final class CommandService implements CommandControls {
             return List.copyOf(out);
         }
         return List.of();
+    }
+
+    @Override
+    public void forgetCompletions() {
+        cache.clear();
     }
 
     private void invalidate(String commandKey) {

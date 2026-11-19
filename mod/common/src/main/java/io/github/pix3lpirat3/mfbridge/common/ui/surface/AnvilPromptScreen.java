@@ -119,7 +119,7 @@ public final class AnvilPromptScreen extends PromptScreen {
         }
         graphics.item(result, left + 134, top + 47);
         drawInventory(graphics, left + 8, top + 84);
-        drawPromptLine(graphics, top - 12);
+        drawPromptLine(graphics, top - 12, mouseX, mouseY);
         final double rx = mouseX - left;
         final double ry = mouseY - top;
         if (rx >= 133 && rx < 151 && ry >= 46 && ry < 64) {

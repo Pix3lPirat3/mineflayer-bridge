@@ -19,8 +19,8 @@ import net.minecraft.client.resources.language.I18n;
  */
 public final class PlayerFeedback {
 
-    /** Longest reply a toast shows; a longer one is cut there and printed whole in chat. */
-    private static final int TOAST_TEXT_MAX = 110;
+    /** Longest text a toast shows, about its six lines; a longer one is cut there and printed whole in chat. */
+    private static final int TOAST_TEXT_MAX = 160;
 
     private final Consumer<Notification> notifier;
     private final ChatBridgeClient chat;
@@ -96,7 +96,19 @@ public final class PlayerFeedback {
             case "warn", "warning" -> Notification.Severity.WARNING;
             default -> Notification.Severity.INFO;
         };
-        notifier.accept(new Notification(n.source(), n.text(), severity));
+        toast(n.source(), n.text(), n.level(), severity);
+    }
+
+    /** A toast, with a text too long for one also printed whole in chat. */
+    private void toast(final String title, final String text, final String level, final Notification.Severity severity) {
+        if (text.length() > TOAST_TEXT_MAX) {
+            chat.notice(title, text, level, List.of());
+        }
+        notifier.accept(new Notification(title, cut(text), severity));
+    }
+
+    private static String cut(final String text) {
+        return text.length() > TOAST_TEXT_MAX ? text.substring(0, TOAST_TEXT_MAX - 3) + "..." : text;
     }
 
     /**
@@ -109,7 +121,7 @@ public final class PlayerFeedback {
         if (messagesInChat) {
             chat.notice(title, message, "info", List.of());
         } else {
-            notifier.accept(new Notification(title, message, Notification.Severity.INFO));
+            toast(title, message, "info", Notification.Severity.INFO);
         }
     }
 
@@ -123,7 +135,7 @@ public final class PlayerFeedback {
         if (messagesInChat) {
             chat.notice(title, message, "error", List.of());
         } else {
-            notifier.accept(new Notification(title, message, Notification.Severity.ERROR));
+            toast(title, message, "error", Notification.Severity.ERROR);
         }
     }
 
@@ -156,7 +168,7 @@ public final class PlayerFeedback {
                 chat.reply(owner, text, !ok);
             }
             if (!inChat && !messagesInChat) {
-                final String shown = text.length() > TOAST_TEXT_MAX ? text.substring(0, TOAST_TEXT_MAX - 3) + "..." : text;
+                final String shown = cut(text);
                 if (ok) {
                     info(owner, shown);
                 } else {

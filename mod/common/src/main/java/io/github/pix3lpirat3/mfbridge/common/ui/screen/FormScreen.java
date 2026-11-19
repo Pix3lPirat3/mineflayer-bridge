@@ -1,9 +1,12 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.ButtonRows;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.CommandArgs;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FieldEditors;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FieldSpec;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FormValues;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.PanelLayout;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.TextWrap;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Suggestion;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Vec3i;
 import java.util.ArrayList;
@@ -12,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
@@ -32,10 +36,13 @@ import org.jspecify.annotations.Nullable;
  */
 public final class FormScreen extends ChildScreen {
 
-    private static final int LABEL_WIDTH = 120;
-    private static final int WIDGET_WIDTH = 200;
+    private static final int MIN_PANEL = 200;
+    private static final int MAX_PANEL = 340;
     private static final int ROW = 24;
-    private static final int TOP = 34;
+    private static final int TITLE_LINES = 3;
+    private static final int LABEL_LINES = 2;
+    private static final int BUTTON_MIN = 100;
+    private static final int BUTTON_GAP = 4;
     private static final int LABEL_ARGB = 0xFFE0E0E0;
 
     /** Validates and sends the input. */
@@ -129,8 +136,19 @@ public final class FormScreen extends ChildScreen {
     private boolean finished;
     private String error = "";
     private @Nullable String errorField;
+    /** Layout of this pass, set by {@link #init()}. */
+    private int panelLeft;
+    private int columnWidth;
+    private int labelWidth;
+    private int widgetWidth;
+    private int top;
+    private int bottom;
+    private TextWrap.Wrapped titleLines = new TextWrap.Wrapped(List.of(), false);
+    private String subtitleLine = "";
+    private boolean dragging;
 
-    private record Label(Component text, int x, int y, String fieldId) {
+    /** A field label, one or two lines, with the full text for a tooltip when it was cut. */
+    private record Label(List<String> lines, int x, int y, int w, String fieldId, @Nullable String full) {
     }
 
     /**
@@ -253,63 +271,115 @@ public final class FormScreen extends ChildScreen {
         return finished;
     }
 
-    private int bottom() {
-        return height - (extras.isEmpty() ? 46 : 70);
-    }
-
     private static int rows(final FieldSpec field) {
         return field.kind() == FieldSpec.Kind.MULTI_SELECT ? Math.max(1, field.options().size()) : 1;
+    }
+
+    private PanelLayout.Scroll scrolling() {
+        return new PanelLayout.Scroll(contentHeight, bottom - top);
     }
 
     @Override
     protected void init() {
         labels.clear();
         boxes.clear();
+        extraIcons.clear();
+        final ToIntFunction<String> measure = UiText.width(font);
+        // The panel follows the window; the scrollbar sits in its right edge.
+        final int panel = PanelLayout.width(width, MIN_PANEL, MAX_PANEL, 0.9);
+        panelLeft = width / 2 - panel / 2;
+        columnWidth = panel - PanelLayout.SCROLLBAR_WIDTH - 4;
+        labelWidth = columnWidth * 3 / 8;
+        widgetWidth = columnWidth - labelWidth;
+
+        final int textWidth = width - 2 * PanelLayout.MARGIN;
+        titleLines = TextWrap.clamp(title.getString(), textWidth, TITLE_LINES, measure);
+        final Component sub = subtitle;
+        subtitleLine = sub == null ? "" : TextWrap.ellipsize(sub.getString(), textWidth, measure);
+        top = 8 + Math.max(1, titleLines.size()) * 10 + (sub == null ? 4 : 14);
+
+        // Extra buttons get rows of their own, apart from Submit and Cancel, so a remove is never
+        // pressed by mistake. Rows that would take over a third of the window scroll with the fields.
+        final int buttonY = height - 26;
+        List<ButtonRows.Placed> placed = ButtonRows.layout(extraWidths(), textWidth, BUTTON_GAP, BUTTON_MIN);
+        int extraRows = ButtonRows.rows(placed);
+        final boolean extrasInFooter = extraRows * ROW <= Math.max(ROW, height / 3);
+        if (!extrasInFooter) {
+            placed = ButtonRows.layout(extraWidths(), columnWidth, BUTTON_GAP, BUTTON_MIN);
+            extraRows = ButtonRows.rows(placed);
+        }
+        final int footerTop = buttonY - (extrasInFooter ? extraRows * ROW : 0);
+        bottom = Math.max(top + ROW, footerTop - 16);
+
         contentHeight = 0;
         for (final FieldSpec field : fields) {
             contentHeight += rows(field) * ROW;
         }
-        scroll = Math.clamp(scroll, 0, Math.max(0, contentHeight - (bottom() - TOP)));
-        final int left = width / 2 - (LABEL_WIDTH + WIDGET_WIDTH) / 2;
-        final int widgetX = left + LABEL_WIDTH;
-        int y = TOP - scroll;
+        final int extrasGap = fields.isEmpty() ? 0 : ROW / 2;
+        if (!extrasInFooter) {
+            contentHeight += extraRows * ROW + extrasGap;
+        }
+        scroll = scrolling().clamp(scroll);
+
+        final int widgetX = panelLeft + labelWidth;
+        int y = top - scroll;
         for (final FieldSpec field : fields) {
-            if (y >= TOP - 2 && y + 20 <= bottom()) {
-                labels.add(new Label(Component.literal(field.label() + (field.required() ? " *" : "")), left, y + 6, field.id()));
+            if (visible(y)) {
+                addLabel(field, panelLeft, y, measure);
                 addField(field, widgetX, y);
             } else if (field.kind() == FieldSpec.Kind.MULTI_SELECT) {
                 addField(field, widgetX, y);
             }
             y += rows(field) * ROW;
         }
-        final int buttonY = height - 26;
-        extraIcons.clear();
-        if (!extras.isEmpty()) {
-            // Their own row, apart from Save and Cancel, so a remove is never pressed by mistake.
-            final int[] widths = new int[extras.size()];
-            int total = -4;
-            for (int i = 0; i < extras.size(); i++) {
-                final ExtraButton e = extras.get(i);
-                widths[i] = Math.max(100, font.width(e.label()) + (e.icon() == null ? 16 : 44));
-                total += widths[i] + 4;
-            }
-            int x = width / 2 - total / 2;
-            for (int i = 0; i < extras.size(); i++) {
-                final ExtraButton e = extras.get(i);
-                final Component text = e.danger() ? Component.literal(e.label()).withStyle(net.minecraft.ChatFormatting.RED) : Component.literal(e.label());
-                addRenderableWidget(Button.builder(text, b -> pressExtra(e.id())).bounds(x, buttonY - 24, widths[i], 20).build());
-                if (e.icon() != null) {
-                    extraIcons.add(new int[] {i, x + 4, buttonY - 22});
-                }
-                x += widths[i] + 4;
-            }
+        if (extrasInFooter) {
+            addExtras(placed, PanelLayout.MARGIN, footerTop, false);
+        } else {
+            addExtras(placed, panelLeft, y + extrasGap, true);
         }
         addRenderableWidget(Button.builder(submitLabel, b -> trySubmit()).bounds(width / 2 - 102, buttonY, 100, 20).build());
         addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, b -> onClose()).bounds(width / 2 + 2, buttonY, 100, 20).build());
     }
 
+    private int[] extraWidths() {
+        final int[] widths = new int[extras.size()];
+        for (int i = 0; i < extras.size(); i++) {
+            final ExtraButton e = extras.get(i);
+            widths[i] = font.width(e.label()) + (e.icon() == null ? 16 : 44);
+        }
+        return widths;
+    }
+
+    private void addExtras(final List<ButtonRows.Placed> placed, final int left, final int y, final boolean scrolled) {
+        for (final ButtonRows.Placed p : placed) {
+            final ExtraButton e = extras.get(p.index());
+            final int bx = left + p.x();
+            final int by = y + p.row() * ROW;
+            if (scrolled && !visible(by)) {
+                continue;
+            }
+            final String shown = TextWrap.ellipsize(e.label(), p.width() - (e.icon() == null ? 8 : 36), UiText.width(font));
+            final Component text = e.danger() ? Component.literal(shown).withStyle(net.minecraft.ChatFormatting.RED) : Component.literal(shown);
+            final Button button = Button.builder(text, b -> pressExtra(e.id())).bounds(bx, by, p.width(), 20).build();
+            if (!shown.equals(e.label())) {
+                button.setTooltip(UiText.tooltip(e.label(), null));
+            }
+            addRenderableWidget(button);
+            if (e.icon() != null) {
+                extraIcons.add(new int[] {p.index(), bx + 4, by + 2});
+            }
+        }
+    }
+
+    private void addLabel(final FieldSpec field, final int x, final int y, final ToIntFunction<String> measure) {
+        final String full = field.label() + (field.required() ? " *" : "");
+        final TextWrap.Wrapped lines = TextWrap.clamp(full, labelWidth - 6, LABEL_LINES, measure);
+        final int textY = lines.size() > 1 ? y + 1 : y + 6;
+        labels.add(new Label(lines.lines(), x, textY, labelWidth - 4, field.id(), lines.clamped() ? full : null));
+    }
+
     private boolean visible(final int y) {
-        return y >= TOP - 2 && y + 20 <= bottom();
+        return y >= top - 2 && y + 20 <= bottom;
     }
 
     @SuppressWarnings("unchecked")
@@ -318,7 +388,7 @@ public final class FormScreen extends ChildScreen {
         final Component label = Component.literal(field.label());
         switch (field.kind()) {
             case TEXT, ITEM, BLOCK, ZONE, NUMBER, INTEGER -> {
-                final EditBox box = new EditBox(font, x, y, WIDGET_WIDTH, 20, label);
+                final EditBox box = new EditBox(font, x, y, widgetWidth, 20, label);
                 box.setMaxLength(1024);
                 box.setValue(String.valueOf(raw.get(id)));
                 box.moveCursorToStart(false);
@@ -329,26 +399,32 @@ public final class FormScreen extends ChildScreen {
                 boxes.put(id, box);
                 addRenderableWidget(box);
             }
-            case SLIDER -> addRenderableWidget(new FieldSlider(x, y, field, raw));
+            case SLIDER -> addRenderableWidget(new FieldSlider(x, y, widgetWidth, field, raw));
             case TOGGLE -> addRenderableWidget(CycleButton.onOffBuilder(Boolean.TRUE.equals(raw.get(id)))
                     .displayOnlyValue()
-                    .create(x, y, WIDGET_WIDTH, 20, label, (b, v) -> raw.put(id, v)));
+                    .create(x, y, widgetWidth, 20, label, (b, v) -> raw.put(id, v)));
             case SELECT -> {
                 final List<String> options = field.options().isEmpty() ? List.of(String.valueOf(raw.get(id))) : field.options();
                 final String current = options.contains(String.valueOf(raw.get(id))) ? String.valueOf(raw.get(id)) : options.getFirst();
                 raw.put(id, current);
-                addRenderableWidget(CycleButton.builder((String s) -> Component.literal(s), current)
+                // Long options are cut on the button and shown whole in its tooltip.
+                final int room = widgetWidth - 8;
+                final ToIntFunction<String> measure = UiText.width(font);
+                addRenderableWidget(CycleButton.builder((String s) -> Component.literal(TextWrap.ellipsize(s, room, measure)), current)
                         .withValues(options)
+                        .withTooltip(s -> TextWrap.overflows(s, room, measure) ? UiText.tooltip(s, null) : null)
                         .displayOnlyValue()
-                        .create(x, y, WIDGET_WIDTH, 20, label, (b, v) -> raw.put(id, v)));
+                        .create(x, y, widgetWidth, 20, label, (b, v) -> raw.put(id, v)));
             }
             case MULTI_SELECT -> {
                 final List<Object> picked = (List<Object>) raw.get(id);
                 int rowY = y;
                 for (final String option : field.options()) {
                     if (visible(rowY)) {
+                        final boolean cut = font.width(option + ": " + CommonComponents.OPTION_OFF.getString()) > widgetWidth - 8;
                         addRenderableWidget(CycleButton.onOffBuilder(picked.contains(option))
-                                .create(x, rowY, WIDGET_WIDTH, 20, Component.literal(option), (b, v) -> {
+                                .withTooltip(v -> cut ? UiText.tooltip(option, null) : null)
+                                .create(x, rowY, widgetWidth, 20, Component.literal(option), (b, v) -> {
                                     picked.remove(option);
                                     if (v) {
                                         picked.add(option);
@@ -370,7 +446,7 @@ public final class FormScreen extends ChildScreen {
         final boolean hereButton = here != null;
         final int buttons = (pickButton ? 1 : 0) + (hereButton ? 1 : 0);
         final int buttonWidth = 40;
-        final int boxWidth = (WIDGET_WIDTH - buttons * (buttonWidth + 2) - 4) / 3;
+        final int boxWidth = (widgetWidth - buttons * (buttonWidth + 2) - 4) / 3;
         final String[] axes = {"x", "y", "z"};
         for (int i = 0; i < 3; i++) {
             final int index = i;
@@ -467,16 +543,45 @@ public final class FormScreen extends ChildScreen {
                 return true;
             }
         }
-        final int max = Math.max(0, contentHeight - (bottom() - TOP));
-        if (max == 0) {
+        final PanelLayout.Scroll s = scrolling();
+        if (!s.scrolls()) {
             return super.mouseScrolled(x, y, scrollX, scrollY);
         }
-        final int next = Math.clamp(scroll - (int) Math.signum(scrollY) * ROW, 0, max);
-        if (next != scroll) {
-            scroll = next;
+        scrollTo(s.clamp(scroll - (int) Math.signum(scrollY) * ROW));
+        return true;
+    }
+
+    private void scrollTo(final int offset) {
+        if (offset != scroll) {
+            scroll = offset;
             rebuildWidgets();
         }
-        return true;
+    }
+
+    private int scrollbarX() {
+        return panelLeft + columnWidth + 4;
+    }
+
+    private boolean onScrollbar(final double x, final double y) {
+        return scrolling().scrolls() && UiText.inside(x, y, scrollbarX() - 1, top, PanelLayout.SCROLLBAR_WIDTH + 2, bottom - top);
+    }
+
+    @Override
+    public boolean mouseDragged(final MouseButtonEvent event, final double dx, final double dy) {
+        if (dragging) {
+            scrollTo(scrolling().offsetAt(event.y() - top));
+            return true;
+        }
+        return super.mouseDragged(event, dx, dy);
+    }
+
+    @Override
+    public boolean mouseReleased(final MouseButtonEvent event) {
+        if (dragging) {
+            dragging = false;
+            return true;
+        }
+        return super.mouseReleased(event);
     }
 
     /** Cancels the form as the player's Esc does, without touching the open screen. Does nothing once it is done. */
@@ -496,7 +601,15 @@ public final class FormScreen extends ChildScreen {
     @Override
     public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);
-        graphics.centeredText(font, title, width / 2, 8, UiColors.TEXT);
+        int ty = 8;
+        for (final String line : titleLines.lines()) {
+            graphics.centeredText(font, line, width / 2, ty, UiColors.TEXT);
+            ty += 10;
+        }
+        ty = 8 + Math.max(1, titleLines.size()) * 10;
+        if (titleLines.clamped() && UiText.inside(mouseX, mouseY, PanelLayout.MARGIN, 8, width - 2 * PanelLayout.MARGIN, ty - 8)) {
+            UiText.showTooltip(graphics, font, title.getString(), mouseX, mouseY);
+        }
         for (final int[] at : extraIcons) {
             switch (extras.get(at[0]).icon()) {
                 case Icon.Item item -> graphics.fakeItem(item.stack(), at[1], at[2]);
@@ -507,18 +620,31 @@ public final class FormScreen extends ChildScreen {
         }
         final Component sub = subtitle;
         if (sub != null) {
-            graphics.centeredText(font, sub, width / 2, 20, UiColors.LABEL);
+            graphics.centeredText(font, subtitleLine, width / 2, ty + 2, UiColors.LABEL);
+            if (!subtitleLine.equals(sub.getString()) && UiText.inside(mouseX, mouseY, PanelLayout.MARGIN, ty + 2, width - 2 * PanelLayout.MARGIN, 9)) {
+                UiText.showTooltip(graphics, font, sub.getString(), mouseX, mouseY);
+            }
         }
         for (final Label label : labels) {
-            graphics.text(font, label.text(), label.x(), label.y(), label.fieldId().equals(errorField) ? UiColors.ERROR : LABEL_ARGB);
+            int ly = label.y();
+            for (final String line : label.lines()) {
+                graphics.text(font, line, label.x(), ly, label.fieldId().equals(errorField) ? UiColors.ERROR : LABEL_ARGB);
+                ly += 9;
+            }
+            final String full = label.full();
+            if (full != null && UiText.inside(mouseX, mouseY, label.x(), label.y(), label.w(), ly - label.y())) {
+                UiText.showTooltip(graphics, font, full, mouseX, mouseY);
+            }
         }
-        if (contentHeight > bottom() - TOP) {
-            graphics.text(font, scroll > 0 ? "^" : " ", width / 2 + (LABEL_WIDTH + WIDGET_WIDTH) / 2 + 4, TOP, UiColors.LABEL);
-            graphics.text(font, scroll < contentHeight - (bottom() - TOP) ? "v" : " ",
-                    width / 2 + (LABEL_WIDTH + WIDGET_WIDTH) / 2 + 4, bottom() - 10, UiColors.LABEL);
-        }
+        UiText.scrollbar(graphics, scrollbarX(), top, scrolling(), scroll);
         if (!error.isEmpty()) {
-            graphics.centeredText(font, error, width / 2, height - 40, UiColors.ERROR);
+            final int room = width - 2 * PanelLayout.MARGIN;
+            final String shown = TextWrap.ellipsize(error, room, UiText.width(font));
+            final int ey = bottom + 4;
+            graphics.centeredText(font, shown, width / 2, ey, UiColors.ERROR);
+            if (!shown.equals(error) && UiText.inside(mouseX, mouseY, PanelLayout.MARGIN, ey, room, 9)) {
+                UiText.showTooltip(graphics, font, error, mouseX, mouseY);
+            }
         }
         renderSuggestions(graphics, mouseX, mouseY);
     }
@@ -554,6 +680,11 @@ public final class FormScreen extends ChildScreen {
 
     @Override
     public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
+        if (event.button() == 0 && onScrollbar(event.x(), event.y())) {
+            dragging = true;
+            scrollTo(scrolling().offsetAt(event.y() - top));
+            return true;
+        }
         final EditBox box = dropdownBox();
         if (box != null) {
             final int x = box.getX();
@@ -575,8 +706,8 @@ public final class FormScreen extends ChildScreen {
         private final double min;
         private final double max;
 
-        FieldSlider(final int x, final int y, final FieldSpec field, final Map<String, Object> raw) {
-            super(x, y, WIDGET_WIDTH, 20, Component.literal(field.label()), 0d);
+        FieldSlider(final int x, final int y, final int width, final FieldSpec field, final Map<String, Object> raw) {
+            super(x, y, width, 20, Component.literal(field.label()), 0d);
             this.field = field;
             this.raw = raw;
             this.min = field.min() == null ? 0d : field.min();

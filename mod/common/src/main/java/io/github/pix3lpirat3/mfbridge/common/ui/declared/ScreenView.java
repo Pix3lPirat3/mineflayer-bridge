@@ -1,14 +1,19 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.declared;
 
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.PanelLayout;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.TextWrap;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.ChildScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiText;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenItem;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenRow;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -45,8 +50,14 @@ import org.jspecify.annotations.Nullable;
  */
 public abstract class ScreenView extends ChildScreen {
 
-    /** Width of a tab's column, in GUI pixels. */
+    /**
+     * Width of a tab's column on a window wide enough, in GUI pixels. Item widths are declared
+     * against it; in a narrower window the column shrinks and they shrink with it.
+     */
     public static final int COLUMN_WIDTH = 320;
+    private static final int MIN_COLUMN = 160;
+    /** Room for the scroll bar of a tab beside its column. */
+    private static final int SCROLLBAR_ROOM = 10;
     /** Gap between items and rows, in GUI pixels. */
     public static final int GAP = 4;
     private static final int MIN_FLEX_WIDTH = 40;
@@ -66,7 +77,11 @@ public abstract class ScreenView extends ChildScreen {
     private @Nullable ScreenData shown;
     /** Every item of the shown model with the widget built for it, in model order. */
     private final List<Bound> bound = new ArrayList<>();
+    /** The width each text widget was given, since such a widget reports only the width of its text. */
+    private final Map<AbstractWidget, Integer> textWidths = new IdentityHashMap<>();
     private @Nullable StringWidget statusLine;
+    /** Width of the column in this window, set by {@link #init()}. */
+    private int column = COLUMN_WIDTH;
     private boolean stale;
     private int ticks;
 
@@ -134,6 +149,8 @@ public abstract class ScreenView extends ChildScreen {
         final ScreenData data = model();
         shown = data;
         bound.clear();
+        textWidths.clear();
+        column = PanelLayout.width(width - SCROLLBAR_ROOM, MIN_COLUMN, COLUMN_WIDTH, 1.0);
         final Component line = status();
         layout = new HeaderAndFooterLayout(this, HeaderAndFooterLayout.DEFAULT_HEADER_AND_FOOTER_HEIGHT,
                 FOOTER_BUTTONS + (line == null ? 0 : FOOTER_LINE));
@@ -146,7 +163,7 @@ public abstract class ScreenView extends ChildScreen {
         }
         if (built.isEmpty()) {
             final LinearLayout empty = emptyColumn();
-            empty.addChild(text(Component.translatable("mineflayer_bridge.screen.empty"), UiColors.LABEL, COLUMN_WIDTH));
+            empty.addChild(text(Component.translatable("mineflayer_bridge.screen.empty"), UiColors.LABEL, column));
             built.add(new ScreenTab(minecraft, Component.literal(data.title()), empty));
             ids.add("");
         }
@@ -158,7 +175,8 @@ public abstract class ScreenView extends ChildScreen {
             addRenderableWidget(bar);
         } else {
             tabBar = null;
-            layout.addTitleHeader(Component.literal(data.title()), font);
+            final String title = TextWrap.ellipsize(data.title(), width - 2 * PanelLayout.MARGIN, UiText.width(font));
+            layout.addTitleHeader(Component.literal(title), font);
             tabManager.setCurrentTab(tabs.getFirst(), false);
         }
 
@@ -169,6 +187,7 @@ public abstract class ScreenView extends ChildScreen {
         footerButtons(buttons);
         buttons.addChild(Button.builder(parent() == null ? CommonComponents.GUI_DONE : CommonComponents.GUI_BACK, b -> onClose())
                 .width(150).build());
+        fitFooter(buttons);
         layout.visitWidgets(w -> {
             w.setTabOrderGroup(1);
             addRenderableWidget(w);
@@ -289,16 +308,53 @@ public abstract class ScreenView extends ChildScreen {
         if (!(element instanceof AbstractWidget widget)) {
             return;
         }
-        final Component label = Component.literal(it.text() == null ? "" : it.text());
+        final String text = it.text() == null ? "" : it.text();
+        final Component label = Component.literal(text);
         switch (it.kind()) {
-            case "heading" -> widget.setMessage(Component.empty().append(label.copy().withStyle(ChatFormatting.BOLD)));
+            case "heading" -> widget.setMessage(heading(label));
             case "text" -> widget.setMessage(colored(label, it.color() == null ? UiColors.TEXT : it.color()));
             case "toggle" -> ((CycleButton<Boolean>) widget).setValue(Boolean.TRUE.equals(it.value()));
             case "cycle" -> ((CycleButton<Long>) widget).setValue(it.value() instanceof Number n ? n.longValue() : 0L);
+            case "button" -> widget.setMessage(Component.literal(TextWrap.ellipsize(text, buttonRoom(widget), UiText.width(font))));
             default -> widget.setMessage(label);
         }
-        widget.setTooltip(it.tooltip() == null ? null : Tooltip.create(Component.literal(it.tooltip())));
+        widget.setTooltip(tooltip(it, widget));
         widget.active = it.enabled();
+    }
+
+    private static Component heading(final Component label) {
+        return Component.empty().append(label.copy().withStyle(ChatFormatting.BOLD));
+    }
+
+    /** Room for a button's label: its width less vanilla's margins, and less the icon when it has one. */
+    private static int buttonRoom(final AbstractWidget widget) {
+        return widget.getWidth() - (widget instanceof ItemIconButton ? 24 : 8);
+    }
+
+    /**
+     * The tooltip of an item's widget: the item's own, under the item's full text when the widget
+     * cut it, or null for none.
+     */
+    private @Nullable Tooltip tooltip(final ScreenItem it, final AbstractWidget widget) {
+        final String text = it.text() == null ? "" : it.text();
+        final boolean cut = switch (it.kind()) {
+            case "text" -> font.splitIgnoringLanguage(Component.literal(text), maxWidthOf(widget)).size() > TEXT_ROWS;
+            case "heading" -> font.width(heading(Component.literal(text))) > maxWidthOf(widget);
+            case "button" -> TextWrap.overflows(text, buttonRoom(widget), UiText.width(font));
+            case "item" -> font.width(text) > widget.getWidth() - ItemRowWidget.TEXT_LEFT;
+            case "toggle", "cycle" -> font.width(widget.getMessage()) > widget.getWidth() - 8;
+            default -> false;
+        };
+        if (cut && !text.isEmpty()) {
+            return UiText.tooltip(text, it.tooltip());
+        }
+        return it.tooltip() == null ? null : Tooltip.create(Component.literal(it.tooltip()));
+    }
+
+    /** The width a text widget wraps or clips at, which it was built with. */
+    private int maxWidthOf(final AbstractWidget widget) {
+        final Integer w = textWidths.get(widget);
+        return w == null ? widget.getWidth() : w;
     }
 
     private LinearLayout column(final List<ScreenRow> rows) {
@@ -319,18 +375,24 @@ public abstract class ScreenView extends ChildScreen {
     private record Sized(ScreenItem item, int width) {
     }
 
+    /** A declared width in this window: scaled with the column when it is narrower, never wider than it. */
+    private int scaled(final int declared) {
+        final int w = column < COLUMN_WIDTH ? (int) ((long) declared * column / COLUMN_WIDTH) : declared;
+        return Math.clamp(w, 1, column);
+    }
+
     /**
      * Splits a row into lines that fit the column. Items with a width keep it; the others share what
      * is left of their line, at least {@link #MIN_FLEX_WIDTH} each.
      */
-    private static List<List<Sized>> lines(final List<ScreenItem> items) {
+    private List<List<Sized>> lines(final List<ScreenItem> items) {
         final List<List<ScreenItem>> groups = new ArrayList<>();
         List<ScreenItem> line = new ArrayList<>();
         int used = 0;
         for (final ScreenItem it : items) {
-            final int w = it.width() == null ? MIN_FLEX_WIDTH : Math.min(it.width(), COLUMN_WIDTH);
+            final int w = it.width() == null ? MIN_FLEX_WIDTH : scaled(it.width());
             final int next = used + (line.isEmpty() ? 0 : GAP) + w;
-            if (!line.isEmpty() && next > COLUMN_WIDTH) {
+            if (!line.isEmpty() && next > column) {
                 groups.add(line);
                 line = new ArrayList<>();
                 used = w;
@@ -350,51 +412,102 @@ public abstract class ScreenView extends ChildScreen {
                 if (it.width() == null) {
                     flex++;
                 } else {
-                    fixed += Math.min(it.width(), COLUMN_WIDTH);
+                    fixed += scaled(it.width());
                 }
             }
-            final int share = flex == 0 ? 0 : Math.max(MIN_FLEX_WIDTH, (COLUMN_WIDTH - fixed) / flex);
-            out.add(g.stream().map(it -> new Sized(it, it.width() == null ? share : Math.min(it.width(), COLUMN_WIDTH))).toList());
+            final int share = flex == 0 ? 0 : Math.min(column, Math.max(MIN_FLEX_WIDTH, (column - fixed) / flex));
+            out.add(g.stream().map(it -> new Sized(it, it.width() == null ? share : scaled(it.width()))).toList());
         }
         return out;
     }
 
     private LayoutElement widget(final ScreenItem it, final int w) {
-        final Component label = Component.literal(it.text() == null ? "" : it.text());
+        final String text = it.text() == null ? "" : it.text();
+        final Component label = Component.literal(text);
+        // A toggle or cycle asks for its tooltip again on every change, so it looks up its item then.
+        final AtomicReference<@Nullable AbstractWidget> self = new AtomicReference<>();
         final LayoutElement element = switch (it.kind()) {
-            case "heading" -> new StringWidget(Component.empty().append(label.copy().withStyle(ChatFormatting.BOLD)), font).setMaxWidth(w);
+            case "heading" -> new StringWidget(heading(label), font).setMaxWidth(w);
             case "text" -> text(label, it.color() == null ? UiColors.TEXT : it.color(), w);
-            case "button" -> ItemIconButton.create(w, label, it.icon(), b -> use(it, null));
+            case "button" -> {
+                final Button b = ItemIconButton.create(w, label, it.icon(), x -> use(it, null));
+                b.setMessage(Component.literal(TextWrap.ellipsize(text, buttonRoom(b), UiText.width(font))));
+                yield b;
+            }
             case "toggle" -> CycleButton.onOffBuilder(Boolean.TRUE.equals(it.value()))
+                    .withTooltip(v -> liveTooltip(self.get()))
                     .create(0, 0, w, Button.DEFAULT_HEIGHT, label, (b, v) -> use(it, v));
-            case "cycle" -> cycle(it, label, w);
+            case "cycle" -> cycle(it, label, w, self);
             case "item" -> new ItemRowWidget(w, it.icon(), label, font);
             default -> SpacerElement.width(w);
         };
         if (element instanceof AbstractWidget widget) {
-            if (it.tooltip() != null) {
-                widget.setTooltip(Tooltip.create(Component.literal(it.tooltip())));
+            self.set(widget);
+            if (it.kind().equals("text") || it.kind().equals("heading")) {
+                textWidths.put(widget, w);
             }
+            widget.setTooltip(tooltip(it, widget));
             widget.active = it.enabled();
         }
         bound.add(new Bound(it, element));
         return element;
     }
 
-    private LayoutElement cycle(final ScreenItem it, final Component label, final int w) {
+    /** The tooltip of a widget's current item, for widgets that ask for it themselves. */
+    private @Nullable Tooltip liveTooltip(final @Nullable AbstractWidget widget) {
+        if (widget == null) {
+            return null;
+        }
+        for (final Bound b : bound) {
+            if (b.element() == widget) {
+                return tooltip(b.item(), widget);
+            }
+        }
+        return null;
+    }
+
+    private LayoutElement cycle(final ScreenItem it, final Component label, final int w, final AtomicReference<@Nullable AbstractWidget> self) {
         final List<String> options = it.options() == null || it.options().isEmpty() ? List.of("") : it.options();
         final List<Long> indexes = IntStream.range(0, options.size()).mapToObj(i -> (long) i).toList();
         final long chosen = it.value() instanceof Number n ? Math.clamp(n.longValue(), 0, options.size() - 1) : 0;
         return CycleButton.<Long>builder(i -> Component.literal(options.get(i.intValue())), chosen)
                 .withValues(indexes)
+                .withTooltip(v -> liveTooltip(self.get()))
                 .create(0, 0, w, Button.DEFAULT_HEIGHT, label, (b, v) -> use(it, v));
     }
 
-    private static LinearLayout emptyColumn() {
-        final LinearLayout column = LinearLayout.vertical().spacing(2);
-        column.defaultCellSetting().alignHorizontallyLeft();
-        column.addChild(SpacerElement.width(COLUMN_WIDTH));
-        return column;
+    /** Shrinks the footer buttons evenly when the row is wider than the window. */
+    private void fitFooter(final LinearLayout row) {
+        final List<AbstractWidget> widgets = new ArrayList<>();
+        row.visitWidgets(widgets::add);
+        if (widgets.isEmpty()) {
+            return;
+        }
+        int total = GAP * (widgets.size() - 1);
+        for (final AbstractWidget w : widgets) {
+            total += w.getWidth();
+        }
+        final int room = width - 2 * PanelLayout.MARGIN;
+        if (total <= room) {
+            return;
+        }
+        final int each = Math.max(20, (room - GAP * (widgets.size() - 1)) / widgets.size());
+        for (final AbstractWidget w : widgets) {
+            final String full = w.getMessage().getString();
+            w.setWidth(Math.min(w.getWidth(), each));
+            final String shown = TextWrap.ellipsize(full, w.getWidth() - 8, UiText.width(font));
+            if (!shown.equals(full)) {
+                w.setMessage(Component.literal(shown));
+                w.setTooltip(UiText.tooltip(full, null));
+            }
+        }
+    }
+
+    private LinearLayout emptyColumn() {
+        final LinearLayout out = LinearLayout.vertical().spacing(2);
+        out.defaultCellSetting().alignHorizontallyLeft();
+        out.addChild(SpacerElement.width(column));
+        return out;
     }
 
     /** Text that wraps at {@code w}, in a colour unless the text has its own. */

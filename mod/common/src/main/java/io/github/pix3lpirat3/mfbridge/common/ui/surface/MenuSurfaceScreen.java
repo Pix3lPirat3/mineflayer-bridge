@@ -79,7 +79,7 @@ abstract class MenuSurfaceScreen extends PromptScreen {
     @Override
     public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);
-        drawPromptLine(graphics, top - 12);
+        drawPromptLine(graphics, top - 12, mouseX, mouseY);
     }
 
     /**

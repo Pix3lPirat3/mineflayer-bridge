@@ -8,9 +8,9 @@ import io.github.pix3lpirat3.mfbridge.common.seam.Notification;
 import io.github.pix3lpirat3.mfbridge.common.seam.RaycastHit;
 import io.github.pix3lpirat3.mfbridge.common.seam.Vec3d;
 import io.github.pix3lpirat3.mfbridge.common.seam.WorldRenderListener;
+import io.github.pix3lpirat3.mfbridge.common.ui.hud.BridgeToast;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.Crosshair;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -18,12 +18,10 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.state.level.LevelRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
@@ -34,14 +32,10 @@ public final class GameBridge26x implements GameBridge {
     private final List<WorldRenderListener> worldListeners = new ArrayList<>();
     private final List<HudRenderListener> hudListeners = new ArrayList<>();
     private final RenderFrame26x frame = new RenderFrame26x();
-    private final EnumMap<Notification.Severity, SystemToast.SystemToastId> toastIds = new EnumMap<>(Notification.Severity.class);
     private @Nullable HudCanvas26x hudCanvas;
 
     /** Creates the bridge. Call on the client thread. */
     public GameBridge26x() {
-        toastIds.put(Notification.Severity.INFO, new SystemToast.SystemToastId(5_000L));
-        toastIds.put(Notification.Severity.WARNING, new SystemToast.SystemToastId(8_000L));
-        toastIds.put(Notification.Severity.ERROR, new SystemToast.SystemToastId(12_000L));
     }
 
     @Override
@@ -93,11 +87,13 @@ public final class GameBridge26x implements GameBridge {
 
     @Override
     public void showToast(final Notification notification) {
-        final Minecraft minecraft = Minecraft.getInstance();
-        final SystemToast.SystemToastId toastId = toastIds.get(notification.severity());
-        final Component title = Component.literal(notification.title());
-        final @Nullable Component message = notification.message().isEmpty() ? null : Component.literal(notification.message());
-        minecraft.execute(() -> SystemToast.addOrUpdate(minecraft.gui.toastManager(), toastId, title, message));
+        final long displayMs = switch (notification.severity()) {
+            case INFO -> 5_000L;
+            case WARNING -> 8_000L;
+            case ERROR -> 12_000L;
+        };
+        final boolean error = notification.severity() == Notification.Severity.ERROR;
+        Minecraft.getInstance().execute(() -> BridgeToast.show(notification.title(), notification.message(), displayMs, error));
     }
 
     /**

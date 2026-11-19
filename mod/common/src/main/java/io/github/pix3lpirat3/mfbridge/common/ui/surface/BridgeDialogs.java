@@ -5,7 +5,9 @@ import io.github.pix3lpirat3.mfbridge.common.ui.logic.CommandArgs;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.DialogValues;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FieldSpec;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FormValues;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.TextWrap;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.BridgeScreen;
+import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiText;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PromptKind;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PromptRequest;
 import java.util.ArrayList;
@@ -59,6 +61,9 @@ public final class BridgeDialogs {
     public static final Identifier CANCEL = Constants.id("dialog/cancel");
 
     private static final int WIDTH = 250;
+    private static final int BUTTON_WIDTH = 150;
+    /** Room vanilla keeps beside a dialog title for its warning button. */
+    private static final int TITLE_MARGIN = 60;
     private static final int TEXT_LIMIT = 1024;
     private static final int ERROR_RGB = 0xFF5555;
 
@@ -166,21 +171,46 @@ public final class BridgeDialogs {
     private static ActionButton button(final Component label, final String id) {
         final CompoundTag additions = new CompoundTag();
         additions.putString(DialogValues.BUTTON, id);
-        return new ActionButton(new CommonButtonData(label, 150), Optional.of(new CustomAll(SUBMIT, Optional.of(additions))));
+        // A label wider than the button is cut with an ellipsis and shown whole in the tooltip.
+        final String full = label.getString();
+        final String shown = TextWrap.ellipsize(full, BUTTON_WIDTH - 8, UiText.width(Minecraft.getInstance().font));
+        final CommonButtonData data = shown.equals(full) ? new CommonButtonData(label, BUTTON_WIDTH)
+                : new CommonButtonData(Component.literal(shown), Optional.of(Component.literal(full)), BUTTON_WIDTH);
+        return new ActionButton(data, Optional.of(new CustomAll(SUBMIT, Optional.of(additions))));
     }
 
     private static ActionButton exit() {
-        return new ActionButton(new CommonButtonData(CommonComponents.GUI_BACK, 150), Optional.of(new CustomAll(CANCEL, Optional.empty())));
+        return new ActionButton(new CommonButtonData(CommonComponents.GUI_BACK, BUTTON_WIDTH), Optional.of(new CustomAll(CANCEL, Optional.empty())));
     }
 
+    /**
+     * Builds the dialog screen. Vanilla draws the title on one line however long it is, so a title
+     * too wide for the window is cut there and given whole as the first body line, which wraps.
+     */
     private static Screen screen(final Component title, final List<DialogBody> body, final List<Input> inputs,
             final List<ActionButton> actions, final int columns, final Listener listener) {
-        final CommonDialogData common = new CommonDialogData(title, Optional.empty(), true, false, DialogAction.CLOSE, body, inputs);
-        return new Screen26(new MultiActionDialog(common, actions, Optional.of(exit()), columns), new Access(listener));
+        final Minecraft minecraft = Minecraft.getInstance();
+        final String full = title.getString();
+        final String shown = TextWrap.ellipsize(full, minecraft.getWindow().getGuiScaledWidth() - TITLE_MARGIN, UiText.width(minecraft.font));
+        final Component heading = shown.equals(full) ? title : Component.literal(shown);
+        final List<DialogBody> all = new ArrayList<>(body.size() + 1);
+        if (!shown.equals(full)) {
+            all.add(message(title));
+        }
+        all.addAll(body);
+        // Two columns of buttons only while the window has room for them.
+        final int fit = Math.max(1, (minecraft.getWindow().getGuiScaledWidth() - 16) / (BUTTON_WIDTH + 4));
+        final CommonDialogData common = new CommonDialogData(heading, Optional.empty(), true, false, DialogAction.CLOSE, all, inputs);
+        return new Screen26(new MultiActionDialog(common, actions, Optional.of(exit()), Math.min(columns, fit)), new Access(listener));
+    }
+
+    /** Width of the body and the inputs: vanilla's 250, less on a narrow window. */
+    private static int width() {
+        return Math.max(60, Math.min(WIDTH, Minecraft.getInstance().getWindow().getGuiScaledWidth() - 20));
     }
 
     private static PlainMessage message(final Component text) {
-        return new PlainMessage(text, WIDTH);
+        return new PlainMessage(text, width());
     }
 
     /**
@@ -217,7 +247,7 @@ public final class BridgeDialogs {
                     final float initial = def instanceof Number n ? Math.clamp(n.floatValue(), min, max) : min;
                     final boolean whole = request.min() == Math.rint(request.min()) && request.max() == Math.rint(request.max())
                             && (def == null || def instanceof Long || def instanceof Integer);
-                    inputs.add(new Input(DialogValues.VALUE, new NumberRangeInput(WIDTH, Component.translatable("screen.mineflayer_bridge.dialog.value"), "options.generic_value",
+                    inputs.add(new Input(DialogValues.VALUE, new NumberRangeInput(width(), Component.translatable("screen.mineflayer_bridge.dialog.value"), "options.generic_value",
                             new NumberRangeInput.RangeInfo(min, max, Optional.of(initial), whole ? Optional.of(1f) : Optional.empty()))));
                 } else {
                     final String initial = def instanceof Number n ? CommandArgs.plain(n.doubleValue()) : "";
@@ -246,7 +276,7 @@ public final class BridgeDialogs {
 
     private static TextInput text(final Component label, final String initial, final int maxLength, final boolean multiline) {
         final int limit = Math.max(maxLength, initial.length());
-        return new TextInput(WIDTH, label, true, initial, limit, multiline
+        return new TextInput(width(), label, true, initial, limit, multiline
                 ? Optional.of(new TextInput.MultilineOptions(Optional.empty(), Optional.of(100)))
                 : Optional.empty());
     }
@@ -296,7 +326,7 @@ public final class BridgeDialogs {
                 final float max = f.max() == null ? min : f.max().floatValue();
                 final float initial = FormValues.initial(f) instanceof Number n ? n.floatValue() : min;
                 final Double step = f.step();
-                yield new NumberRangeInput(WIDTH, label, "options.generic_value", new NumberRangeInput.RangeInfo(min, max,
+                yield new NumberRangeInput(width(), label, "options.generic_value", new NumberRangeInput.RangeInfo(min, max,
                         Optional.of(Math.clamp(initial, Math.min(min, max), Math.max(min, max))),
                         step == null || step <= 0 ? Optional.empty() : Optional.of(step.floatValue())));
             }
@@ -306,7 +336,7 @@ public final class BridgeDialogs {
                 for (final String o : f.options()) {
                     entries.add(new SingleOptionInput.Entry(o, Optional.empty(), o.equals(initial)));
                 }
-                yield new SingleOptionInput(WIDTH, entries, label, true);
+                yield new SingleOptionInput(width(), entries, label, true);
             }
         };
     }

@@ -9,6 +9,8 @@ import { toBridgeError } from './util.ts';
 
 /** Dynamic completion is given up after 300 ms. */
 const COMPLETION_TIMEOUT_MS = Messages['command.complete'].timeoutMs ?? 300;
+/** A dynamic answer is reused for 1.5 s, then the bot is asked again. */
+const COMPLETION_CACHE_MS = 1500;
 /** Suggestions shown when a source declares no limit (schema default). */
 const DEFAULT_COMPLETION_LIMIT = 20;
 const INVOCATION_TIMEOUT_MS = 30_000;
@@ -76,8 +78,8 @@ export class ChatCommands {
   private readonly invocations = new Pending<MockInvocationResult>();
   /** `command.complete` requests awaiting `command.suggestions`, by envelope request id. */
   private readonly completions = new Pending<CompletionAnswer>();
-  /** Dynamic answers by owner, command revision, path, argument, earlier arguments and input prefix. */
-  private readonly completionCache = new Map<string, Suggestion[]>();
+  /** Dynamic answers by owner, command revision, path, argument, earlier arguments and input prefix, with when they came. */
+  private readonly completionCache = new Map<string, { atMs: number; suggestions: Suggestion[] }>();
 
   constructor(private readonly core: ModCore) {}
 
@@ -565,9 +567,10 @@ export class ChatCommands {
         const rev = this.core.store.get(key)?.rev ?? 0;
         const cacheKey = JSON.stringify([s.owner, key, rev, plan.path, a.name, plan.args, plan.input, bots]);
         const hit = this.completionCache.get(cacheKey);
-        if (hit !== undefined) return { suggestions: hit.slice(0, limit), source, dynamic: 'cached' };
+        const freshMs = this.core.opts.completionCacheMs ?? COMPLETION_CACHE_MS;
+        if (hit !== undefined && this.core.clock.now() - hit.atMs < freshMs) return { suggestions: hit.suggestions.slice(0, limit), source, dynamic: 'cached' };
         const r = await this.requestCompletion(s, { command: key, path: plan.path, arg: a.name, input: plan.input, args: plan.args, ...(bots.length === 0 ? {} : { bots: [...bots] }) });
-        if (r.status === 'answered') this.completionCache.set(cacheKey, r.suggestions);
+        if (r.status === 'answered') this.completionCache.set(cacheKey, { atMs: this.core.clock.now(), suggestions: r.suggestions });
         return { suggestions: r.suggestions.slice(0, limit), source, dynamic: r.status };
       }
       default:

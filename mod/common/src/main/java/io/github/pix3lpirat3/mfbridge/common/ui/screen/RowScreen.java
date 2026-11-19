@@ -1,5 +1,6 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.PanelLayout;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -27,8 +28,9 @@ public abstract class RowScreen extends ChildScreen {
     private record Label(Component text, int x, int y, int argb) {
     }
 
-    /** Width of the content column, in GUI pixels. */
-    protected final int columnWidth;
+    /** Width of the content column in this window, in GUI pixels; set before {@link #rows} runs. */
+    protected int columnWidth;
+    private final int preferredWidth;
     private final List<Label> labels = new ArrayList<>();
     private Component status = CommonComponents.EMPTY;
     private int statusArgb = UiColors.ERROR;
@@ -54,6 +56,7 @@ public abstract class RowScreen extends ChildScreen {
      */
     protected RowScreen(final Component title, final @Nullable Screen parent, final int columnWidth) {
         super(title, parent);
+        this.preferredWidth = columnWidth;
         this.columnWidth = columnWidth;
     }
 
@@ -118,6 +121,7 @@ public abstract class RowScreen extends ChildScreen {
     @Override
     protected void init() {
         labels.clear();
+        columnWidth = PanelLayout.width(width, Math.min(preferredWidth, 160), preferredWidth, 1.0);
         final int left = width / 2 - columnWidth / 2;
         final int end = rows(left, TOP - scroll);
         contentHeight = end + scroll - TOP;
@@ -141,11 +145,14 @@ public abstract class RowScreen extends ChildScreen {
     @Override
     public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);
-        graphics.centeredText(font, title, width / 2, 12, UiColors.TEXT);
+        final int room = width - 2 * PanelLayout.MARGIN;
+        UiText.line(graphics, font, title.getString(), width / 2, 12, room, UiColors.TEXT, true, true, mouseX, mouseY);
+        final int right = width / 2 + columnWidth / 2;
         for (final Label label : labels) {
-            graphics.text(font, label.text(), label.x(), label.y(), label.argb());
+            UiText.line(graphics, font, label.text().getString(), label.x(), label.y(), Math.max(1, right - label.x()), label.argb(), true, false,
+                    mouseX, mouseY);
         }
-        graphics.centeredText(font, status, width / 2, height - 40, statusArgb);
+        UiText.line(graphics, font, status.getString(), width / 2, height - 40, room, statusArgb, true, true, mouseX, mouseY);
     }
 
     @Override

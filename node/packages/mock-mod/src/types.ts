@@ -184,6 +184,11 @@ export interface MockModOptions {
    */
   completionTimeoutMs?: number;
   /**
+   * How long a `dynamic` answer is reused before {@link MockMod.complete} asks the bot again, in
+   * ms, as the real mod does. Default 1500.
+   */
+  completionCacheMs?: number;
+  /**
    * Suggestions for completion sources the real mod resolves from the client world, by schema
    * source name (`entities`, `blocks`, `block_ids`, `item_ids`, `sounds`, `particles`,
    * `enchantments`, `players`, `zones`, `points`, `waypoints`). The mock filters them by prefix and

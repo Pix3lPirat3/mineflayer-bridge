@@ -136,7 +136,7 @@ public final class SettingsScreen extends RowScreen {
     @Override
     protected int rows(final int left, final int top) {
         final int widgetX = left + LABEL_WIDTH;
-        final int widgetWidth = COLUMN_WIDTH - LABEL_WIDTH;
+        final int widgetWidth = columnWidth - LABEL_WIDTH;
         final int y = owner == null ? modRows(left, top, widgetX, widgetWidth) : top;
         return botRows(left, y, widgetX, widgetWidth);
     }
@@ -147,7 +147,7 @@ public final class SettingsScreen extends RowScreen {
         if (visible(y)) {
             addRenderableWidget(CycleButton.builder(SettingsScreen::presetName, bindPreset)
                     .withValues(List.of(BindPreset.values()))
-                    .create(left, y, COLUMN_WIDTH, ROW_HEIGHT, label("bind_address"), (button, value) -> {
+                    .create(left, y, columnWidth, ROW_HEIGHT, label("bind_address"), (button, value) -> {
                         bindPreset = value;
                         bindAddress = switch (value) {
                             case LOCAL_ONLY -> BridgeSettings.LOCAL_ONLY;
@@ -186,7 +186,7 @@ public final class SettingsScreen extends RowScreen {
         y += 24;
         if (visible(y)) {
             addRenderableWidget(CycleButton.onOffBuilder(requireTls)
-                    .create(left, y, COLUMN_WIDTH, ROW_HEIGHT, label("require_tls"), (button, value) -> requireTls = value));
+                    .create(left, y, columnWidth, ROW_HEIGHT, label("require_tls"), (button, value) -> requireTls = value));
         }
         y += 24;
         if (visible(y)) {
@@ -218,37 +218,37 @@ public final class SettingsScreen extends RowScreen {
         }
         y += 24;
         if (visible(y)) {
-            addRenderableWidget(CycleButton.onOffBuilder(askLocalApproval).create(left, y, COLUMN_WIDTH, ROW_HEIGHT,
+            addRenderableWidget(CycleButton.onOffBuilder(askLocalApproval).create(left, y, columnWidth, ROW_HEIGHT,
                     label("ask_local_approval"), (button, value) -> askLocalApproval = value));
         }
         y += 24;
         if (visible(y)) {
             addRenderableWidget(Button.builder(label("devices"), button -> ui.openDevices(this))
-                    .bounds(left, y, COLUMN_WIDTH, ROW_HEIGHT)
+                    .bounds(left, y, columnWidth, ROW_HEIGHT)
                     .build());
         }
         y += 24;
         if (visible(y)) {
             addRenderableWidget(CycleButton.builder(SettingsScreen::policyName, attachPolicy)
                     .withValues(List.of(AttachPolicy.values()))
-                    .create(left, y, COLUMN_WIDTH, ROW_HEIGHT, label("attach_policy"), (button, value) -> attachPolicy = value));
+                    .create(left, y, columnWidth, ROW_HEIGHT, label("attach_policy"), (button, value) -> attachPolicy = value));
         }
         y += 24;
         if (visible(y)) {
             addRenderableWidget(CycleButton.onOffBuilder(showLabels)
-                    .create(left, y, COLUMN_WIDTH, ROW_HEIGHT, label("show_labels"), (button, value) -> showLabels = value));
+                    .create(left, y, columnWidth, ROW_HEIGHT, label("show_labels"), (button, value) -> showLabels = value));
         }
         y += 24;
         if (visible(y)) {
             addRenderableWidget(CycleButton.builder((JoinTips v) -> label("join_tips." + v.key()), joinTips)
                     .withValues(List.of(JoinTips.values()))
-                    .create(left, y, COLUMN_WIDTH, ROW_HEIGHT, label("join_tips"), (button, value) -> joinTips = value));
+                    .create(left, y, columnWidth, ROW_HEIGHT, label("join_tips"), (button, value) -> joinTips = value));
         }
         y += 24;
         if (visible(y)) {
             addRenderableWidget(CycleButton.builder((Boolean v) -> label(v ? "messages.chat" : "messages.toasts"), messagesInChat)
                     .withValues(List.of(true, false))
-                    .create(left, y, COLUMN_WIDTH, ROW_HEIGHT, label("messages"), (button, value) -> messagesInChat = value));
+                    .create(left, y, columnWidth, ROW_HEIGHT, label("messages"), (button, value) -> messagesInChat = value));
         }
         y += 24;
         if (visible(y)) {
@@ -261,21 +261,21 @@ public final class SettingsScreen extends RowScreen {
                             ? Component.translatable("screen.mineflayer_bridge.settings.away_minutes.never")
                             : Component.translatable("screen.mineflayer_bridge.settings.away_minutes.value", v), awayMinutes)
                     .withValues(minutes)
-                    .create(left, y, COLUMN_WIDTH, ROW_HEIGHT, label("away_minutes"), (button, value) -> awayMinutes = value));
+                    .create(left, y, columnWidth, ROW_HEIGHT, label("away_minutes"), (button, value) -> awayMinutes = value));
         }
         y += 24;
         if (visible(y)) {
-            addRenderableWidget(CycleButton.onOffBuilder(showAliases).create(left, y, COLUMN_WIDTH, ROW_HEIGHT,
+            addRenderableWidget(CycleButton.onOffBuilder(showAliases).create(left, y, columnWidth, ROW_HEIGHT,
                     label("show_aliases"), (button, value) -> showAliases = value));
         }
         y += 24;
         if (visible(y)) {
-            addRenderableWidget(CycleButton.onOffBuilder(allowBotFocus).create(left, y, COLUMN_WIDTH, ROW_HEIGHT,
+            addRenderableWidget(CycleButton.onOffBuilder(allowBotFocus).create(left, y, columnWidth, ROW_HEIGHT,
                     label("allow_bot_focus"), (button, value) -> allowBotFocus = value));
         }
         y += 24;
         if (visible(y)) {
-            addRenderableWidget(CycleButton.onOffBuilder(showAllHud).create(left, y, COLUMN_WIDTH, ROW_HEIGHT,
+            addRenderableWidget(CycleButton.onOffBuilder(showAllHud).create(left, y, columnWidth, ROW_HEIGHT,
                     label("show_all_hud"), (button, value) -> showAllHud = value));
         }
         y += 24;
@@ -289,7 +289,7 @@ public final class SettingsScreen extends RowScreen {
             addRenderableWidget(CycleButton.builder(
                             (Integer v) -> Component.translatable("screen.mineflayer_bridge.settings.sample_rate.value", v), sampleRateHz)
                     .withValues(rates)
-                    .create(left, y, COLUMN_WIDTH, ROW_HEIGHT, label("sample_rate"), (button, value) -> sampleRateHz = value));
+                    .create(left, y, columnWidth, ROW_HEIGHT, label("sample_rate"), (button, value) -> sampleRateHz = value));
         }
         y += 24;
         if (visible(y)) {
@@ -306,7 +306,7 @@ public final class SettingsScreen extends RowScreen {
                     ? Component.translatable("screen.mineflayer_bridge.settings.bot_sound_volume.off")
                     : Component.translatable("screen.mineflayer_bridge.settings.bot_sound_volume.value", v), botSoundVolume)
                     .withValues(volumes)
-                    .create(left, y, COLUMN_WIDTH, ROW_HEIGHT, label("bot_sound_volume"), (button, value) -> botSoundVolume = value));
+                    .create(left, y, columnWidth, ROW_HEIGHT, label("bot_sound_volume"), (button, value) -> botSoundVolume = value));
         }
         return y + 30;
     }
@@ -379,7 +379,7 @@ public final class SettingsScreen extends RowScreen {
             if (visible(y)) {
                 final Boolean pending = interceptChanges.get(identity);
                 final boolean value = pending != null ? pending : core.intercepts().mayCancel(identity);
-                addRenderableWidget(CycleButton.onOffBuilder(value).create(left, y, COLUMN_WIDTH, ROW_HEIGHT,
+                addRenderableWidget(CycleButton.onOffBuilder(value).create(left, y, columnWidth, ROW_HEIGHT,
                         Component.translatable("screen.mineflayer_bridge.settings.intercept_cancel", bot.getValue()),
                         (button, v) -> interceptChanges.put(identity, v)));
             }

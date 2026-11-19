@@ -667,8 +667,9 @@ export class MockMod {
    * - `choices` (also the default for `choice` arguments), `true`/`false` for `bool`, and `bots`
    *   (also the default for `bot` arguments) are resolved by the mock;
    * - `dynamic` sends `command.complete` with the earlier arguments already parsed, waits at most
-   *   {@link MockModOptions.completionTimeoutMs} (default 300), drops a late answer, and caches
-   *   answers per input prefix until the command object changes;
+   *   {@link MockModOptions.completionTimeoutMs} (default 300) and drops a late answer. Answers are
+   *   cached per input prefix and reused for {@link MockModOptions.completionCacheMs} (default
+   *   1500), or until the command object changes; an older answer asks the bot again;
    * - every other source returns {@link MockModOptions.completionStubs} for that source.
    * Client sources are filtered by prefix; all sources are cut to their `limit` (default 20). The
    * real mod also debounces typing by 100 ms; each call here is one settled keystroke.

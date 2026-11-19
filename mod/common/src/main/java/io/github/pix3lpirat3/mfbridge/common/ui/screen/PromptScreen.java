@@ -1,6 +1,8 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotVisual;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.PanelLayout;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.TextWrap;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SlotItem;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -23,7 +25,9 @@ public abstract class PromptScreen extends ChildScreen {
     protected final PromptInput prompt;
     /** Where the answer goes. */
     protected final PromptAnswers controller;
-    private final Component promptLine;
+    private final String promptLine;
+    private int shownWidth = -1;
+    private String shownLine = "";
 
     /**
      * Creates the screen.
@@ -36,7 +40,7 @@ public abstract class PromptScreen extends ChildScreen {
         super(title, null);
         this.prompt = prompt;
         this.controller = controller;
-        this.promptLine = Component.literal(prompt.ownerName() + ": " + prompt.request().text());
+        this.promptLine = prompt.ownerName() + ": " + prompt.request().text();
     }
 
     @Override
@@ -47,12 +51,20 @@ public abstract class PromptScreen extends ChildScreen {
     }
 
     /**
-     * Draws "bot: prompt text" centred on a line.
+     * Draws "bot: prompt text" centred on a line, cut to the window with the whole text in a tooltip.
      *
      * @param y top of the line, in GUI pixels
      */
-    protected final void drawPromptLine(final GuiGraphicsExtractor graphics, final int y) {
-        graphics.centeredText(font, promptLine, width / 2, y, UiColors.TEXT);
+    protected final void drawPromptLine(final GuiGraphicsExtractor graphics, final int y, final int mouseX, final int mouseY) {
+        final int room = width - 2 * PanelLayout.MARGIN;
+        if (shownWidth != room) {
+            shownWidth = room;
+            shownLine = TextWrap.ellipsize(promptLine, room, UiText.width(font));
+        }
+        graphics.centeredText(font, shownLine, width / 2, y, UiColors.TEXT);
+        if (!shownLine.equals(promptLine) && UiText.inside(mouseX, mouseY, PanelLayout.MARGIN, y, room, 9)) {
+            UiText.showTooltip(graphics, font, promptLine, mouseX, mouseY);
+        }
     }
 
     /**

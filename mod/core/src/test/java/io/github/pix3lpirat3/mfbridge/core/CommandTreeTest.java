@@ -163,4 +163,47 @@ class CommandTreeTest {
             assertTrue(commands.completeDynamic(P + "x/~cmd/none", List.of(), "a", "", Map.of()).isDone());
         }
     }
+
+    @Test
+    void cachedAnswersExpireAndAreForgottenOnClose() throws Exception {
+        try (Harness h = ResumeTest.always(dir, b -> {}); FakePlugin p = FakePlugin.ready(h, "dev")) {
+            int s = declare(h, p, 1);
+            CommandControls commands = h.core.commands();
+
+            CompletableFuture<List<Suggestion>> first = commands.completeDynamic(TEAM, List.of("join"), "team", "", Map.of());
+            h.clock.advanceMs(CommandControls.DEBOUNCE_MS);
+            FakePlugin.Frame req = p.await("command.complete", f -> f.is(CoreMessages.COMMAND_COMPLETE));
+            answer(p, s, req.env().req(), "red", "blue");
+            h.tickUntil("answer", first::isDone);
+            assertEquals(List.of(new Suggestion("red"), new Suggestion("blue")), first.join());
+
+            h.clock.advanceMs(CommandControls.CACHE_FRESH_MS - 1);
+            assertTrue(commands.completeDynamic(TEAM, List.of("join"), "team", "", Map.of()).isDone(), "a fresh answer is reused");
+
+            h.clock.advanceMs(1);
+            CompletableFuture<List<Suggestion>> again = commands.completeDynamic(TEAM, List.of("join"), "team", "", Map.of());
+            assertFalse(again.isDone(), "an old answer is asked for again");
+            h.clock.advanceMs(CommandControls.DEBOUNCE_MS);
+            req = p.await("second command.complete", f -> f.is(CoreMessages.COMMAND_COMPLETE));
+            answer(p, s, req.env().req(), "blue");
+            h.tickUntil("second answer", again::isDone);
+            assertEquals(List.of(new Suggestion("blue")), again.join(), "the new answer replaces the old one");
+
+            h.clock.advanceMs(CommandControls.CACHE_FRESH_MS);
+            CompletableFuture<List<Suggestion>> slow = commands.completeDynamic(TEAM, List.of("join"), "team", "b", Map.of());
+            h.clock.advanceMs(CommandControls.DEBOUNCE_MS);
+            p.await("third command.complete", f -> f.is(CoreMessages.COMMAND_COMPLETE));
+            h.clock.advanceMs(CoreMessages.COMMAND_COMPLETE.timeoutMs());
+            h.tick();
+            assertEquals(List.of(new Suggestion("blue")), slow.join(), "a timeout still falls back to an old answer");
+
+            commands.forgetCompletions();
+            CompletableFuture<List<Suggestion>> closed = commands.completeDynamic(TEAM, List.of("join"), "team", "b", Map.of());
+            h.clock.advanceMs(CommandControls.DEBOUNCE_MS);
+            p.await("fourth command.complete", f -> f.is(CoreMessages.COMMAND_COMPLETE));
+            h.clock.advanceMs(CoreMessages.COMMAND_COMPLETE.timeoutMs());
+            h.tick();
+            assertEquals(List.of(), closed.join(), "nothing is left after the chat closes");
+        }
+    }
 }

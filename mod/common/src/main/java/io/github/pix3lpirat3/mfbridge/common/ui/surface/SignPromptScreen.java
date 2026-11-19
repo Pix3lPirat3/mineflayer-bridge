@@ -1,7 +1,9 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.surface;
 
-import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptAnswers;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.PanelLayout;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.BridgeScreen;
+import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptAnswers;
+import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiText;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PromptKind;
 import java.util.ArrayList;
@@ -120,7 +122,8 @@ public final class SignPromptScreen extends SignEditScreen implements BridgeScre
     @Override
     public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);
-        graphics.centeredText(font, Component.literal(prompt.ownerName() + ": " + prompt.request().text()), width / 2, 24, 0xFFFFFFFF);
+        UiText.line(graphics, font, prompt.ownerName() + ": " + prompt.request().text(), width / 2, 24, width - 2 * PanelLayout.MARGIN, 0xFFFFFFFF, true, true,
+                mouseX, mouseY);
     }
 
     /** A sign block entity that belongs to no level; text changes stay in the object. */

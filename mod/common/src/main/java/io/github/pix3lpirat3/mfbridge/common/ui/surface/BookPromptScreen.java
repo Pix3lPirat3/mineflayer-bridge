@@ -138,7 +138,7 @@ public final class BookPromptScreen extends PromptScreen {
     public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);
         graphics.text(font, pageIndicator, left() + 148 - font.width(pageIndicator), 2 + 16, TEXT_ARGB, false);
-        drawPromptLine(graphics, IMAGE_SIZE + 26);
+        drawPromptLine(graphics, IMAGE_SIZE + 26, mouseX, mouseY);
     }
 
     @Override

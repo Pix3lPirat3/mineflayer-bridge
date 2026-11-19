@@ -4,17 +4,21 @@ import io.github.pix3lpirat3.mfbridge.common.ui.BridgeUi;
 import io.github.pix3lpirat3.mfbridge.common.ui.PlayerFeedback;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.PickController;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.PromptController;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.PanelLayout;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.TextWrap;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiText;
 import io.github.pix3lpirat3.mfbridge.core.decl.ToolDecl;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
+import io.github.pix3lpirat3.mfbridge.protocol.core.PromptKind;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PromptRequest;
 import java.util.List;
+import java.util.function.ToIntFunction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -23,7 +27,11 @@ import org.jspecify.annotations.Nullable;
  */
 public final class InputOverlay {
 
-    private static final int CARD_WIDTH = 220;
+    private static final int CARD_MIN = 180;
+    private static final int CARD_MAX = 280;
+    private static final int CARD_LINES = 8;
+    /** Kept free above the bottom edge for the hotbar and status bars. */
+    private static final int HOTBAR_RESERVE = 48;
     private static final int BACKGROUND_ARGB = 0xA0000000;
     private static final int OK_ARGB = 0xFF77FF77;
     private static final int BAD_ARGB = 0xFFFF6060;
@@ -35,7 +43,9 @@ public final class InputOverlay {
     private static final Component PRESS_ENTER = Component.translatable("mineflayer_bridge.prompt.press_enter");
 
     private long promptLinesId = -1L;
-    private List<FormattedCharSequence> promptLines = List.of();
+    private int promptLinesWidth;
+    private int promptLinesMax;
+    private List<String> promptLines = List.of();
 
     /** Creates the overlay. */
     public InputOverlay() {
@@ -83,7 +93,8 @@ public final class InputOverlay {
         centered(graphics, Minecraft.getInstance().font, hint, graphics.guiHeight() - 72, TOOL_ARGB);
     }
 
-    private static void centered(final GuiGraphicsExtractor graphics, final Font font, final String text, final int y, final int argb) {
+    private static void centered(final GuiGraphicsExtractor graphics, final Font font, final String full, final int y, final int argb) {
+        final String text = TextWrap.ellipsize(full, graphics.guiWidth() - 2 * PanelLayout.MARGIN, UiText.width(font));
         final int w = font.width(text);
         final int x = graphics.guiWidth() / 2 - w / 2;
         graphics.fill(x - 3, y - 2, x + w + 3, y + 9, BACKGROUND_ARGB);
@@ -132,23 +143,29 @@ public final class InputOverlay {
     private void promptCard(final GuiGraphicsExtractor graphics, final Font font, final PromptController prompts, final PromptInput prompt,
             final int queued) {
         final PromptRequest r = prompt.request();
-        if (promptLinesId != prompt.id()) {
-            promptLinesId = prompt.id();
-            promptLines = List.copyOf(font.split(Component.literal(r.text()), CARD_WIDTH - 8));
-        }
+        final ToIntFunction<String> measure = UiText.width(font);
+        final int cardWidth = PanelLayout.width(graphics.guiWidth(), CARD_MIN, CARD_MAX, 0.45);
         final List<String> choices = r.choices() == null ? List.of() : r.choices();
-        final int optionRows = switch (r.kind()) {
-            case CONFIRM, TEXT, NUMBER, LINES, PAGES -> 1;
-            case CHOICE -> Math.max(1, Math.min(choices.size(), 9));
-        };
+        // The card sits below the crosshair and above the hotbar; the question gets what is left.
+        final int room = graphics.guiHeight() - HOTBAR_RESERVE - 8;
+        final int choiceRows = r.kind() == PromptKind.CHOICE ? Math.max(1, Math.min(choices.size(), 9)) : 1;
+        final int fixed = 12 + 4 + 12 + 12;
+        final int optionRows = Math.max(1, Math.min(choiceRows, (room - fixed - 10) / 10));
+        final int maxLines = Math.clamp((room - fixed - optionRows * 10) / 10, 1, CARD_LINES);
+        if (promptLinesId != prompt.id() || promptLinesWidth != cardWidth || promptLinesMax != maxLines) {
+            promptLinesId = prompt.id();
+            promptLinesWidth = cardWidth;
+            promptLinesMax = maxLines;
+            promptLines = TextWrap.clamp(r.text(), cardWidth - 8, maxLines, measure).lines();
+        }
         final int height = 12 + promptLines.size() * 10 + 4 + optionRows * 10 + 12;
-        final int x = graphics.guiWidth() / 2 - CARD_WIDTH / 2;
-        final int y = graphics.guiHeight() / 2 + 16;
-        graphics.fill(x, y, x + CARD_WIDTH, y + height, BACKGROUND_ARGB);
-        graphics.outline(x, y, CARD_WIDTH, height, 0x80FFFFFF);
-        graphics.text(font, prompt.ownerName() + waiting(queued), x + 4, y + 3, UiColors.HEADER);
+        final int x = graphics.guiWidth() / 2 - cardWidth / 2;
+        final int y = Math.max(4, Math.min(graphics.guiHeight() / 2 + 16, graphics.guiHeight() - HOTBAR_RESERVE - height));
+        graphics.fill(x, y, x + cardWidth, y + height, BACKGROUND_ARGB);
+        graphics.outline(x, y, cardWidth, height, 0x80FFFFFF);
+        graphics.text(font, TextWrap.ellipsize(prompt.ownerName() + waiting(queued), cardWidth - 8, measure), x + 4, y + 3, UiColors.HEADER);
         int ly = y + 15;
-        for (final FormattedCharSequence line : promptLines) {
+        for (final String line : promptLines) {
             graphics.text(font, line, x + 4, ly, UiColors.TEXT);
             ly += 10;
         }
@@ -162,16 +179,21 @@ public final class InputOverlay {
                 graphics.text(font, NO, x + 70, ly, noDefault ? BAD_ARGB : UiColors.TEXT);
             }
             case CHOICE -> {
-                for (int i = 0; i < Math.min(choices.size(), 9); i++) {
+                // Keys pick 1 to 9; with less room the list follows the highlight.
+                final int shown = Math.min(Math.min(choices.size(), 9), optionRows);
+                final int first = Math.clamp(prompts.selected() - shown + 1, 0, Math.max(0, Math.min(choices.size(), 9) - shown));
+                for (int i = first; i < first + shown; i++) {
                     if (i == prompts.selected()) {
-                        graphics.fill(x + 2, ly - 1, x + CARD_WIDTH - 2, ly + 9, SELECTED_ARGB);
+                        graphics.fill(x + 2, ly - 1, x + cardWidth - 2, ly + 9, SELECTED_ARGB);
                     }
-                    graphics.text(font, font.plainSubstrByWidth((i + 1) + ". " + choices.get(i), CARD_WIDTH - 12), x + 6, ly, UiColors.TEXT);
+                    graphics.text(font, TextWrap.ellipsize((i + 1) + ". " + choices.get(i), cardWidth - 12, measure), x + 6, ly, UiColors.TEXT);
                     ly += 10;
                 }
                 ly -= 10;
             }
             case TEXT, NUMBER -> graphics.text(font, PRESS_ENTER, x + 8, ly, UiColors.TEXT);
+            case LINES, PAGES -> {
+            }
         }
         ly += 12;
         final String keys = I18n.get(switch (r.kind()) {
@@ -182,7 +204,7 @@ public final class InputOverlay {
         final String time = seconds(prompts.remainingMs());
         final String footer = def == null ? I18n.get("mineflayer_bridge.prompt.footer", time, keys)
                 : I18n.get("mineflayer_bridge.prompt.footer.default", time, def, keys);
-        graphics.text(font, font.plainSubstrByWidth(footer, CARD_WIDTH - 8), x + 4, ly, UiColors.LABEL);
+        graphics.text(font, TextWrap.ellipsize(footer, cardWidth - 8, measure), x + 4, ly, UiColors.LABEL);
     }
 
     private static void toolLine(final GuiGraphicsExtractor graphics, final Font font, final ToolDecl tool, final BridgeUi ui) {
