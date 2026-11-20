@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import { rm } from 'node:fs/promises';
+import { readFile, rm, writeFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { BridgeError, FileCredentialStore } from '../src/index.ts';
 import { ALICE, ALICE_PREFIX, BOT_OPTIONS, FakeBot, fixture, load, OVERWORLD, sleep, until, within, type Env } from './helpers.ts';
@@ -29,6 +29,18 @@ describe('handshake and session', () => {
     expect((await waiting).reason).toBe('endpoint unavailable');
     await e.mod.writeEndpointFile(e.endpointFile);
     await until(() => b.state.connected, 3000, 'connect after the file came');
+  });
+
+  it('waits for a new endpoint file after the game refused the token of an old one', async () => {
+    // A game that restarted is listening before it wrote its new token.
+    const real = await readFile(e.endpointFile, 'utf8');
+    await writeFile(e.endpointFile, JSON.stringify({ ...JSON.parse(real), localToken: Buffer.alloc(32, 7).toString('base64url') }));
+    const h = hub({ reconnect: { initialDelayMs: 60_000, maxDelayMs: 60_000 } });
+    const gone = new Promise<{ reason: string; retry: boolean }>((resolve) => h.on('disconnected', resolve));
+    const b = load(h.plugin(), new FakeBot('Alice'));
+    expect(await gone).toEqual({ reason: 'unauthorized', retry: true });
+    await e.mod.writeEndpointFile(e.endpointFile);
+    await until(() => b.state.connected, 3000, 'connect with the new token');
   });
 
   it('keeps a stable device id in the credentials file', async () => {

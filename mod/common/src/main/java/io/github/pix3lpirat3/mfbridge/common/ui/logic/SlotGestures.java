@@ -9,12 +9,15 @@ import org.jspecify.annotations.Nullable;
  */
 public final class SlotGestures {
 
-    /** GLFW mouse button 1, the left button. */
-    public static final int BUTTON_LEFT = 0;
-    /** GLFW mouse button 2, the right button. */
-    public static final int BUTTON_RIGHT = 1;
-    /** GLFW mouse button 3, the middle button. */
+    // Minecraft's button numbers as MouseButtonEvent gives them (InputConstants.MOUSE_BUTTON_*),
+    // which start at 1; GLFW's start at 0.
+
+    /** The left button. */
+    public static final int BUTTON_LEFT = 1;
+    /** The middle button. */
     public static final int BUTTON_MIDDLE = 2;
+    /** The right button. */
+    public static final int BUTTON_RIGHT = 3;
 
     private SlotGestures() {
     }

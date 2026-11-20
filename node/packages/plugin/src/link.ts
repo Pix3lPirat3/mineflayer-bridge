@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync, watch, type FSWatcher } from 'node:fs';
 import { basename, dirname } from 'node:path';
-import { endpointFileOf } from './files.ts';
+import { endpointFileOf, readEndpointFile } from './files.ts';
 import { extensionMessage } from './ext-wire.ts';
 import { hostname } from 'node:os';
 import { WebSocket, type ClientOptions, type RawData } from 'ws';
@@ -90,6 +90,9 @@ export interface LinkOptions {
   /** Extension kind and message names to register in `hello`. */
   names(): { kinds: string[]; messages: string[] };
 }
+
+/** How long the endpoint file must stay unchanged before a waiting link connects. */
+const ENDPOINT_SETTLE_MS = 250;
 
 /** Permissions a local device has by default and a remotely paired one does not. */
 const REMOTE_WITHHELD: ReadonlySet<string> = new Set(LOCAL_DEFAULT_PERMISSIONS.filter((p) => !REMOTE_DEFAULT_PERMISSIONS.includes(p)));
@@ -180,6 +183,10 @@ export class Link {
   private reconnectTimer: NodeJS.Timeout | undefined;
   /** Watches the endpoint file while waiting to reconnect, so a game that starts is reached at once. */
   private endpointWatch: FSWatcher | undefined;
+  /** Between a lost or failed connection and the next attempt. */
+  private waiting = false;
+  /** Runs once the endpoint file has been still for a moment; the backoff timer runs too. */
+  private settleTimer: NodeJS.Timeout | undefined;
   private heartbeatTimer: NodeJS.Timeout | undefined;
   private writableTimer: NodeJS.Timeout | undefined;
   private readonly writableWaiters = new Set<() => void>();
@@ -212,6 +219,11 @@ export class Link {
   }
 
   private beginConnect(): void {
+    // Whatever started it, the wait is over: its timers and the file watch go.
+    this.waiting = false;
+    clearTimeout(this.reconnectTimer);
+    clearTimeout(this.settleTimer);
+    this.unwatchEndpoint();
     const attempt = this.connect().finally(() => {
       if (this.connecting === attempt) this.connecting = undefined;
     });
@@ -390,6 +402,7 @@ export class Link {
     for (const core of [...this.cores]) await core.close('shutdown');
     this.state = 'closed';
     clearTimeout(this.reconnectTimer);
+    clearTimeout(this.settleTimer);
     this.unwatchEndpoint();
     clearTimeout(this.renegotiateTimer);
     clearTimeout(this.stableTimer);
@@ -559,7 +572,27 @@ export class Link {
   private scheduleReconnect(reason: string, retry: boolean): void {
     const policy = this.opts.reconnect;
     const allowed = retry && policy !== false && (policy.maxAttempts === undefined || this.attempt < policy.maxAttempts);
-    this.events.emit('disconnected', { reason, retry: allowed });
+    // A token read from the endpoint file can be refused when the game restarted and has not
+    // written its new file yet: wait for the file to change rather than give up.
+    const t = this.target;
+    const fromFile = t !== undefined && t.info.localToken !== undefined && t.pairCode === undefined && t.source !== 'the endpoint option';
+    const modRefused = this.goodbye?.reason === 'unauthorized' && this.refusal === undefined && !this.pairing;
+    const afterFile = !allowed && modRefused && fromFile && policy !== false && this.state !== 'closed' && endpointFileOf(this.opts) !== undefined;
+    this.events.emit('disconnected', { reason, retry: allowed || afterFile });
+    if (afterFile) {
+      this.waiting = true;
+      this.watchEndpoint();
+      // The new file may be there already, written before the watch began.
+      const refused = t.info.localToken;
+      const file = endpointFileOf(this.opts)!;
+      void readEndpointFile(file).then(
+        (now) => {
+          if (this.waiting && now.localToken !== refused) this.reconnectNow();
+        },
+        () => undefined,
+      );
+      if (this.endpointWatch !== undefined) return;
+    }
     if (!allowed || this.state === 'closed') {
       if (this.state !== 'closed') this.state = 'idle';
       this.started = false;
@@ -571,14 +604,18 @@ export class Link {
     // Exponential backoff with full jitter.
     const ceiling = Math.min(max, initial * 2 ** this.attempt);
     this.attempt++;
+    this.waiting = true;
     this.reconnectTimer = setTimeout(() => this.reconnectNow(), Math.random() * ceiling);
     this.watchEndpoint();
   }
 
   private reconnectNow(): void {
     clearTimeout(this.reconnectTimer);
+    clearTimeout(this.settleTimer);
     this.unwatchEndpoint();
-    if (this.state !== 'closed') this.beginConnect();
+    // Only from a wait: a late timer or file event must not start a second connection.
+    if (!this.waiting || this.state === 'closed') return;
+    this.beginConnect();
   }
 
   /** The mod writes a new endpoint file on every start; a change to it ends the wait. */
@@ -588,8 +625,11 @@ export class Link {
     if (file === undefined) return;
     try {
       const name = basename(file);
+      // A file is written in steps: connect once it has been still for a moment, not mid-write.
       const w = watch(dirname(file), { persistent: false }, (_event, changed) => {
-        if (changed === null || changed === name) this.reconnectNow();
+        if (this.endpointWatch !== w || (changed !== null && changed !== name)) return;
+        clearTimeout(this.settleTimer);
+        this.settleTimer = setTimeout(() => this.reconnectNow(), ENDPOINT_SETTLE_MS);
       });
       w.on('error', () => this.unwatchEndpoint());
       this.endpointWatch = w;

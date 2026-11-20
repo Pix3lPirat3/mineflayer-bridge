@@ -68,6 +68,9 @@ public final class BridgeCommands {
     /** Server commands seen in the last command tree, by root name. */
     private static volatile java.util.Set<String> serverRoots = java.util.Set.of();
 
+    /** The name a clash with the server was last told for; null while there is none. */
+    private static volatile @Nullable String clashTold;
+
     /**
      * Sets the command name from the settings. It applies when the loader next registers client
      * commands, which both loaders do on joining a world.
@@ -86,15 +89,24 @@ public final class BridgeCommands {
     /**
      * Records the root commands of a command tree the server sent, before client commands join it,
      * and returns a warning when the server has a command with this command's name,
-     * which the client command would hide.
+     * which the client command would hide. Servers resend the tree often, some every few minutes,
+     * so a clash is told once when it shows, and again only after it went away or the name changed.
      *
      * @param roots the server's root command names
-     * @return the warning, or null when there is no clash
+     * @return the warning, or null when there is no clash or it was told already
      */
     public static @Nullable String serverCommands(final java.util.Set<String> roots) {
         serverRoots = java.util.Set.copyOf(roots);
         final String name = wanted;
-        return roots.contains(name) ? I18n.get("mineflayer_bridge.command.server_clash", name) : null;
+        if (!roots.contains(name)) {
+            clashTold = null;
+            return null;
+        }
+        if (name.equals(clashTold)) {
+            return null;
+        }
+        clashTold = name;
+        return I18n.get("mineflayer_bridge.command.server_clash", name);
     }
 
     /** Returns whether the server sent a root command with this name, as of the last command tree. */

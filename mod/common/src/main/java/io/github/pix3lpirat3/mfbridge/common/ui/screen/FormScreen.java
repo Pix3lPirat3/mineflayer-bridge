@@ -1,5 +1,6 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.ButtonRows;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.CommandArgs;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FieldEditors;
@@ -680,7 +681,7 @@ public final class FormScreen extends ChildScreen {
 
     @Override
     public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
-        if (event.button() == 0 && onScrollbar(event.x(), event.y())) {
+        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && onScrollbar(event.x(), event.y())) {
             dragging = true;
             scrollTo(scrolling().offsetAt(event.y() - top));
             return true;
