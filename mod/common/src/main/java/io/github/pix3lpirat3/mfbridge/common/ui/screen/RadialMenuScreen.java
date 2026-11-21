@@ -1,6 +1,7 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import io.github.pix3lpirat3.mfbridge.common.ui.logic.RadialHold;
 import java.util.List;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -40,6 +41,8 @@ public final class RadialMenuScreen extends ChildScreen {
     private final List<Entry> entries;
     private final String emptyText;
     private final @Nullable KeyMapping holdKey;
+    /** A tap keeps the menu open for a click; a hold chooses on release. */
+    private final RadialHold hold = new RadialHold(System.currentTimeMillis());
     private int hovered = -1;
 
     /**
@@ -189,10 +192,23 @@ public final class RadialMenuScreen extends ChildScreen {
     public boolean keyReleased(final KeyEvent event) {
         final KeyMapping key = holdKey;
         if (key != null && key.matches(event)) {
-            choose(hovered);
+            if (hold.released(System.currentTimeMillis()) == RadialHold.Release.CHOOSE) {
+                choose(hovered);
+            }
             return true;
         }
         return super.keyReleased(event);
+    }
+
+    @Override
+    public boolean keyPressed(final KeyEvent event) {
+        final KeyMapping key = holdKey;
+        // Tapped open, the key closes it again, choosing nothing.
+        if (key != null && key.matches(event) && hold.sticky()) {
+            minecraft.gui.setScreen(parent());
+            return true;
+        }
+        return super.keyPressed(event);
     }
 
     @Override

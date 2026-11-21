@@ -38,7 +38,9 @@ abstract class ClientPacketListenerMixin {
     private void mfbridge$serverCommands(final ClientboundCommandsPacket packet, final CallbackInfo ci) {
         final Set<String> roots = new HashSet<>();
         commands.getRoot().getChildren().forEach(n -> roots.add(n.getName()));
-        final String warning = BridgeCommands.serverCommands(roots);
+        // The address joined: moving between the servers of a network keeps it, while each move makes a new connection.
+        final net.minecraft.client.multiplayer.ServerData server = net.minecraft.client.Minecraft.getInstance().getCurrentServer();
+        final String warning = BridgeCommands.serverCommands(roots, server == null ? this : server.ip);
         if (warning != null) {
             Constants.LOG.warn(warning);
             try {

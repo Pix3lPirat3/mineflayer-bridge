@@ -1,6 +1,6 @@
 {
   "name": "@mineflayer-bridge/mock-mod",
-  "version": "0.1.0-alpha.26",
+  "version": "0.1.0-alpha.28",
   "private": true,
   "description": "Headless implementation of the mineflayer-bridge mod side, for testing bots and extensions without Minecraft.",
   "keywords": [

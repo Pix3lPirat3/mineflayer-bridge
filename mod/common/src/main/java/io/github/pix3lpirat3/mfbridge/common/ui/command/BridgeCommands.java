@@ -68,8 +68,8 @@ public final class BridgeCommands {
     /** Server commands seen in the last command tree, by root name. */
     private static volatile java.util.Set<String> serverRoots = java.util.Set.of();
 
-    /** The name a clash with the server was last told for; null while there is none. */
-    private static volatile @Nullable String clashTold;
+    /** Where a clash was told, with the command name it was told for: each told once a game. */
+    private static final java.util.Set<String> clashesTold = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /**
      * Sets the command name from the settings. It applies when the loader next registers client
@@ -89,23 +89,22 @@ public final class BridgeCommands {
     /**
      * Records the root commands of a command tree the server sent, before client commands join it,
      * and returns a warning when the server has a command with this command's name,
-     * which the client command would hide. Servers resend the tree often, some every few minutes,
-     * so a clash is told once when it shows, and again only after it went away or the name changed.
+     * which the client command would hide. Servers resend the tree often, and a network of servers
+     * sends trees with and without the command as the player moves between them, each move a new
+     * connection: so a clash is told once for each address joined and command name, for as long as
+     * the game runs.
      *
      * @param roots the server's root command names
+     * @param where the address joined (a string), or the connection when there is none
      * @return the warning, or null when there is no clash or it was told already
      */
-    public static @Nullable String serverCommands(final java.util.Set<String> roots) {
+    public static @Nullable String serverCommands(final java.util.Set<String> roots, final Object where) {
         serverRoots = java.util.Set.copyOf(roots);
         final String name = wanted;
-        if (!roots.contains(name)) {
-            clashTold = null;
+        final String key = (where instanceof String address ? address : "connection " + System.identityHashCode(where)) + " /" + name;
+        if (!roots.contains(name) || !clashesTold.add(key)) {
             return null;
         }
-        if (name.equals(clashTold)) {
-            return null;
-        }
-        clashTold = name;
         return I18n.get("mineflayer_bridge.command.server_clash", name);
     }
 

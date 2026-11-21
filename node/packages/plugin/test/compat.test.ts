@@ -20,19 +20,33 @@ class TickBot extends EventEmitter {
   constructor(public registry: unknown = REGISTRY_WITH_TICK_END) {
     super();
   }
-  tick(): void {
-    this._client.write('position', {});
+  /** As mineflayer runs a tick: its listeners first, then the movement packet, when there is one. */
+  tick(move = true): void {
     this.emit('physicsTick');
+    if (move) this._client.write('position', {});
   }
 }
 
 describe('tick_end', () => {
-  it('sends tick_end after every physics tick in play', () => {
+  it('sends tick_end after the movement packet of every physics tick in play', () => {
     const bot = new TickBot();
     tickEnd(bot);
     bot.tick();
     bot.tick();
     expect(bot.written).toEqual(['position', 'tick_end', 'position', 'tick_end']);
+  });
+
+  it('ends a tick with no movement packet before the next one, also when ticks run back to back', async () => {
+    const bot = new TickBot();
+    tickEnd(bot);
+    // Catching up: two ticks in one go, the first moves nothing.
+    bot.tick(false);
+    bot.tick();
+    expect(bot.written).toEqual(['tick_end', 'position', 'tick_end']);
+    // A lone tick with no move ends once its code has run.
+    bot.tick(false);
+    await new Promise((r) => setImmediate(r));
+    expect(bot.written).toEqual(['tick_end', 'position', 'tick_end', 'tick_end']);
   });
 
   it('sends nothing on versions without the packet or outside play', () => {
