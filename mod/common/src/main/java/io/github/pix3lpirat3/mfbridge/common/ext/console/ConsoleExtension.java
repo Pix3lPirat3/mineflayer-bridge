@@ -12,6 +12,7 @@ import io.github.pix3lpirat3.mfbridge.api.client.ClientRegistrar;
 import io.github.pix3lpirat3.mfbridge.common.ext.console.wire.BridgeConsoleInput;
 import io.github.pix3lpirat3.mfbridge.common.ext.console.wire.ConsoleLine;
 import io.github.pix3lpirat3.mfbridge.common.ext.console.wire.ConsoleWire;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.protocol.core.CoreKinds;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Vec3d;
 import io.github.pix3lpirat3.mfbridge.protocol.core.WaypointData;
@@ -140,7 +141,7 @@ public final class ConsoleExtension implements ClientExtension {
                     : new ConsoleLine(line.time(), line.level(), line.text().substring(0, MAX_LINE_CHARS), line.pos(), line.kind(), null);
             ring.addLast(l);
         }
-        if (Minecraft.getInstance().gui.screen() instanceof ConsoleScreen s && s.owner().equals(owner)) {
+        if (Game.screen() instanceof ConsoleScreen s && s.owner().equals(owner)) {
             s.linesChanged();
         }
     }
@@ -152,7 +153,7 @@ public final class ConsoleExtension implements ClientExtension {
             return;
         }
         final Minecraft mc = Minecraft.getInstance();
-        mc.gui.setScreen(new ConsoleScreen(this, owner, b.botName(owner), mc.gui.screen()));
+        Game.setScreen(new ConsoleScreen(this, owner, b.botName(owner), Game.screen()));
     }
 
     /** Returns a bot's lines, oldest first. */

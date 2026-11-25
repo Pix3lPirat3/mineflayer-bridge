@@ -8,6 +8,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.logic.SlotGestures;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.ChildScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiText;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.container.SlotStorage;
 import io.github.pix3lpirat3.mfbridge.core.decl.ContainerViewDecl;
@@ -15,6 +16,7 @@ import io.github.pix3lpirat3.mfbridge.protocol.core.ContainerViewData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SlotClick;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SlotEntry;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SlotItem;
+import io.github.pix3lpirat3.mfbridge.common.version.Keys;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -27,7 +29,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.PageButton;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -212,7 +213,7 @@ public final class ContainerViewScreen extends ChildScreen {
         if (core == null || view == null || !viewKey.equals(core.containers().open())) {
             // The bot closed it, removed it, or was detached; the core already knows.
             closedByCore = true;
-            minecraft.gui.setScreen(null);
+            Game.setScreen(null);
             return;
         }
         refresh(view.data());
@@ -252,7 +253,7 @@ public final class ContainerViewScreen extends ChildScreen {
             }
         }
         final String parent = data == null ? null : data.reopenParent();
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
         if (parent != null && !parent.equals(viewKey)) {
             ui.openContainerView(parent);
         }
@@ -271,21 +272,21 @@ public final class ContainerViewScreen extends ChildScreen {
         switch (layout.background()) {
             case GENERIC_54 -> {
                 final int rows = layout.chestRows();
-                graphics.blit(RenderPipelines.GUI_TEXTURED, GENERIC_54, left, top, 0f, 0f, w, rows * 18 + 17, 256, 256);
-                graphics.blit(RenderPipelines.GUI_TEXTURED, GENERIC_54, left, top + rows * 18 + 17, 0f, 126f, w, 96, 256, 256);
+                Game.blit(graphics, GENERIC_54, left, top, 0f, 0f, w, rows * 18 + 17, 256, 256);
+                Game.blit(graphics, GENERIC_54, left, top + rows * 18 + 17, 0f, 126f, w, 96, 256, 256);
             }
-            case HOPPER -> graphics.blit(RenderPipelines.GUI_TEXTURED, HOPPER, left, top, 0f, 0f, w, h, 256, 256);
-            case DISPENSER -> graphics.blit(RenderPipelines.GUI_TEXTURED, DISPENSER, left, top, 0f, 0f, w, h, 256, 256);
-            case INVENTORY -> graphics.blit(RenderPipelines.GUI_TEXTURED, INVENTORY, left, top, 0f, 0f, w, h, 256, 256);
+            case HOPPER -> Game.blit(graphics, HOPPER, left, top, 0f, 0f, w, h, 256, 256);
+            case DISPENSER -> Game.blit(graphics, DISPENSER, left, top, 0f, 0f, w, h, 256, 256);
+            case INVENTORY -> Game.blit(graphics, INVENTORY, left, top, 0f, 0f, w, h, 256, 256);
             case FURNACE -> {
-                graphics.blit(RenderPipelines.GUI_TEXTURED, FURNACE, left, top, 0f, 0f, w, h, 256, 256);
+                Game.blit(graphics, FURNACE, left, top, 0f, 0f, w, h, 256, 256);
                 furnaceProgress(graphics);
             }
             case BREWING -> {
-                graphics.blit(RenderPipelines.GUI_TEXTURED, BREWING, left, top, 0f, 0f, w, h, 256, 256);
+                Game.blit(graphics, BREWING, left, top, 0f, 0f, w, h, 256, 256);
                 brewingProgress(graphics);
             }
-            case LECTERN -> graphics.blit(RenderPipelines.GUI_TEXTURED, BOOK, left, top, 0f, 0f, w, h, 256, 256);
+            case LECTERN -> Game.blit(graphics, BOOK, left, top, 0f, 0f, w, h, 256, 256);
             case PANEL -> {
                 final int r = left + w;
                 final int b = top + h;
@@ -294,7 +295,7 @@ public final class ContainerViewScreen extends ChildScreen {
                 graphics.fill(left + 3, top + 3, r - 1, b - 1, 0xFF555555);
                 graphics.fill(left + 3, top + 3, r - 3, b - 3, PANEL_ARGB);
                 for (final ContainerLayout.Slot s : layout.slots()) {
-                    graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SLOT_SPRITE, left + s.x() - 1, top + s.y() - 1, 18, 18);
+                    Game.blitSprite(graphics, SLOT_SPRITE, left + s.x() - 1, top + s.y() - 1, 18, 18);
                 }
             }
         }
@@ -309,12 +310,12 @@ public final class ContainerViewScreen extends ChildScreen {
         final Float fuel = data.fuel();
         if (fuel != null && fuel > 0f) {
             final int lit = Mth.ceil(Mth.clamp(fuel, 0f, 1f) * 13f) + 1;
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, LIT_PROGRESS, 14, 14, 0, 14 - lit, left + 56, top + 36 + 14 - lit, 14, lit);
+            Game.blitSprite(graphics, LIT_PROGRESS, 14, 14, 0, 14 - lit, left + 56, top + 36 + 14 - lit, 14, lit);
         }
         final Float progress = data.progress();
         if (progress != null && progress > 0f) {
             final int burn = Mth.ceil(Mth.clamp(progress, 0f, 1f) * 24f);
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BURN_PROGRESS, 24, 16, 0, 0, left + 79, top + 34, burn, 16);
+            Game.blitSprite(graphics, BURN_PROGRESS, 24, 16, 0, 0, left + 79, top + 34, burn, 16);
         }
     }
 
@@ -327,17 +328,17 @@ public final class ContainerViewScreen extends ChildScreen {
         final Float fuel = data.fuel();
         if (fuel != null && fuel > 0f) {
             final int length = Mth.clamp(Mth.ceil(18f * fuel), 0, 18);
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, FUEL_LENGTH, 18, 4, 0, 0, left + 60, top + 44, length, 4);
+            Game.blitSprite(graphics, FUEL_LENGTH, 18, 4, 0, 0, left + 60, top + 44, length, 4);
         }
         final Float progress = data.progress();
         if (progress != null && progress > 0f && progress < 1f) {
             final int length = (int) (28f * Mth.clamp(progress, 0f, 1f));
             if (length > 0) {
-                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BREW_PROGRESS, 9, 28, 0, 0, left + 97, top + 16, 9, length);
+                Game.blitSprite(graphics, BREW_PROGRESS, 9, 28, 0, 0, left + 97, top + 16, 9, length);
             }
             final int bubbles = BUBBLE_LENGTHS[(int) (ui.nowMs() / 100L % BUBBLE_LENGTHS.length)];
             if (bubbles > 0) {
-                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BUBBLES, 12, 29, 0, 29 - bubbles, left + 63, top + 14 + 29 - bubbles, 12,
+                Game.blitSprite(graphics, BUBBLES, 12, 29, 0, 29 - bubbles, left + 63, top + 14 + 29 - bubbles, 12,
                         bubbles);
             }
         }
@@ -366,7 +367,7 @@ public final class ContainerViewScreen extends ChildScreen {
         final ContainerLayout.Slot hoveredPlayer = hovered == null ? layout.playerSlotAt(rx, ry) : null;
         final ContainerLayout.Slot highlight = hovered != null ? hovered : hoveredPlayer;
         if (highlight != null) {
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, HIGHLIGHT_BACK, left + highlight.x() - 4, top + highlight.y() - 4, 24, 24);
+            Game.blitSprite(graphics, HIGHLIGHT_BACK, left + highlight.x() - 4, top + highlight.y() - 4, 24, 24);
         }
         int seed = 0;
         for (final ContainerLayout.Slot s : layout.slots()) {
@@ -398,7 +399,7 @@ public final class ContainerViewScreen extends ChildScreen {
             }
         }
         if (highlight != null) {
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, HIGHLIGHT_FRONT, left + highlight.x() - 4, top + highlight.y() - 4, 24, 24);
+            Game.blitSprite(graphics, HIGHLIGHT_FRONT, left + highlight.x() - 4, top + highlight.y() - 4, 24, 24);
         }
         final SlotItem carried = storage.cursor();
         if (carried != null) {
@@ -496,7 +497,7 @@ public final class ContainerViewScreen extends ChildScreen {
                 // Virtual items cannot be thrown into the world; clicking outside puts them back instead.
                 apply(storage.returnCursor(), OUTSIDE, SlotClick.LEFT, null);
             } else if (outside) {
-                final SlotGestures.Gesture g = SlotGestures.mouse(event.button(), event.hasShiftDown(), false,
+                final SlotGestures.Gesture g = SlotGestures.mouse(Keys.button(event.button()), event.hasShiftDown(), false,
                         minecraft.options.keyPickItem.matchesMouse(event));
                 if (g != null && (g.click() == SlotClick.LEFT || g.click() == SlotClick.RIGHT)) {
                     send(OUTSIDE, g);
@@ -523,7 +524,7 @@ public final class ContainerViewScreen extends ChildScreen {
             sourceClick(index, event);
             return true;
         }
-        final SlotGestures.Gesture g = SlotGestures.mouse(event.button(), event.hasShiftDown(), repeat,
+        final SlotGestures.Gesture g = SlotGestures.mouse(Keys.button(event.button()), event.hasShiftDown(), repeat,
                 minecraft.options.keyPickItem.matchesMouse(event));
         if (g != null) {
             send(index, g);
@@ -533,7 +534,7 @@ public final class ContainerViewScreen extends ChildScreen {
 
     /** A source slot copies its template, never running out. */
     private void sourceClick(final int index, final MouseButtonEvent event) {
-        final int button = event.button();
+        final int button = Keys.button(event.button());
         if (button != SlotGestures.BUTTON_LEFT && button != SlotGestures.BUTTON_RIGHT) {
             return;
         }
@@ -552,7 +553,7 @@ public final class ContainerViewScreen extends ChildScreen {
      * source. Only a virtual copy moves; the real stack and the server never hear of it.
      */
     private void inventoryClick(final ContainerLayout.Slot own, final MouseButtonEvent event) {
-        final int button = event.button();
+        final int button = Keys.button(event.button());
         final Inventory inventory = minecraft.player == null ? null : minecraft.player.getInventory();
         if (inventory == null || !storage.hasStorage() || (button != SlotGestures.BUTTON_LEFT && button != SlotGestures.BUTTON_RIGHT)) {
             return;
@@ -569,7 +570,7 @@ public final class ContainerViewScreen extends ChildScreen {
     }
 
     private void storageClick(final int index, final MouseButtonEvent event, final boolean repeat) {
-        final int button = event.button();
+        final int button = Keys.button(event.button());
         if (minecraft.options.keyPickItem.matchesMouse(event) || (button != SlotGestures.BUTTON_LEFT && button != SlotGestures.BUTTON_RIGHT)) {
             return;
         }
@@ -607,7 +608,7 @@ public final class ContainerViewScreen extends ChildScreen {
 
     @Override
     public boolean mouseReleased(final MouseButtonEvent event) {
-        if (dragging && event.button() == (dragRight ? SlotGestures.BUTTON_RIGHT : SlotGestures.BUTTON_LEFT)) {
+        if (dragging && Keys.button(event.button()) == (dragRight ? SlotGestures.BUTTON_RIGHT : SlotGestures.BUTTON_LEFT)) {
             dragging = false;
             final int first = dragSlots.getInt(0);
             final SlotClick click = dragRight ? SlotClick.RIGHT : SlotClick.LEFT;

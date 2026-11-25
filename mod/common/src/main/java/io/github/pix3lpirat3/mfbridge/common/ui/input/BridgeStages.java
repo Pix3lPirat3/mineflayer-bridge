@@ -7,6 +7,7 @@ import io.github.pix3lpirat3.mfbridge.common.spatial.SpatialTools;
 import io.github.pix3lpirat3.mfbridge.common.ui.UiContext;
 import io.github.pix3lpirat3.mfbridge.common.ui.edit.ObjectEditor;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.ScrollAccumulator;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ElementInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ToolInput;
@@ -94,7 +95,7 @@ public final class BridgeStages {
      */
     public boolean capturesGameInput() {
         final Minecraft minecraft = Minecraft.getInstance();
-        return minecraft.gui.screen() == null && minecraft.player != null
+        return Game.screen() == null && minecraft.player != null
                 && (picks.active() || tools.active() != null || displays.menus().active() || displays.hovering()
                         || spatial.capturesClicks() || objectEditor.moving());
     }
@@ -165,7 +166,7 @@ public final class BridgeStages {
 
             @Override
             public Outcome button(final InputConstants.Key key, final String name) {
-                return consumedIf(Minecraft.getInstance().options.keyAttack.matches(key) && traitsClick());
+                return consumedIf(Game.matches(Minecraft.getInstance().options.keyAttack, key) && traitsClick());
             }
 
             @Override
@@ -176,7 +177,7 @@ public final class BridgeStages {
         input.add(InputPipeline.GIZMO, new InputStage() {
             @Override
             public Outcome button(final InputConstants.Key key, final String name) {
-                return consumedIf(spatial.editor().hasSelection() && Minecraft.getInstance().options.keyAttack.matches(key)
+                return consumedIf(spatial.editor().hasSelection() && Game.matches(Minecraft.getInstance().options.keyAttack, key)
                         && spatial.editor().press());
             }
 
@@ -319,9 +320,9 @@ public final class BridgeStages {
     /** The vanilla role of a mouse button: attack, use or pick-block, or null. */
     private static @Nullable ToolInput role(final InputConstants.Key key) {
         final Options options = Minecraft.getInstance().options;
-        return options.keyAttack.matches(key) ? ToolInput.PRIMARY
-                : options.keyUse.matches(key) ? ToolInput.SECONDARY
-                : options.keyPickItem.matches(key) ? ToolInput.MIDDLE : null;
+        return Game.matches(options.keyAttack, key) ? ToolInput.PRIMARY
+                : Game.matches(options.keyUse, key) ? ToolInput.SECONDARY
+                : Game.matches(options.keyPickItem, key) ? ToolInput.MIDDLE : null;
     }
 
     private static InputStage.Outcome consumedIf(final boolean taken) {

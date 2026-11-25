@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.pix3lpirat3.mfbridge.common.game.RenderFrame26x;
 import io.github.pix3lpirat3.mfbridge.common.seam.RenderFrame;
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotItems;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.spatial.SpatialIndex;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PointData;
@@ -80,7 +81,7 @@ public final class PointIcons {
             }
             pose.pushPose();
             pose.translate(p.pos().x() - f.cameraX(), p.pos().y() + OFFSET - f.cameraY(), p.pos().z() - f.cameraZ());
-            pose.rotate(f.camera().orientation);
+            Game.rotate(pose, f.camera().orientation);
             pose.scale(SCALE, SCALE, SCALE);
             state.submit(pose, f.collector(), LightCoordsUtil.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0);
             pose.popPose();

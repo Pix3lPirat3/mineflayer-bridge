@@ -3,7 +3,7 @@ plugins {
 }
 
 base {
-    archivesName = "${mod_id}-${project.name}-${minecraft_version}"
+    archivesName = "${mod_id}-${project.name}-${minecraft_versions}"
 }
 
 java {
@@ -53,6 +53,7 @@ processResources {
             'group'                        : project.group,
             'minecraft_version'            : minecraft_version,
             'minecraft_version_range'      : minecraft_version_range,
+            'fabric_minecraft_range'       : fabric_minecraft_range,
             'fabric_api_version'           : fabric_api_version,
             'fabric_loader_version'        : fabric_loader_version,
             'mod_name'                     : mod_name,
@@ -64,6 +65,7 @@ processResources {
             'mod_sources'                  : mod_sources,
             'mod_issues'                   : mod_issues,
             'neoforge_version'             : neoforge_version,
+            'neoforge_min_version'         : neoforge_min_version,
             'neoforge_loader_version_range': neoforge_loader_version_range,
             'credits'                      : credits,
             'java_version'                 : java_version

@@ -4,6 +4,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.command.ClientEntities;
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotItems;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.DisplayText;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.TargetMatch;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.Presence;
 import io.github.pix3lpirat3.mfbridge.core.command.ArgContext;
@@ -113,7 +114,7 @@ public final class Crosshair {
      * @return the eye position used for rays
      */
     public static Vec3 eye() {
-        return Minecraft.getInstance().gameRenderer.mainCamera().position();
+        return Game.mainCamera().position();
     }
 
     /**
@@ -122,7 +123,7 @@ public final class Crosshair {
      * @return the forward vector
      */
     public static Vec3 look() {
-        final Camera camera = Minecraft.getInstance().gameRenderer.mainCamera();
+        final Camera camera = Game.mainCamera();
         final Vector3fc f = camera.forwardVector();
         return new Vec3(f.x(), f.y(), f.z());
     }

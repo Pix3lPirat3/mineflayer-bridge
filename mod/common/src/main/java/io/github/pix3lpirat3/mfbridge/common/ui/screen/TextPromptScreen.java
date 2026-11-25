@@ -2,6 +2,7 @@ package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.PanelLayout;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.TextWrap;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PromptKind;
 import java.util.List;
@@ -84,7 +85,7 @@ public final class TextPromptScreen extends PromptScreen {
         } else {
             controller.answer(value);
         }
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
     }
 
     @Override

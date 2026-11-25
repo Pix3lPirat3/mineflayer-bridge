@@ -1,5 +1,6 @@
 package io.github.pix3lpirat3.mfbridge.common.sound;
 
+import io.github.pix3lpirat3.mfbridge.common.version.VersionSpecific;
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.client.resources.sounds.Sound;
 import net.minecraft.client.resources.sounds.SoundInstance;
@@ -57,16 +58,38 @@ final class EmitterSound extends AbstractTickableSoundInstance {
     public void tick() {
     }
 
+    // 26.3 calls this one.
     @Override
+    @VersionSpecific
     public WeighedSoundEvents getOrResolve(final SoundManager manager) {
         if (!blob) {
             return super.getOrResolve(manager);
         }
+        final WeighedSoundEvents events = blobEvents();
+        soundEvent = events;
+        return events;
+    }
+
+    /** The same under the name 26.1 and 26.2 call; their own resolve, written out, when not a blob. */
+    @VersionSpecific
+    public WeighedSoundEvents resolve(final SoundManager manager) {
+        if (blob) {
+            return blobEvents();
+        }
+        if (identifier.equals(SoundManager.INTENTIONALLY_EMPTY_SOUND_LOCATION)) {
+            sound = SoundManager.INTENTIONALLY_EMPTY_SOUND;
+            return SoundManager.INTENTIONALLY_EMPTY_SOUND_EVENT;
+        }
+        final WeighedSoundEvents events = manager.getSoundEvent(identifier);
+        sound = events == null ? SoundManager.EMPTY_SOUND : events.getSound(random);
+        return events;
+    }
+
+    private WeighedSoundEvents blobEvents() {
         final Identifier id = getIdentifier();
         final WeighedSoundEvents events = new WeighedSoundEvents(id, null);
         sound = new Sound(id, ConstantFloat.of(1f), ConstantFloat.of(1f), 1, Sound.Type.FILE, true, false, ATTENUATION);
         events.addSound(sound);
-        soundEvent = events;
         return events;
     }
 }

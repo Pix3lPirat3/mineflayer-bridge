@@ -1,4 +1,5 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.command;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.arguments.ArgumentType;
@@ -484,14 +485,14 @@ public final class BridgeCommands {
 
     private static int print(final List<String> lines) {
         for (final String line : lines) {
-            Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(Component.literal(line).withColor(INFO_ARGB));
+            Game.chat().addClientSystemMessage(Component.literal(line).withColor(INFO_ARGB));
         }
         return 1;
     }
 
     /** Problems print as a readable red client line instead of a Brigadier syntax error. */
     private static int fail(final String message) {
-        Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(Component.literal(message).withColor(UiColors.ERROR));
+        Game.chat().addClientSystemMessage(Component.literal(message).withColor(UiColors.ERROR));
         return 0;
     }
 }

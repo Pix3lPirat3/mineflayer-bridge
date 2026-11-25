@@ -10,6 +10,7 @@ import io.github.pix3lpirat3.mfbridge.api.client.ClientRegistrar;
 import io.github.pix3lpirat3.mfbridge.api.client.HomeTab;
 import io.github.pix3lpirat3.mfbridge.api.client.InputStage;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenItem;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenRow;
 import java.util.ArrayList;
@@ -80,14 +81,14 @@ public final class HotkeysExtension implements ClientExtension {
 
             @Override
             public void use(final String itemId, final @Nullable Object value) {
-                final Screen here = Minecraft.getInstance().gui.screen();
+                final Screen here = Game.screen();
                 if (itemId.equals("add")) {
-                    Minecraft.getInstance().gui.setScreen(new HotkeyScreen(here, null, h -> save(store, -1, h), h -> { }));
+                    Game.setScreen(new HotkeyScreen(here, null, h -> save(store, -1, h), h -> { }));
                 } else if (itemId.startsWith("edit/")) {
                     final int index = Integer.parseInt(itemId.substring("edit/".length()));
                     final List<Hotkey> all = store.all();
                     if (index < all.size()) {
-                        Minecraft.getInstance().gui.setScreen(new HotkeyScreen(here, all.get(index), h -> save(store, index, h),
+                        Game.setScreen(new HotkeyScreen(here, all.get(index), h -> save(store, index, h),
                                 h -> store.remove(index)));
                     }
                 }

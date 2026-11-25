@@ -1,6 +1,7 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FieldEditors;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import java.util.function.IntConsumer;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -106,7 +107,7 @@ public final class ColorPickerScreen extends ChildScreen {
         if (!valid) {
             return;
         }
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
         done.accept(argb);
     }
 

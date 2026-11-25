@@ -2,12 +2,12 @@ package io.github.pix3lpirat3.mfbridge.common.ui.hud;
 
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.ToastLayout;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiText;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.toasts.Toast;
 import net.minecraft.client.gui.components.toasts.ToastManager;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 
 /**
@@ -54,7 +54,7 @@ public final class BridgeToast implements Toast {
      */
     public static void show(final String title, final String message, final long displayMs, final boolean error) {
         final Minecraft minecraft = Minecraft.getInstance();
-        final ToastManager toasts = minecraft.gui.toastManager();
+        final ToastManager toasts = Game.toasts();
         final Key key = new Key(title, message);
         final BridgeToast shown = toasts.getToast(BridgeToast.class, key);
         if (shown != null) {
@@ -103,7 +103,7 @@ public final class BridgeToast implements Toast {
 
     @Override
     public void extractRenderState(final GuiGraphicsExtractor graphics, final Font font, final long fullyVisibleForMs) {
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BACKGROUND, 0, 0, width(), height());
+        Game.blitSprite(graphics, BACKGROUND, 0, 0, width(), height());
         final int x = ToastLayout.PADDING_X;
         if (layout.body().isEmpty()) {
             graphics.text(font, layout.title(), x, 12, error ? ERROR_TITLE_ARGB : TITLE_ARGB, false);

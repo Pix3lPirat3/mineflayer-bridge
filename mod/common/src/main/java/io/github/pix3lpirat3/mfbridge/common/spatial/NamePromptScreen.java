@@ -2,6 +2,7 @@ package io.github.pix3lpirat3.mfbridge.common.spatial;
 
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.ChildScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -107,7 +108,7 @@ public final class NamePromptScreen extends ChildScreen {
             return;
         }
         finished = true;
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
         done.accept(new Result(trimmed, parseTags(tags)));
     }
 

@@ -5,6 +5,7 @@ import io.github.pix3lpirat3.mfbridge.api.Setting;
 import io.github.pix3lpirat3.mfbridge.api.SettingValue;
 import io.github.pix3lpirat3.mfbridge.common.ui.declared.ScreenView;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.ext.ExtensionResolver;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenData;
@@ -129,7 +130,7 @@ public final class ExtensionsScreen extends ScreenView {
                 ((SettingValue<Boolean>) v).set(on);
                 invalidate();
             } else if (v.setting().type() != Boolean.class) {
-                minecraft.gui.setScreen(new SettingValueScreen(this, v));
+                Game.setScreen(new SettingValueScreen(this, v));
             }
             return;
         }

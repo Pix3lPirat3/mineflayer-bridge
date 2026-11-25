@@ -35,6 +35,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.logic.ScrollAccumulator;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.PaletteScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.surface.BotForms;
 import io.github.pix3lpirat3.mfbridge.common.ui.surface.BotSurfaces;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.Notifier;
 import io.github.pix3lpirat3.mfbridge.core.decl.SettingsDecl;
@@ -170,7 +171,7 @@ public final class BridgeUi implements UiContext {
      * @return the key mapping
      */
     public static KeyMapping keyMapping(final String name, final int keyCode) {
-        return new KeyMapping("key." + Constants.MOD_ID + "." + name, InputConstants.Type.KEYBOARD, keyCode, KEY_CATEGORY);
+        return new KeyMapping("key." + Constants.MOD_ID + "." + name, Game.KEYBOARD, keyCode, KEY_CATEGORY);
     }
 
     /**
@@ -244,7 +245,7 @@ public final class BridgeUi implements UiContext {
 
     @Override
     public void openSettings() {
-        Minecraft.getInstance().gui.setScreen(settingsFactory.apply(null));
+        Game.setScreen(settingsFactory.apply(null));
     }
 
     /** Sets the key that opens Bridge home, so it also works inside what bots put on screen. */
@@ -436,7 +437,7 @@ public final class BridgeUi implements UiContext {
      * @param parent the screen to return to, or null to close to the game
      */
     public void openHome(final @Nullable Screen parent) {
-        Minecraft.getInstance().gui.setScreen(homeFactory.apply(parent));
+        Game.setScreen(homeFactory.apply(parent));
     }
 
     /**
@@ -464,7 +465,7 @@ public final class BridgeUi implements UiContext {
      * @param parent the screen to return to, or null to close to the game
      */
     public void openDevices(final @Nullable Screen parent) {
-        Minecraft.getInstance().gui.setScreen(new DevicesScreen(parent, this::core));
+        Game.setScreen(new DevicesScreen(parent, this::core));
     }
 
     /**
@@ -473,7 +474,7 @@ public final class BridgeUi implements UiContext {
      * @param parent the screen to return to, or null to close to the game
      */
     public void openInspector(final @Nullable Screen parent) {
-        Minecraft.getInstance().gui.setScreen(new InspectorScreen(parent, this::core, highlight));
+        Game.setScreen(new InspectorScreen(parent, this::core, highlight));
     }
 
     /**
@@ -482,7 +483,7 @@ public final class BridgeUi implements UiContext {
      * @param parent the screen to return to, or null to close to the game
      */
     public void openHudEditor(final @Nullable Screen parent) {
-        Minecraft.getInstance().gui.setScreen(new HudEditorScreen(parent, this::core, hud));
+        Game.setScreen(new HudEditorScreen(parent, this::core, hud));
     }
 
     /**
@@ -545,7 +546,7 @@ public final class BridgeUi implements UiContext {
             keys.drain();
             return;
         }
-        final Screen screen = Minecraft.getInstance().gui.screen();
+        final Screen screen = Game.screen();
         if (screen != lastScreen) {
             // What bots offer goes stale (items dropped, blocks broken): a closed chat asks again.
             if (lastScreen != null) {
@@ -629,7 +630,7 @@ public final class BridgeUi implements UiContext {
      */
     public void renderHud(final GuiGraphicsExtractor graphics) {
         final Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.gui.hud.isHidden()) {
+        if (Game.hudHidden()) {
             return;
         }
         final BridgeCore core = core();
@@ -639,7 +640,7 @@ public final class BridgeUi implements UiContext {
                     showAllHud != showAllToggled);
             core.inspector().metrics().record(Metric.DRAW_HUD, System.nanoTime() - start);
         }
-        if (minecraft.gui.screen() == null) {
+        if (Game.screen() == null) {
             overlay.render(graphics, this, core == null ? 0 : core.input().queued());
             displays.renderHud(graphics);
             final String hint = picks.active() ? "" : objectEditor.moving() ? objectEditor.hint() : spatial.hint();

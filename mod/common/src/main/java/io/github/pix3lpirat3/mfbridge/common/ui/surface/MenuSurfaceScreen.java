@@ -3,12 +3,12 @@ package io.github.pix3lpirat3.mfbridge.common.ui.surface;
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotVisual;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptAnswers;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptScreen;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SlotItem;
 import io.github.pix3lpirat3.mfbridge.protocol.core.WorldMenuEntry;
 import java.util.Locale;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import org.jspecify.annotations.Nullable;
@@ -66,14 +66,14 @@ abstract class MenuSurfaceScreen extends PromptScreen {
      * @param value the answer, or null for none
      */
     protected final void answer(final @Nullable Object value) {
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
         controller.answer(value, surface);
     }
 
     @Override
     public void extractBackground(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
         super.extractBackground(graphics, mouseX, mouseY, a);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, texture, left, top, 0f, 0f, imageWidth, imageHeight, textureWidth, textureHeight);
+        Game.blit(graphics, texture, left, top, 0f, 0f, imageWidth, imageHeight, textureWidth, textureHeight);
     }
 
     @Override

@@ -13,8 +13,10 @@ import io.github.pix3lpirat3.mfbridge.common.ui.surface.BridgeDialogs;
 import io.github.pix3lpirat3.mfbridge.common.ui.surface.CraftingPromptScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.surface.EnchantingPromptScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.surface.MerchantPromptScreen;
-import io.github.pix3lpirat3.mfbridge.common.ui.surface.SignPromptScreen;
+
 import io.github.pix3lpirat3.mfbridge.common.ui.surface.StonecutterPromptScreen;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
+import io.github.pix3lpirat3.mfbridge.common.version.Versions;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PromptKind;
@@ -138,7 +140,7 @@ public final class PromptController implements PromptAnswers {
             final long now = ui.nowMs();
             if (hintAtMs == Long.MIN_VALUE || now - hintAtMs >= CHAT_HINT_MS) {
                 hintAtMs = now;
-                minecraft.gui.hud.setOverlayMessage(Component.translatable("mineflayer_bridge.prompt.chat_hint", in.ownerName(),
+                Game.overlayMessage(Component.translatable("mineflayer_bridge.prompt.chat_hint", in.ownerName(),
                         in.request().text()), false);
             }
         }
@@ -177,7 +179,7 @@ public final class PromptController implements PromptAnswers {
         }
         return switch (r.kind()) {
             case CONFIRM -> {
-                final int key = event.shortcutKey();
+                final int key = Game.shortcutKey(event);
                 if (key == 'y') {
                     answer(Boolean.TRUE, cardSurface());
                     yield true;
@@ -248,7 +250,7 @@ public final class PromptController implements PromptAnswers {
             screen = switch (surface) {
                 case DIALOG -> BridgeDialogs.prompt(in.ownerName(), in.request(), new DialogAnswer(in));
                 case ANVIL -> new AnvilPromptScreen(in, this);
-                case SIGN -> new SignPromptScreen(in, this);
+                case SIGN -> Versions.CURRENT.signPrompt(in, this);
                 case BOOK -> new BookPromptScreen(in, this);
                 case CHAT -> new ChatScreen("", false);
                 case STONECUTTER -> new StonecutterPromptScreen(in, this);
@@ -276,7 +278,7 @@ public final class PromptController implements PromptAnswers {
             shown(in, used);
         }
         if (screen != null) {
-            minecraft.gui.setScreen(screen);
+            Game.setScreen(screen);
         }
     }
 

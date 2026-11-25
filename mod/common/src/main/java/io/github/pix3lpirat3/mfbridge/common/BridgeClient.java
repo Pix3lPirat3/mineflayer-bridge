@@ -1,4 +1,6 @@
 package io.github.pix3lpirat3.mfbridge.common;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
+import io.github.pix3lpirat3.mfbridge.common.version.Keys;
 
 import io.github.pix3lpirat3.mfbridge.common.ext.BridgeFacade;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -103,7 +105,7 @@ public final class BridgeClient {
                 new BridgeFacade(ui));
         // Bridge home has a key in game. B has no vanilla 26.3 binding of its own; F3+B
         // (hitboxes) is a debug chord, and vanilla does not click other mappings for a key it used as one.
-        this.openHomeKey = BridgeUi.keyMapping("open_home", InputConstants.KEY_B);
+        this.openHomeKey = BridgeUi.keyMapping("open_home", Keys.KEY_B);
         ui.setHomeFactory(this::createHomeScreen);
         ui.setSettingsFactory(this::createSettingsScreen);
         ui.setHomeKey(openHomeKey);
@@ -371,7 +373,7 @@ public final class BridgeClient {
     public void onEndClientTick() {
         final Minecraft minecraft = Minecraft.getInstance();
         while (openHomeKey.consumeClick()) {
-            if (minecraft.gui.screen() == null) {
+            if (Game.screen() == null) {
                 joinTips.menuOpened();
                 ui.openPrimary(null);
             }
@@ -379,7 +381,7 @@ public final class BridgeClient {
         onLevelChanged();
         onTick();
         ui.tick();
-        extensions.tick(minecraft.player != null && minecraft.gui.screen() == null);
+        extensions.tick(minecraft.player != null && Game.screen() == null);
     }
 
     /** Loader glue: the play connection is ready and the player is in a world. */
@@ -488,7 +490,7 @@ public final class BridgeClient {
                     ui.openPrimary(null);
                 })));
         final Component prefix = Component.literal(settings.chatPrefix()).withStyle(ChatFormatting.YELLOW);
-        final var chat = minecraft.gui.hud.getChat();
+        final var chat = Game.chat();
         if (tip == JoinTipsState.Tip.WELCOME) {
             chat.addClientSystemMessage(Component.translatable("mineflayer_bridge.tips.welcome.title").withStyle(ChatFormatting.GOLD));
             chat.addClientSystemMessage(Component.translatable("mineflayer_bridge.tips.welcome.menu", key, open).withStyle(ChatFormatting.GRAY));

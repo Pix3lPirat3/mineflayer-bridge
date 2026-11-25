@@ -1,0 +1,115 @@
+plugins {
+    id 'bridge-multiloader-common'
+}
+
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Fabric'
+                url = uri('https://maven.fabricmc.net')
+            }
+        }
+        filter {
+            includeGroup('net.fabricmc')
+        }
+    }
+}
+
+dependencies {
+    compileOnly(project(':common')) {
+        transitive = false
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+    bridgeSharedModules.each { path ->
+        compileOnly(project(path)) {
+            transitive = false
+        }
+    }
+    compileOnly("net.fabricmc:sponge-mixin:${sponge_mixin_version}") {
+        transitive = false
+    }
+}
+
+configurations {
+    versionJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+artifacts {
+    versionJava(tasks.named('jar'))
+}
+
+['apiElements', 'runtimeElements', 'sourcesElements'].each { variant ->
+    configurations.named(variant) {
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant ->
+        configurations.named(variant) {
+            attributes {
+                attribute(loaderAttribute, 'common')
+            }
+        }
+    }
+}
+
+configurations {
+    sharedClasses {
+        canBeResolved = true
+        canBeConsumed = false
+        transitive = false
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+}
+
+configurations {
+    bundled {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    borrowedClasses {
+        canBeResolved = true
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
+dependencies {
+    sharedClasses(project(':common'))
+    bridgeSharedModules.each { path ->
+        sharedClasses(project(path))
+    }
+    bundled("io.airlift:aircompressor:${aircompressor_version}")
+}
+
+def linkCheck = tasks.register('checkSharedLinks', bridge.LinkCheck) {
+    description = 'Checks that the shared code links against this game version.'
+    group = 'verification'
+    classes.from(configurations.sharedClasses, tasks.named('jar'))
+    borrowed.from(configurations.borrowedClasses)
+    target.from(configurations.compileClasspath.filter { !it.name.startsWith('common') }, configurations.bundled)
+    report = layout.buildDirectory.file('linkcheck.txt')
+}
+
+tasks.named('check') {
+    dependsOn(linkCheck)
+}
+
+ext.borrow = { String path ->
+    dependencies.add('compileOnly', dependencies.project(path: path)) {
+        transitive = false
+    }
+    dependencies.add('borrowedClasses', dependencies.project(path: path, configuration: 'versionJava'))
+}

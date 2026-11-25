@@ -1,15 +1,16 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.input;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import io.github.pix3lpirat3.mfbridge.common.render.command.DrawCommand;
 import io.github.pix3lpirat3.mfbridge.common.ui.UiContext;
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotItems;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.input.PickInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PickItem;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PickKind;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PickRequest;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PickResult;
+import io.github.pix3lpirat3.mfbridge.common.version.Keys;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -146,8 +147,8 @@ public final class PickController {
         };
         rejectedAtMs = Long.MIN_VALUE;
         final Minecraft minecraft = Minecraft.getInstance();
-        if (k == PickKind.ITEM && minecraft.gui.screen() == null && minecraft.player != null) {
-            minecraft.gui.setScreen(new InventoryScreen(minecraft.player));
+        if (k == PickKind.ITEM && Game.screen() == null && minecraft.player != null) {
+            Game.setScreen(new InventoryScreen(minecraft.player));
         }
     }
 
@@ -241,7 +242,7 @@ public final class PickController {
             }
             return true;
         }
-        if (event.input() == InputConstants.KEY_BACKSPACE) {
+        if (event.input() == Keys.KEY_BACKSPACE) {
             secondary();
             return true;
         }
@@ -319,7 +320,7 @@ public final class PickController {
     public List<DrawCommand> preview() {
         preview.clear();
         final PickMode m = mode;
-        if (m != null && Minecraft.getInstance().gui.screen() == null) {
+        if (m != null && Game.screen() == null) {
             m.update();
             m.draw(preview);
         }

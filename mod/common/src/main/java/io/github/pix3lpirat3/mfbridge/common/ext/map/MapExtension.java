@@ -15,6 +15,7 @@ import io.github.pix3lpirat3.mfbridge.common.ext.map.wire.BridgeMapOrder;
 import io.github.pix3lpirat3.mfbridge.common.ext.map.wire.MapOrderType;
 import io.github.pix3lpirat3.mfbridge.common.ext.map.wire.MapWire;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenItem;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenRow;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Vec3d;
@@ -105,14 +106,14 @@ public final class MapExtension implements ClientExtension {
             t = new MapTerrain();
             terrain = t;
         }
-        mc.gui.setScreen(new MapScreen(this, t, mc.gui.screen()));
+        Game.setScreen(new MapScreen(this, t, Game.screen()));
     }
 
     /** Opens bot selection over the player's own view. */
     void selectInView() {
         final Minecraft mc = Minecraft.getInstance();
-        if (mc.level != null && mc.gui.screen() == null) {
-            mc.gui.setScreen(new WorldSelectScreen(this));
+        if (mc.level != null && Game.screen() == null) {
+            Game.setScreen(new WorldSelectScreen(this));
         }
     }
 

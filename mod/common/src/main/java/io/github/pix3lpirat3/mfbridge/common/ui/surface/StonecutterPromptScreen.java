@@ -4,12 +4,12 @@ import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptAnswers;
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotVisual;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.WorldMenuEntry;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -116,7 +116,7 @@ public final class StonecutterPromptScreen extends MenuSurfaceScreen {
         super.extractBackground(graphics, mouseX, mouseY, a);
         final int max = maxStartRow();
         final int offset = max == 0 ? 0 : (int) (41f * startRow / max);
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, max == 0 ? SCROLLER_DISABLED : SCROLLER, left + 119, top + 15 + offset, 12, 15);
+        Game.blitSprite(graphics, max == 0 ? SCROLLER_DISABLED : SCROLLER, left + 119, top + 15 + offset, 12, 15);
         final int hovered = optionAt(mouseX, mouseY);
         for (int i = 0; i < COLUMNS * ROWS; i++) {
             final int index = startRow * COLUMNS + i;
@@ -124,7 +124,7 @@ public final class StonecutterPromptScreen extends MenuSurfaceScreen {
                 break;
             }
             final Identifier sprite = index == selected ? RECIPE_SELECTED : index == hovered ? RECIPE_HIGHLIGHTED : RECIPE;
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, left + 52 + (i % COLUMNS) * 16, top + 14 + (i / COLUMNS) * 18 + 1, 16,
+            Game.blitSprite(graphics, sprite, left + 52 + (i % COLUMNS) * 16, top + 14 + (i / COLUMNS) * 18 + 1, 16,
                     18);
         }
     }

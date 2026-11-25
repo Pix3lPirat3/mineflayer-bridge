@@ -1,5 +1,6 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
@@ -35,7 +36,7 @@ public abstract class ChildScreen extends Screen implements BridgeScreen {
 
     @Override
     public void onClose() {
-        minecraft.gui.setScreen(parent);
+        Game.setScreen(parent);
     }
 
     @Override

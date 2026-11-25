@@ -5,6 +5,7 @@ import io.github.pix3lpirat3.mfbridge.common.Constants;
 import io.github.pix3lpirat3.mfbridge.common.ui.UiContext;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.KeybindIndex;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.DisplayText;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.decl.DeclarationSnapshot;
 import io.github.pix3lpirat3.mfbridge.core.decl.KeybindDecl;
@@ -164,17 +165,17 @@ public final class KeybindRouter {
         if (key == null) {
             return false;
         }
-        if (key.getType() == InputConstants.Type.KEYBOARD) {
-            return InputConstants.isKeyDown(key.getValue());
+        if (key.getType() == Game.KEYBOARD) {
+            return Game.keyDown(key.getValue());
         }
         final var options = Minecraft.getInstance().options;
-        return options.keyAttack.matches(key) && options.keyAttack.isDown()
-                || options.keyUse.matches(key) && options.keyUse.isDown();
+        return Game.matches(options.keyAttack, key) && options.keyAttack.isDown()
+                || Game.matches(options.keyUse, key) && options.keyUse.isDown();
     }
 
     private boolean contextActive(final KeybindIndex.Bind bind) {
         final String context = bind.context();
-        final Screen screen = Minecraft.getInstance().gui.screen();
+        final Screen screen = Game.screen();
         return switch (context) {
             case "any" -> true;
             case "ingame" -> screen == null;

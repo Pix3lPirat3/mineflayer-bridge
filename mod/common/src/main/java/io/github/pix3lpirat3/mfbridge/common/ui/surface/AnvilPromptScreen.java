@@ -3,6 +3,7 @@ package io.github.pix3lpirat3.mfbridge.common.ui.surface;
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotItems;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptAnswers;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptScreen;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SlotItem;
 import net.minecraft.client.Minecraft;
@@ -10,7 +11,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -96,15 +96,15 @@ public final class AnvilPromptScreen extends PromptScreen {
     }
 
     private void submit() {
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
         controller.answer(value);
     }
 
     @Override
     public void extractBackground(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
         super.extractBackground(graphics, mouseX, mouseY, a);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, ANVIL, left, top, 0f, 0f, IMAGE_WIDTH, IMAGE_HEIGHT, 256, 256);
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, TEXT_FIELD, left + 59, top + 20, 110, 16);
+        Game.blit(graphics, ANVIL, left, top, 0f, 0f, IMAGE_WIDTH, IMAGE_HEIGHT, 256, 256);
+        Game.blitSprite(graphics, TEXT_FIELD, left + 59, top + 20, 110, 16);
     }
 
     @Override

@@ -11,6 +11,7 @@ import io.github.pix3lpirat3.mfbridge.api.client.ClientExtension;
 import io.github.pix3lpirat3.mfbridge.api.client.ClientRegistrar;
 import io.github.pix3lpirat3.mfbridge.common.ext.spectate.wire.BridgeSpectateWatching;
 import io.github.pix3lpirat3.mfbridge.common.ext.spectate.wire.SpectateWire;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.resources.language.I18n;
@@ -124,7 +125,7 @@ public final class SpectateExtension implements ClientExtension {
         name = botName;
         level = mc.level;
         lookIn = 0;
-        mc.gui.setScreen(null);
+        Game.setScreen(null);
         mc.setCameraEntity(entity);
         tell(botOwner, true);
     }
@@ -194,7 +195,7 @@ public final class SpectateExtension implements ClientExtension {
             stop(null);
             return;
         }
-        if (mc.options.keyShift.isDown() && mc.gui.screen() == null) {
+        if (mc.options.keyShift.isDown() && Game.screen() == null) {
             stop(null);
             return;
         }

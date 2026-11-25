@@ -1,4 +1,5 @@
 package io.github.pix3lpirat3.mfbridge.common.ui;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 
 import io.github.pix3lpirat3.mfbridge.common.sound.BotSounds;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
@@ -19,7 +20,7 @@ public interface UiContext {
      */
     static boolean inPlay() {
         final Minecraft minecraft = Minecraft.getInstance();
-        return minecraft.gui.screen() == null && minecraft.player != null && minecraft.gui.overlay() == null;
+        return Game.screen() == null && minecraft.player != null && Game.overlay() == null;
     }
 
     /**

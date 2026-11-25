@@ -2,6 +2,7 @@ package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.RadialHold;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import java.util.List;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -173,8 +174,8 @@ public final class RadialMenuScreen extends ChildScreen {
     /** Whether the key bound to a mapping is down right now; screens hide that from the mapping itself. */
     private static boolean physicallyDown(final KeyMapping key) {
         final InputConstants.Key bound = InputConstants.getKey(key.saveString());
-        return bound.getType() == InputConstants.Type.KEYBOARD && bound.getValue() != InputConstants.UNKNOWN.getValue()
-                && InputConstants.isKeyDown(bound.getValue());
+        return bound.getType() == Game.KEYBOARD && bound.getValue() != InputConstants.UNKNOWN.getValue()
+                && Game.keyDown(bound.getValue());
     }
 
     private void choose(final int index) {
@@ -182,7 +183,7 @@ public final class RadialMenuScreen extends ChildScreen {
         if (key != null && physicallyDown(key)) {
             heldAfterChoice = key;
         }
-        minecraft.gui.setScreen(parent());
+        Game.setScreen(parent());
         if (index >= 0 && index < entries.size()) {
             entries.get(index).run().run();
         }
@@ -205,7 +206,7 @@ public final class RadialMenuScreen extends ChildScreen {
         final KeyMapping key = holdKey;
         // Tapped open, the key closes it again, choosing nothing.
         if (key != null && key.matches(event) && hold.sticky()) {
-            minecraft.gui.setScreen(parent());
+            Game.setScreen(parent());
             return true;
         }
         return super.keyPressed(event);
@@ -270,7 +271,7 @@ public final class RadialMenuScreen extends ChildScreen {
     /** A vanilla button face; the current choice gets a green frame. */
     private static void button(final GuiGraphicsExtractor graphics, final int x, final int y, final int w, final int h, final boolean hover,
             final boolean current) {
-        graphics.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, hover ? BUTTON_HOVER : BUTTON, x, y, w, h);
+        Game.blitSprite(graphics, hover ? BUTTON_HOVER : BUTTON, x, y, w, h);
         if (current) {
             graphics.outline(x, y, w, h, UiColors.GOOD);
         }

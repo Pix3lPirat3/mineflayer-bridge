@@ -2,6 +2,7 @@ package io.github.pix3lpirat3.mfbridge.common.ui.devices;
 
 import io.github.pix3lpirat3.mfbridge.common.Constants;
 import io.github.pix3lpirat3.mfbridge.common.ui.UiContext;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.remote.DevicePaired;
 import io.github.pix3lpirat3.mfbridge.core.remote.PermissionBatch;
@@ -64,13 +65,13 @@ public final class PermissionPrompts {
         }
         final Minecraft minecraft = Minecraft.getInstance();
         asking = batch;
-        minecraft.gui.setScreen(new PermissionBatchScreen(batch, allowed -> {
+        Game.setScreen(new PermissionBatchScreen(batch, allowed -> {
             asking = null;
             toasted = null;
             if (core.get() == c) {
                 c.devices().answerPermissions(batch, allowed);
             }
-            minecraft.gui.setScreen(null);
+            Game.setScreen(null);
         }));
     }
 }

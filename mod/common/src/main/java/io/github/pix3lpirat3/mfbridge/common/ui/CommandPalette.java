@@ -6,6 +6,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.logic.DisplayText;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FieldSpec;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.FormScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.PaletteScreen;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.command.Addressee;
 import io.github.pix3lpirat3.mfbridge.core.command.BotCommands;
@@ -78,7 +79,7 @@ public final class CommandPalette {
         entries.addAll(builtIn.get());
         entries.sort(Comparator.comparing(PaletteScreen.Entry::owner).thenComparing(PaletteScreen.Entry::label));
         entries.addAll(0, recentEntries(null));
-        Minecraft.getInstance().gui.setScreen(new PaletteScreen(entries));
+        Game.setScreen(new PaletteScreen(entries));
     }
 
     /**
@@ -98,7 +99,7 @@ public final class CommandPalette {
         }
         entries.sort(Comparator.comparing(PaletteScreen.Entry::label));
         entries.addAll(0, recentEntries(name));
-        Minecraft.getInstance().gui.setScreen(new PaletteScreen(Component.translatable("screen.mineflayer_bridge.palette.title.bot", name), entries));
+        Game.setScreen(new PaletteScreen(Component.translatable("screen.mineflayer_bridge.palette.title.bot", name), entries));
     }
 
     /** Commands and global actions, all of them or only those under {@code owner}. */
@@ -290,7 +291,7 @@ public final class CommandPalette {
             }
             return CompletableFuture.completedFuture(List.of());
         });
-        Minecraft.getInstance().gui.setScreen(screen);
+        Game.setScreen(screen);
     }
 
     /** Form field id of an order's "For" choice; argument names never start with a space. */

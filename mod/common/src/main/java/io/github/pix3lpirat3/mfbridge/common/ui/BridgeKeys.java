@@ -7,7 +7,9 @@ import io.github.pix3lpirat3.mfbridge.common.ui.input.InterceptClient;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.PickController;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.ToolController;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.RadialMenuScreen;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
+import io.github.pix3lpirat3.mfbridge.common.version.Keys;
 import java.util.List;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -20,18 +22,18 @@ import net.minecraft.client.resources.language.I18n;
  */
 public final class BridgeKeys {
 
-    private final KeyMapping paletteKey = BridgeUi.keyMapping("palette", InputConstants.KEY_K);
-    private final KeyMapping contextKey = BridgeUi.keyMapping("context_menu", InputConstants.KEY_R);
-    private final KeyMapping toolWheelKey = BridgeUi.keyMapping("tool_wheel", InputConstants.KEY_V);
+    private final KeyMapping paletteKey = BridgeUi.keyMapping("palette", Keys.KEY_K);
+    private final KeyMapping contextKey = BridgeUi.keyMapping("context_menu", Keys.KEY_R);
+    private final KeyMapping toolWheelKey = BridgeUi.keyMapping("tool_wheel", Keys.KEY_V);
     // One key pauses every rule. Unbound so it never steals a key.
     private final KeyMapping pauseInterceptsKey = BridgeUi.keyMapping("pause_intercepts", InputConstants.UNKNOWN.getValue());
     // Undo and redo are Ctrl plus these keys while a zone tool or the editor is active.
-    private final KeyMapping undoKey = BridgeUi.keyMapping("spatial_undo", InputConstants.KEY_Z);
-    private final KeyMapping redoKey = BridgeUi.keyMapping("spatial_redo", InputConstants.KEY_Y);
+    private final KeyMapping undoKey = BridgeUi.keyMapping("spatial_undo", Keys.KEY_Z);
+    private final KeyMapping redoKey = BridgeUi.keyMapping("spatial_redo", Keys.KEY_Y);
     // A developer tool, so unbound by default; the palette opens it too.
     private final KeyMapping inspectorKey = BridgeUi.keyMapping("inspector", InputConstants.UNKNOWN.getValue());
     // Cycling the selected bot is one of the fixed vanilla key mappings.
-    private final KeyMapping cycleFocusKey = BridgeUi.keyMapping("cycle_focus", InputConstants.KEY_COMMA);
+    private final KeyMapping cycleFocusKey = BridgeUi.keyMapping("cycle_focus", Keys.KEY_COMMA);
     private final KeyMapping toggleHudKey = BridgeUi.keyMapping("toggle_hud", InputConstants.UNKNOWN.getValue());
     private final List<KeyMapping> keyMappings = List.of(paletteKey, contextKey, toolWheelKey, pauseInterceptsKey, undoKey, redoKey,
             inspectorKey, cycleFocusKey, toggleHudKey);
@@ -120,7 +122,7 @@ public final class BridgeKeys {
     /** Client tick while the core runs: acts on the keys pressed since the last tick. */
     public void handle() {
         final Minecraft minecraft = Minecraft.getInstance();
-        final boolean free = minecraft.gui.screen() == null && !picks.active() && minecraft.player != null;
+        final boolean free = Game.screen() == null && !picks.active() && minecraft.player != null;
         final boolean palette = clicked(paletteKey);
         // A menu chosen from by clicking while its key is held: the key's repeats must not reopen it.
         // Checked every tick, so the hold ends as soon as the key is let go.

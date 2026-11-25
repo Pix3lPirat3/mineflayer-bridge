@@ -26,3 +26,5 @@ includeBuild('build-logic')
 include('api', 'protocol', 'core')
 
 include('common', 'fabric', 'neoforge')
+
+include('mc26_1', 'mc26_2', 'mc26_3')

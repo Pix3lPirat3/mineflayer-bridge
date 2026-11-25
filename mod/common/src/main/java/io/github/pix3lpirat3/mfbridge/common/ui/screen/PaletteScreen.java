@@ -1,6 +1,7 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FuzzyMatch;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -150,7 +151,7 @@ public final class PaletteScreen extends ChildScreen {
         if (entry == null) {
             return;
         }
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
         entry.run().run();
     }
 

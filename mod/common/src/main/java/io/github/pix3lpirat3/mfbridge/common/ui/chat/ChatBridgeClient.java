@@ -9,6 +9,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.UiContext;
 import io.github.pix3lpirat3.mfbridge.common.ui.command.BridgeCommands;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.Crosshair;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.PacketGuard;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.Notifier;
 import io.github.pix3lpirat3.mfbridge.api.BridgeException;
@@ -252,7 +253,7 @@ public final class ChatBridgeClient {
     }
 
     private static void local(final Component line) {
-        Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(line);
+        Game.chat().addClientSystemMessage(line);
     }
 
     private void print(final ChatPrint p) {

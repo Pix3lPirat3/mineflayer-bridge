@@ -11,6 +11,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.screen.ChildScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.FormHost;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.FormScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptScreen;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.decl.ContainerViewDecl;
 import io.github.pix3lpirat3.mfbridge.core.decl.ScreenDecl;
@@ -127,7 +128,7 @@ public final class BotSurfaces {
         if (decl == null) {
             openHome.accept(parent);
         } else {
-            Minecraft.getInstance().gui.setScreen(declared.create(parent, decl, true));
+            Game.setScreen(declared.create(parent, decl, true));
         }
     }
 
@@ -143,7 +144,7 @@ public final class BotSurfaces {
         if (decl == null) {
             return false;
         }
-        Minecraft.getInstance().gui.setScreen(declared.create(parent, decl, false));
+        Game.setScreen(declared.create(parent, decl, false));
         return true;
     }
 
@@ -161,7 +162,7 @@ public final class BotSurfaces {
         if (leftScreens.isEmpty()) {
             return;
         }
-        final Screen current = Minecraft.getInstance().gui.screen();
+        final Screen current = Game.screen();
         for (final DeclaredScreen left : leftScreens) {
             if (!below(current, left)) {
                 core.screens().closed(left.key());
@@ -184,9 +185,9 @@ public final class BotSurfaces {
     private void openRequestedScreen(final BridgeCore core) {
         final String requested = core.screens().requestedOpen();
         final Minecraft minecraft = Minecraft.getInstance();
-        if (requested != null && mayReplace(minecraft.gui.screen(), core.screens().askedFor(requested)) && minecraft.player != null
-                && !picks.active() && minecraft.gui.overlay() == null) {
-            openScreen(minecraft.gui.screen(), requested);
+        if (requested != null && mayReplace(Game.screen(), core.screens().askedFor(requested)) && minecraft.player != null
+                && !picks.active() && Game.overlay() == null) {
+            openScreen(Game.screen(), requested);
         }
     }
 
@@ -194,8 +195,8 @@ public final class BotSurfaces {
     private void openRequestedView(final BridgeCore core) {
         final String requested = core.containers().requestedOpen();
         final Minecraft minecraft = Minecraft.getInstance();
-        if (requested != null && mayReplace(minecraft.gui.screen(), core.containers().askedFor(requested)) && minecraft.player != null
-                && !picks.active() && minecraft.gui.overlay() == null) {
+        if (requested != null && mayReplace(Game.screen(), core.containers().askedFor(requested)) && minecraft.player != null
+                && !picks.active() && Game.overlay() == null) {
             openContainerView(requested);
         }
     }
@@ -222,7 +223,7 @@ public final class BotSurfaces {
             ui.toastError(view.ownerName(), String.valueOf(e.getMessage()));
             return false;
         }
-        Minecraft.getInstance().gui.setScreen(new ContainerViewScreen(ui, view));
+        Game.setScreen(new ContainerViewScreen(ui, view));
         return true;
     }
 
@@ -260,18 +261,18 @@ public final class BotSurfaces {
         final Minecraft minecraft = Minecraft.getInstance();
         final BotForms.Dialog d = formDialog;
         final Screen host = formReturn;
-        if (host != null && minecraft.gui.screen() == null && (f == null || f.finished()) && (d == null || d.finished())) {
+        if (host != null && Game.screen() == null && (f == null || f.finished()) && (d == null || d.finished())) {
             // The form is done: back to the screen it opened over.
             formReturn = null;
-            minecraft.gui.setScreen(host);
+            Game.setScreen(host);
             return;
         }
         final boolean waiting = f != null && !f.finished() || d != null && !d.finished();
-        if (!waiting || picks.active() || !mayReplace(minecraft.gui.screen(), core.input().askedFor(currentId))) {
+        if (!waiting || picks.active() || !mayReplace(Game.screen(), core.input().askedFor(currentId))) {
             return;
         }
-        rememberHost(minecraft.gui.screen());
-        minecraft.gui.setScreen(f != null && !f.finished() ? f : d.screen());
+        rememberHost(Game.screen());
+        Game.setScreen(f != null && !f.finished() ? f : d.screen());
     }
 
     /** The screen a form opened over, to go back to when it closes; null for the game. */
@@ -306,7 +307,7 @@ public final class BotSurfaces {
     public boolean leaveForHome(final @Nullable Screen screen) {
         final Minecraft minecraft = Minecraft.getInstance();
         if (screen == null) {
-            if (minecraft.player == null || minecraft.gui.overlay() != null || !botInputActive()) {
+            if (minecraft.player == null || Game.overlay() != null || !botInputActive()) {
                 return false;
             }
         } else if (!botSurface(screen) || typing(screen)) {
@@ -330,13 +331,13 @@ public final class BotSurfaces {
     private boolean botSurface(final Screen screen) {
         final BotForms.Dialog d = formDialog;
         return screen == form || d != null && d.shown() == screen || screen instanceof DeclaredScreen
-                || screen instanceof ContainerViewScreen || screen instanceof PromptScreen || screen instanceof SignPromptScreen
+                || screen instanceof ContainerViewScreen || screen instanceof PromptScreen || screen instanceof SignPrompt.Editor
                 || BridgeDialogs.owns(screen) || picks.kind() == PickKind.ITEM && screen instanceof AbstractContainerScreen<?>;
     }
 
     /** Whether keys are text for the screen right now. */
     private static boolean typing(final Screen screen) {
-        if (screen instanceof SignPromptScreen) {
+        if (screen instanceof SignPrompt.Editor) {
             return true;
         }
         GuiEventListener focused = screen.getFocused();
@@ -380,16 +381,16 @@ public final class BotSurfaces {
         formDialog = null;
         if (d != null) {
             d.end();
-            if (d.shown() != null && Minecraft.getInstance().gui.screen() == d.shown()) {
-                Minecraft.getInstance().gui.setScreen(null);
+            if (d.shown() != null && Game.screen() == d.shown()) {
+                Game.setScreen(null);
             }
         }
         final FormScreen f = form;
         form = null;
         if (f != null) {
             f.dismiss();
-            if (Minecraft.getInstance().gui.screen() == f) {
-                Minecraft.getInstance().gui.setScreen(null);
+            if (Game.screen() == f) {
+                Game.setScreen(null);
             }
         }
         if (picks.active() && (!picks.isLocal() || f != null)) {

@@ -4,6 +4,8 @@ import com.mojang.blaze3d.platform.InputConstants;
 import io.github.pix3lpirat3.mfbridge.common.Constants;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.ChildScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
+import io.github.pix3lpirat3.mfbridge.common.version.Keys;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import net.minecraft.ChatFormatting;
@@ -12,7 +14,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -109,7 +110,7 @@ final class HotkeyScreen extends ChildScreen {
         if (!capturing) {
             return super.keyPressed(event);
         }
-        if (event.key() == InputConstants.KEY_ESCAPE) {
+        if (event.key() == Keys.KEY_ESCAPE) {
             capturing = false;
         } else if (!modifier(event.key())) {
             key = InputConstants.getKey(event).getName();
@@ -125,8 +126,8 @@ final class HotkeyScreen extends ChildScreen {
     }
 
     private static boolean modifier(final int code) {
-        return code == InputConstants.KEY_LCONTROL || code == InputConstants.KEY_RCONTROL || code == InputConstants.KEY_LSHIFT
-                || code == InputConstants.KEY_RSHIFT || code == InputConstants.KEY_LALT || code == InputConstants.KEY_RALT;
+        return code == Keys.KEY_LCONTROL || code == Keys.KEY_RCONTROL || code == Keys.KEY_LSHIFT
+                || code == Keys.KEY_RSHIFT || code == Keys.KEY_LALT || code == Keys.KEY_RALT;
     }
 
     private void trySave() {
@@ -151,7 +152,7 @@ final class HotkeyScreen extends ChildScreen {
         graphics.text(font, Component.translatable("mineflayer_bridge_hotkeys.line"), left, top - 11, UiColors.LABEL);
         graphics.text(font, Component.translatable("mineflayer_bridge_hotkeys.key.label"), left, top + 23, UiColors.LABEL);
         if (existing != null) {
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, Constants.id("icon/trash"), left + 2 * (third() + 4) + 3, top + 70, 16, 16);
+            Game.blitSprite(graphics, Constants.id("icon/trash"), left + 2 * (third() + 4) + 3, top + 70, 16, 16);
         }
         if (!error.isEmpty()) {
             graphics.centeredText(font, Component.literal(error).withStyle(ChatFormatting.RED), width / 2, top + 96, 0xFFFFFFFF);

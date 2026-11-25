@@ -1,6 +1,7 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.declared;
 
 import io.github.pix3lpirat3.mfbridge.common.ui.BridgeUi;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.decl.ScreenDecl;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenData;
@@ -78,7 +79,7 @@ public final class DeclaredScreen extends ScreenView {
         super.tick();
         final BridgeCore core = ui.core();
         if (core == null || !core.screens().isOpen(key)) {
-            minecraft.gui.setScreen(parent());
+            Game.setScreen(parent());
         }
     }
 
@@ -102,7 +103,7 @@ public final class DeclaredScreen extends ScreenView {
             if (child == null) {
                 ui.toastError(last.ownerName(), I18n.get("mineflayer_bridge.screen.gone"));
             } else {
-                minecraft.gui.setScreen(new DeclaredScreen(this, ui, child, false));
+                Game.setScreen(new DeclaredScreen(this, ui, child, false));
             }
         }
         send(ui, last.ownerName(), key, item, value, this::invalidate);

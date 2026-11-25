@@ -2,6 +2,7 @@ package io.github.pix3lpirat3.mfbridge.common.ui.surface;
 
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptAnswers;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptScreen;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PromptKind;
 import java.util.ArrayList;
@@ -12,7 +13,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.client.gui.screens.inventory.BookViewScreen;
 import net.minecraft.client.gui.screens.inventory.PageButton;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
@@ -120,7 +120,7 @@ public final class BookPromptScreen extends PromptScreen {
         while (out.size() > 1 && out.getLast().isEmpty()) {
             out.removeLast();
         }
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
         if (prompt.request().kind() == PromptKind.TEXT) {
             controller.answer(String.join("\n\n", out));
         } else {
@@ -131,7 +131,7 @@ public final class BookPromptScreen extends PromptScreen {
     @Override
     public void extractBackground(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
         super.extractBackground(graphics, mouseX, mouseY, a);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, BookViewScreen.BOOK_LOCATION, left(), 2, 0f, 0f, IMAGE_SIZE, IMAGE_SIZE, 256, 256);
+        Game.blit(graphics, BookViewScreen.BOOK_LOCATION, left(), 2, 0f, 0f, IMAGE_SIZE, IMAGE_SIZE, 256, 256);
     }
 
     @Override

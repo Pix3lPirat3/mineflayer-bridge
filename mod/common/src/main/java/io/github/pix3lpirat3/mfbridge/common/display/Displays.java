@@ -10,6 +10,7 @@ import io.github.pix3lpirat3.mfbridge.common.render.retained.RetainedRenderer;
 import io.github.pix3lpirat3.mfbridge.common.seam.RenderFrame;
 import io.github.pix3lpirat3.mfbridge.common.sound.BotSounds;
 import io.github.pix3lpirat3.mfbridge.common.ui.UiContext;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.blob.BlobStore;
 import io.github.pix3lpirat3.mfbridge.core.traits.Traits;
@@ -277,12 +278,12 @@ public final class Displays {
         final Minecraft minecraft = Minecraft.getInstance();
         final LocalPlayer player = minecraft.player;
         final BridgeCore core = ui.core();
-        if (player == null || minecraft.level == null || core == null || minecraft.gui.screen() != null) {
+        if (player == null || minecraft.level == null || core == null || Game.screen() != null) {
             hover(null, null);
             targetKey = null;
             return;
         }
-        final Camera camera = minecraft.gameRenderer.mainCamera();
+        final Camera camera = Game.mainCamera();
         final Vec3 eye = camera.position();
         final Vector3fc look = camera.forwardVector();
         if (menus.active()) {
@@ -557,7 +558,7 @@ public final class Displays {
         pointer.press(input, local.x, local.y, local.z);
         if (!wasDragging && pointer.dragging()) {
             dragButton = button;
-            final Vector3fc look = Minecraft.getInstance().gameRenderer.mainCamera().forwardVector();
+            final Vector3fc look = Game.mainCamera().forwardVector();
             dragPlaneX = grid.hitX();
             dragPlaneY = grid.hitY();
             dragPlaneZ = grid.hitZ();

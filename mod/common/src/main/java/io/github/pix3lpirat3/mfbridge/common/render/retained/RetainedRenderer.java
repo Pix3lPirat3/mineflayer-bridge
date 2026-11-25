@@ -1,17 +1,10 @@
 package io.github.pix3lpirat3.mfbridge.common.render.retained;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
-import com.mojang.renderpearl.api.commands.RenderPass;
-import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
-import com.mojang.renderpearl.api.pipeline.RenderPipeline;
-import com.mojang.renderpearl.api.textures.FilterMode;
-import com.mojang.renderpearl.api.textures.GpuSampler;
-import com.mojang.renderpearl.api.textures.GpuTextureView;
 import io.github.pix3lpirat3.mfbridge.common.Constants;
 import io.github.pix3lpirat3.mfbridge.common.game.RenderFrame26x;
 import io.github.pix3lpirat3.mfbridge.common.render.FrustumView;
+import io.github.pix3lpirat3.mfbridge.common.render.gpu.Gpu;
+import io.github.pix3lpirat3.mfbridge.common.version.Versions;
 import io.github.pix3lpirat3.mfbridge.common.render.cull.ViewVolume;
 import io.github.pix3lpirat3.mfbridge.common.seam.RenderFrame;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
@@ -55,8 +48,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -70,7 +61,6 @@ import net.minecraft.client.color.block.BlockColors;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.block.BlockStateModelSet;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -232,6 +222,7 @@ public final class RetainedRenderer {
     private final Object2LongOpenHashMap<String> ownerBytes = new Object2LongOpenHashMap<>();
     private final Set<String> quotaWarned = new HashSet<>();
     private final Matrix4f view = new Matrix4f();
+    private final Gpu gpu = Versions.CURRENT.gpu();
     private @Nullable GpuArena arena;
     private @Nullable DynamicTexture colormap;
     private @Nullable BridgeCore core;
@@ -267,7 +258,7 @@ public final class RetainedRenderer {
                 });
         this.workers.allowCoreThreadTimeOut(true);
         this.sectionDistance.defaultReturnValue(Double.NaN);
-        final String problem = RetainedPipelines.layoutProblem();
+        final String problem = VertexLayouts.problem();
         if (problem != null) {
             disabled = true;
             Constants.LOG.error("Retained rendering disabled: vertex layouts differ from the game's ({})", problem);
@@ -783,15 +774,15 @@ public final class RetainedRenderer {
             }
             final GpuArena a = arena();
             if (m.faceVertices() > 0) {
-                old.faces = a.upload(Objects.requireNonNull(m.faces()));
+                old.faces = a.upload(Objects.requireNonNull(m.faces()), m.faceVertices());
                 old.faceVertices = m.faceVertices();
             }
             if (m.nearVertices() > 0) {
-                old.near = a.upload(Objects.requireNonNull(m.near()));
+                old.near = a.upload(Objects.requireNonNull(m.near()), m.nearVertices());
                 old.nearVertices = m.nearVertices();
             }
             if (m.farVertices() > 0) {
-                old.far = a.upload(Objects.requireNonNull(m.far()));
+                old.far = a.upload(Objects.requireNonNull(m.far()), m.farVertices());
                 old.farVertices = m.farVertices();
             }
             final long now = slotBytes(old);
@@ -813,7 +804,7 @@ public final class RetainedRenderer {
     private GpuArena arena() {
         GpuArena a = arena;
         if (a == null) {
-            a = new GpuArena();
+            a = new GpuArena(gpu);
             arena = a;
         }
         return a;
@@ -884,8 +875,6 @@ public final class RetainedRenderer {
         }
     }
 
-    // LOCATION_BLOCKS is deprecated in 26.3, yet it is what LevelRenderer binds for terrain in the same version.
-    @SuppressWarnings("deprecation")
     private void drawSections() {
         upload();
         final GpuArena a = arena;
@@ -901,17 +890,6 @@ public final class RetainedRenderer {
                 maxLineIndices = Math.max(maxLineIndices, Math.max(s.nearVertices, s.farVertices) / 4 * 6);
             }
         }
-        final RenderSystem.AutoStorageIndexBuffer quadIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
-        final RenderSystem.AutoStorageIndexBuffer lineIndices = RenderSystem.getSequentialBuffer(PrimitiveTopology.LINES);
-        final GpuBuffer quadBuffer = quadIndices.getBuffer(Math.max(6, maxQuadIndices));
-        final GpuBuffer lineBuffer = lineIndices.getBuffer(Math.max(6, maxLineIndices));
-        view.set(RenderSystem.getModelViewMatrixCopy());
-        final Minecraft minecraft = Minecraft.getInstance();
-        final RenderTarget target = minecraft.gameRenderer.mainRenderTarget();
-        final GpuTextureView atlas = minecraft.getTextureManager().getTexture(TextureAtlas.LOCATION_BLOCKS).getTextureView();
-        final GpuSampler nearest = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST);
-        final GpuSampler linear = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
-        final GpuTextureView colormapView = colormap().getTextureView();
         final List<Obj> order = new ArrayList<>(objects.size());
         final String looked = lookedAt.get();
         for (final Obj obj : objects.values()) {
@@ -921,30 +899,26 @@ public final class RetainedRenderer {
         }
         // Faces blend without depth writes, so far objects and sections draw first.
         order.sort((x, y) -> Double.compare(centreDistanceSq(y), centreDistanceSq(x)));
-        try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
-                () -> "Bridge retained tier", target.getColorTextureView(), Optional.empty(),
-                target.getDepthTextureView(), OptionalDouble.empty())) {
-            RenderSystem.bindDefaultUniforms(pass);
+        try (Gpu.Pass pass = gpu.begin(maxQuadIndices, maxLineIndices, colormap(), view)) {
             for (int xray = 1; xray >= 0; xray--) {
                 final boolean depthTest = xray == 0;
                 for (final Kind kind : Kind.values()) {
-                    RenderPipeline current = null;
+                    Gpu.Pipeline current = null;
                     for (final Obj obj : order) {
                         if (obj.kind != kind || !inPass(obj.depth, depthTest)) {
                             continue;
                         }
                         final float dim = !depthTest && obj.depth == DepthMode.BOTH ? XRAY_DIM : 1f;
-                        current = drawFaces(pass, obj, current, depthTest, dim, a, quadBuffer, quadIndices,
-                                atlas, nearest, colormapView, linear);
+                        current = drawFaces(pass, obj, current, depthTest, dim, a);
                     }
                 }
-                RenderPipeline current = null;
+                Gpu.Pipeline current = null;
                 for (final Obj obj : order) {
                     if (!inPass(obj.depth, depthTest)) {
                         continue;
                     }
                     final float dim = !depthTest && obj.depth == DepthMode.BOTH ? XRAY_DIM : 1f;
-                    current = drawLines(pass, obj, current, depthTest, dim, a, lineBuffer, lineIndices);
+                    current = drawLines(pass, obj, current, depthTest, dim, a);
                 }
             }
         }
@@ -1055,24 +1029,22 @@ public final class RetainedRenderer {
         return d;
     }
 
-    private void transform(final RenderPass pass, final long key, final float r, final float g, final float b,
+    private void transform(final Gpu.Pass pass, final long key, final float r, final float g, final float b,
             final float alpha, final boolean heat, final Obj obj) {
         final float[] uv = heat ? Colormaps.uvTransform(obj.range[0], obj.range[1], obj.colormapRow) : null;
-        pass.setUniform("DynamicTransforms", RenderSystem.getDynamicUniforms().writeTransform(SectionTransforms.section(view,
+        pass.transform(SectionTransforms.section(view,
                 (float) ((SectionKeys.x(key) << 4) - camX), (float) ((SectionKeys.y(key) << 4) - camY),
-                (float) ((SectionKeys.z(key) << 4) - camZ), r, g, b, alpha, uv)));
+                (float) ((SectionKeys.z(key) << 4) - camZ), r, g, b, alpha, uv));
     }
 
-    private @Nullable RenderPipeline drawFaces(final RenderPass pass, final Obj obj, final @Nullable RenderPipeline current,
-            final boolean depthTest, final float dim, final GpuArena a, final GpuBuffer indices,
-            final RenderSystem.AutoStorageIndexBuffer indexStorage, final GpuTextureView atlas, final GpuSampler nearest,
-            final GpuTextureView colormapView, final GpuSampler linear) {
-        final RenderPipeline pipeline = switch (obj.kind) {
-            case GHOST -> depthTest ? RetainedPipelines.GHOST : RetainedPipelines.GHOST_XRAY;
-            case HEAT -> depthTest ? RetainedPipelines.HEAT : RetainedPipelines.HEAT_XRAY;
-            case HIGHLIGHT -> RetainedPipelines.faces(depthTest);
+    private Gpu.@Nullable Pipeline drawFaces(final Gpu.Pass pass, final Obj obj, final Gpu.@Nullable Pipeline current,
+            final boolean depthTest, final float dim, final GpuArena a) {
+        final Gpu.Pipeline pipeline = switch (obj.kind) {
+            case GHOST -> depthTest ? Gpu.Pipeline.GHOST : Gpu.Pipeline.GHOST_XRAY;
+            case HEAT -> depthTest ? Gpu.Pipeline.HEAT : Gpu.Pipeline.HEAT_XRAY;
+            case HIGHLIGHT -> depthTest ? Gpu.Pipeline.FILL : Gpu.Pipeline.FILL_XRAY;
         };
-        RenderPipeline bound = current;
+        Gpu.Pipeline bound = current;
         for (final long key : farToNear(obj)) {
             final SectionMeshes s = obj.sections.get(key);
             if (s == null || s.faces == null || s.faceVertices == 0) {
@@ -1083,13 +1055,11 @@ public final class RetainedRenderer {
                 continue;
             }
             if (bound != pipeline) {
-                pass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
-                pass.setIndexBuffer(indices, indexStorage.type());
-                if (obj.kind == Kind.GHOST) {
-                    pass.setUniform("Sampler0", atlas, nearest);
-                } else if (obj.kind == Kind.HEAT) {
-                    pass.setUniform("Sampler0", colormapView, linear);
-                }
+                pass.bind(pipeline, switch (obj.kind) {
+                    case GHOST -> Gpu.Texture.BLOCKS;
+                    case HEAT -> Gpu.Texture.COLORMAP;
+                    case HIGHLIGHT -> Gpu.Texture.NONE;
+                });
                 bound = pipeline;
             }
             switch (obj.kind) {
@@ -1097,20 +1067,18 @@ public final class RetainedRenderer {
                 case HIGHLIGHT -> transform(pass, key, red(obj.argb), green(obj.argb), blue(obj.argb),
                         obj.fill * dim, false, obj);
             }
-            pass.setVertexBuffer(0, a.slice(s.faces));
-            pass.drawIndexed(s.faceVertices / 4 * 6, 1, 0, 0, 0);
+            pass.draw(a.buffer(s.faces), s.faces.firstVertex(), s.faceVertices);
         }
         return bound;
     }
 
-    private @Nullable RenderPipeline drawLines(final RenderPass pass, final Obj obj, final @Nullable RenderPipeline current,
-            final boolean depthTest, final float dim, final GpuArena a, final GpuBuffer indices,
-            final RenderSystem.AutoStorageIndexBuffer indexStorage) {
+    private Gpu.@Nullable Pipeline drawLines(final Gpu.Pass pass, final Obj obj, final Gpu.@Nullable Pipeline current,
+            final boolean depthTest, final float dim, final GpuArena a) {
         if (obj.kind == Kind.HEAT) {
             return current;
         }
-        final RenderPipeline pipeline = RetainedPipelines.lines(depthTest);
-        RenderPipeline bound = current;
+        final Gpu.Pipeline pipeline = depthTest ? Gpu.Pipeline.LINES : Gpu.Pipeline.LINES_XRAY;
+        Gpu.Pipeline bound = current;
         for (final Long2ObjectMap.Entry<SectionMeshes> e : obj.sections.long2ObjectEntrySet()) {
             final SectionMeshes s = e.getValue();
             final double d = visibleDistance(e.getLongKey());
@@ -1124,8 +1092,7 @@ public final class RetainedRenderer {
                 continue;
             }
             if (bound != pipeline) {
-                pass.setPipeline(RenderSystem.getCompiledPipeline(pipeline));
-                pass.setIndexBuffer(indices, indexStorage.type());
+                pass.bind(pipeline, Gpu.Texture.NONE);
                 bound = pipeline;
             }
             if (obj.kind == Kind.HIGHLIGHT) {
@@ -1134,8 +1101,7 @@ public final class RetainedRenderer {
             } else {
                 transform(pass, e.getLongKey(), 1f, 1f, 1f, dim, false, obj);
             }
-            pass.setVertexBuffer(0, a.slice(slot));
-            pass.drawIndexed(vertices / 4 * 6, 1, 0, 0, 0);
+            pass.draw(a.buffer(slot), slot.firstVertex(), vertices);
         }
         return bound;
     }

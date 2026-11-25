@@ -4,6 +4,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.devices.DevicePermissionsScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.devices.DevicesScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.ChildScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.diag.BridgeMetrics;
 import io.github.pix3lpirat3.mfbridge.core.diag.ConnectionInfo;
@@ -191,7 +192,7 @@ public final class InspectorScreen extends ChildScreen {
 
     private void permissionButtons(final @Nullable BridgeCore c) {
         addRenderableWidget(Button.builder(Component.translatable("screen.mineflayer_bridge.inspector.all_devices"),
-                b -> minecraft.gui.setScreen(new DevicesScreen(this, core))).bounds(SIDE, TOP, 120, 20).build());
+                b -> Game.setScreen(new DevicesScreen(this, core))).bounds(SIDE, TOP, 120, 20).build());
         if (c == null) {
             return;
         }
@@ -201,7 +202,7 @@ public final class InspectorScreen extends ChildScreen {
                 break;
             }
             addRenderableWidget(Button.builder(Tab.PERMISSIONS.label,
-                    b -> minecraft.gui.setScreen(new DevicePermissionsScreen(this, core, d.id()))).bounds(SIDE, y, 90, 20).build());
+                    b -> Game.setScreen(new DevicePermissionsScreen(this, core, d.id()))).bounds(SIDE, y, 90, 20).build());
             y += 24;
         }
     }

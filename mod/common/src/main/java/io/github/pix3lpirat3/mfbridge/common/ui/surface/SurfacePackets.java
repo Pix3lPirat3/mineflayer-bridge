@@ -4,6 +4,7 @@ import io.github.pix3lpirat3.mfbridge.common.Constants;
 import io.github.pix3lpirat3.mfbridge.common.ui.BridgeUi;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.PacketGuard;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.BridgeScreen;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.common.ServerboundCustomClickActionPacket;
@@ -42,7 +43,7 @@ public final class SurfacePackets {
         if (ui == null) {
             return false;
         }
-        final boolean bridgeScreen = Minecraft.getInstance().gui.screen() instanceof BridgeScreen;
+        final boolean bridgeScreen = Game.screen() instanceof BridgeScreen;
         final String chat = packet instanceof ServerboundChatPacket c ? c.message() : null;
         final String namespace = packet instanceof ServerboundCustomClickActionPacket c ? c.id().getNamespace() : null;
         final boolean blocked = ui.packetGuard().blocks(kind, bridgeScreen, chat, namespace, System.nanoTime() / 1_000_000L);

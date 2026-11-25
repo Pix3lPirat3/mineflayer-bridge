@@ -13,6 +13,7 @@ import io.github.pix3lpirat3.mfbridge.common.seam.RenderFrame;
 import io.github.pix3lpirat3.mfbridge.common.seam.Vec3d;
 import io.github.pix3lpirat3.mfbridge.common.settings.BridgeSettings;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.ClientSampler;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.ApprovalDecision;
 import io.github.pix3lpirat3.mfbridge.core.AttachPolicy;
 import io.github.pix3lpirat3.mfbridge.core.BridgeConfig;
@@ -299,11 +300,11 @@ public final class CoreIntegration implements ClientLifecycleListener, WorldRend
         CompletableFuture<ApprovalDecision> result = new CompletableFuture<>();
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.execute(() -> {
-            Screen previous = minecraft.gui.screen();
-            minecraft.gui.setScreen(new ConfirmScreen(
+            Screen previous = Game.screen();
+            Game.setScreen(new ConfirmScreen(
                     allowed -> {
                         result.complete(allowed ? ApprovalDecision.ALLOW : ApprovalDecision.DENY);
-                        minecraft.gui.setScreen(previous);
+                        Game.setScreen(previous);
                     },
                     Component.translatable("mineflayer_bridge.connect.title"),
                     Component.translatable("mineflayer_bridge.connect.message", request.deviceName(), request.method(),

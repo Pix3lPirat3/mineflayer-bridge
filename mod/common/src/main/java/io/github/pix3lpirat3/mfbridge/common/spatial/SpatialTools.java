@@ -1,6 +1,5 @@
 package io.github.pix3lpirat3.mfbridge.common.spatial;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import io.github.pix3lpirat3.mfbridge.common.render.command.DepthMode;
 import io.github.pix3lpirat3.mfbridge.common.render.command.DrawCommand;
 import io.github.pix3lpirat3.mfbridge.common.seam.Vec3d;
@@ -12,6 +11,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.UiContext;
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotItems;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.Crosshair;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.PickController;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.history.HistoryControls;
 import io.github.pix3lpirat3.mfbridge.core.history.HistoryEntry;
@@ -23,6 +23,7 @@ import io.github.pix3lpirat3.mfbridge.protocol.core.RouteData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.RouteNode;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Vec3i;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ZoneData;
+import io.github.pix3lpirat3.mfbridge.common.version.Keys;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -285,7 +286,7 @@ public final class SpatialTools {
     }
 
     private void name(final Component title, final String initial, final Consumer<NamePromptScreen.Result> then) {
-        Minecraft.getInstance().gui.setScreen(new NamePromptScreen(title, initial, then));
+        Game.setScreen(new NamePromptScreen(title, initial, then));
     }
 
     /** Selects a freshly created object for editing once the next render snapshot indexes it. */
@@ -317,7 +318,7 @@ public final class SpatialTools {
         if (editor.hasSelection() && editor.keyPressed(key)) {
             return true;
         }
-        if (active == Tool.RULER && key == InputConstants.KEY_ESCAPE && rulerA != null) {
+        if (active == Tool.RULER && key == Keys.KEY_ESCAPE && rulerA != null) {
             rulerA = null;
             rulerB = null;
             return true;

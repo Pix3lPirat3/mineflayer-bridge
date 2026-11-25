@@ -2,6 +2,7 @@ package io.github.pix3lpirat3.mfbridge.common.game;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.pix3lpirat3.mfbridge.common.seam.RenderFrame;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import java.util.Objects;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
@@ -31,7 +32,7 @@ public final class RenderFrame26x implements RenderFrame {
         this.cameraX = newCamera.pos.x;
         this.cameraY = newCamera.pos.y;
         this.cameraZ = newCamera.pos.z;
-        this.partialTick = newCamera.cameraEntityPartialTicks;
+        this.partialTick = Game.partialTick(newCamera);
     }
 
     void end() {

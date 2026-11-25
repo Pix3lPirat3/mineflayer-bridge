@@ -6,6 +6,8 @@ import com.mojang.math.Axis;
 import io.github.pix3lpirat3.mfbridge.common.Constants;
 import io.github.pix3lpirat3.mfbridge.common.game.RenderFrame26x;
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotItems;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
+import io.github.pix3lpirat3.mfbridge.common.version.Versions;
 import io.github.pix3lpirat3.mfbridge.protocol.core.DisplayBlockData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.DisplayEntityData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.DisplayItemData;
@@ -259,7 +261,7 @@ final class DisplayDrawer {
         final int light = light(f, level, n);
         pose.pushPose();
         pose.translate(n.wx - frame.cameraX(), n.wy - frame.cameraY(), n.wz - frame.cameraZ());
-        pose.rotate(n.rotation);
+        Game.rotate(pose, n.rotation);
         pose.scale(n.scaleX, n.scaleY, n.scaleZ);
         switch (n.data) {
             case DisplayTextData d -> submitText(n, d, pose, collector, light, outlineArgb);
@@ -284,7 +286,7 @@ final class DisplayDrawer {
             return LightCoordsUtil.pack(b, b);
         }
         lightPos.set(n.wx, n.wy + n.boxY * n.scaleY, n.wz);
-        return LightCoordsUtil.getLightCoords(level, lightPos);
+        return Game.lightCoords(level, lightPos);
     }
 
     private static void submitText(final DisplayNode n, final DisplayTextData d, final PoseStack pose, final SubmitNodeCollector collector,
@@ -294,13 +296,14 @@ final class DisplayDrawer {
         final int[] lineWidths = hoverText ? n.hoverLineWidths : n.lineWidths;
         final int width = hoverText ? n.hoverTextWidth : n.textWidth;
         final Font.DisplayMode mode = d.seeThrough() ? Font.DisplayMode.SEE_THROUGH : Font.DisplayMode.POLYGON_OFFSET;
-        pose.rotate(Axis.YP.rotation((float) Math.PI));
+        Game.rotate(pose, Axis.YP.rotation((float) Math.PI));
         pose.scale(-TEXT_SCALE, -TEXT_SCALE, -TEXT_SCALE);
         final int height = lines.size() * LINE_HEIGHT - 1;
         pose.translate(1f - width / 2f, -height, 0f);
-        if (d.background() != 0) {
-            collector.submitTextBackground(pose, -1f, -1f, width, height, d.background(), mode, light);
-        }
+        // One background behind the block where the version draws one, else one behind each line.
+        final int lineBackground = d.background() != 0
+                && !Versions.CURRENT.textBackground(collector, pose, -1f, -1f, width, height, d.background(), mode, light)
+                ? d.background() : 0;
         final String align = d.align().toLowerCase(Locale.ROOT);
         float y = 0f;
         for (int i = 0; i < lines.size(); i++) {
@@ -310,7 +313,7 @@ final class DisplayDrawer {
                 default -> width / 2f - lineWidths[i] / 2f;
             };
             // Text has no entity outline pass; glow uses the glyph outline vanilla draws for glowing signs.
-            collector.submitText(pose, x, y, lines.get(i), d.shadow(), mode, light, TEXT_ARGB, 0, outlineArgb);
+            collector.submitText(pose, x, y, lines.get(i), d.shadow(), mode, light, TEXT_ARGB, lineBackground, outlineArgb);
             y += LINE_HEIGHT;
         }
     }
@@ -325,15 +328,15 @@ final class DisplayDrawer {
         if (name != null) {
             pose.pushPose();
             pose.translate(0f, ITEM_NAME_OFFSET, 0f);
-            pose.rotate(scratchInverse(n));
-            pose.rotate(frame.camera().orientation);
+            Game.rotate(pose, scratchInverse(n));
+            Game.rotate(pose, frame.camera().orientation);
             pose.scale(TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE);
             collector.submitText(pose, -n.itemNameWidth / 2f, -4f, name, false, Font.DisplayMode.NORMAL, light, TEXT_ARGB,
                     0x40000000, 0);
             pose.popPose();
         }
         // Vanilla item displays face the other way round (26.3 DisplayRenderer.ItemDisplayRenderer).
-        pose.rotate(Axis.YP.rotation((float) Math.PI));
+        Game.rotate(pose, Axis.YP.rotation((float) Math.PI));
         item.submit(pose, collector, light, OverlayTexture.NO_OVERLAY, outlineArgb);
     }
 
@@ -361,7 +364,7 @@ final class DisplayDrawer {
         // 26.3 resets the dispatcher camera after extraction; name tags need it while we extract.
         final boolean ownCamera = dispatcher.camera == null;
         if (ownCamera) {
-            dispatcher.prepare(minecraft.gameRenderer.mainCamera(), minecraft.crosshairPickEntity);
+            dispatcher.prepare(Game.mainCamera(), minecraft.crosshairPickEntity);
         }
         try {
             renderer.extractRenderState(entity, state, frame.partialTick());

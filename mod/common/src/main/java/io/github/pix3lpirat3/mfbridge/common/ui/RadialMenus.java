@@ -8,6 +8,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.input.Crosshair;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.ToolController;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.TargetMatch;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.RadialMenuScreen;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.RenderEntry;
 import io.github.pix3lpirat3.mfbridge.core.decl.ActionDecl;
@@ -96,7 +97,7 @@ public final class RadialMenus {
         final SpatialIndex.Item route = labelled != null ? kindOrNull(labelled, SpatialIndex.Kind.ROUTE) : routeAt(core, ray, reach);
         final List<RadialMenuScreen.Entry> entries = contextEntries(core, labelled != null ? null : hit, zone, point, route, "menu", List.of());
         final String title = labelled != null ? labelled.name() : describe(hit);
-        Minecraft.getInstance().gui.setScreen(new RadialMenuScreen(Component.literal(title), I18n.get("mineflayer_bridge.actions.empty.target"),
+        Game.setScreen(new RadialMenuScreen(Component.literal(title), I18n.get("mineflayer_bridge.actions.empty.target"),
                 entries, key));
     }
 
@@ -125,7 +126,7 @@ public final class RadialMenus {
         if (entries.isEmpty()) {
             return false;
         }
-        Minecraft.getInstance().gui.setScreen(new RadialMenuScreen(Component.literal(title), "", entries, null, parent));
+        Game.setScreen(new RadialMenuScreen(Component.literal(title), "", entries, null, parent));
         return true;
     }
 
@@ -256,7 +257,7 @@ public final class RadialMenus {
         for (final ActionDecl a : offered) {
             entries.add(new RadialMenuScreen.Entry(a.data().label(), a.ownerName(), () -> actions.invoke(a, target, "menu"), false));
         }
-        Minecraft.getInstance().gui.setScreen(new RadialMenuScreen(Component.literal(e.localId()), I18n.get("mineflayer_bridge.actions.empty.object"),
+        Game.setScreen(new RadialMenuScreen(Component.literal(e.localId()), I18n.get("mineflayer_bridge.actions.empty.object"),
                 entries, key));
     }
 
@@ -311,7 +312,7 @@ public final class RadialMenus {
             tools.select(null);
             spatial.select(null);
         }, active == null && spatial.active() == null));
-        Minecraft.getInstance().gui.setScreen(new RadialMenuScreen(Component.translatable("mineflayer_bridge.tools"), I18n.get("mineflayer_bridge.tools.empty"), entries,
+        Game.setScreen(new RadialMenuScreen(Component.translatable("mineflayer_bridge.tools"), I18n.get("mineflayer_bridge.tools.empty"), entries,
                 key));
     }
 }

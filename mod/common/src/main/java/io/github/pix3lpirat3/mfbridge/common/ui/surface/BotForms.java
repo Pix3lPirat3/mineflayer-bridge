@@ -8,6 +8,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.logic.DialogValues;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FieldSpec;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FormValues;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.FormScreen;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.input.FormInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.FormOpen;
@@ -200,13 +201,13 @@ public final class BotForms {
     /** Block-pos fields pick in the world; the form closes for the pick and reopens with the result. */
     public void pickBlock(final FormScreen screen, final String fieldId) {
         final Minecraft minecraft = Minecraft.getInstance();
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
         picks.beginLocal(I18n.get("mineflayer_bridge.pick.form_block"), (final @Nullable PickResult result) -> {
             if (result instanceof PickResult.Block block) {
                 screen.setCoordinates(fieldId, block.value().pos());
             }
             if (!screen.finished()) {
-                minecraft.gui.setScreen(screen);
+                Game.setScreen(screen);
             }
         });
     }

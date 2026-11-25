@@ -3,9 +3,9 @@ package io.github.pix3lpirat3.mfbridge.neoforge;
 import io.github.pix3lpirat3.mfbridge.common.BridgeClient;
 import io.github.pix3lpirat3.mfbridge.common.Constants;
 import io.github.pix3lpirat3.mfbridge.common.platform.Platform;
-import io.github.pix3lpirat3.mfbridge.common.render.BridgePipelines;
-import io.github.pix3lpirat3.mfbridge.common.render.retained.RetainedPipelines;
 import io.github.pix3lpirat3.mfbridge.common.ui.command.BridgeCommands;
+import io.github.pix3lpirat3.mfbridge.common.version.Versions;
+import java.lang.reflect.Method;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.commands.CommandSourceStack;
@@ -59,14 +59,7 @@ public final class MineflayerBridgeNeoForge {
         });
         modBus.addListener(RegisterGuiLayersEvent.class,
                 event -> event.registerAboveAll(BridgeClient.HUD_ELEMENT_ID, client::onHudRender));
-        modBus.addListener(RegisterRenderPipelinesEvent.class, event -> {
-            for (final var pipeline : BridgePipelines.ALL) {
-                event.registerPipeline(pipeline);
-            }
-            for (final var pipeline : RetainedPipelines.ALL) {
-                event.registerPipeline(pipeline);
-            }
-        });
+        modBus.addListener(RegisterRenderPipelinesEvent.class, MineflayerBridgeNeoForge::registerPipelines);
 
         final IEventBus gameBus = NeoForge.EVENT_BUS;
         gameBus.addListener(ClientStartedEvent.class, event -> client.onClientStarted());
@@ -89,5 +82,28 @@ public final class MineflayerBridgeNeoForge {
         // feature phases, after opaque terrain and with translucent features or OIT.
         gameBus.addListener(SubmitCustomGeometryEvent.class, event -> client.onCollectWorldGeometry(
                 event.getSubmitNodeCollector(), event.getPoseStack(), event.getLevelRenderState()));
+    }
+
+    /**
+     * Hands the game version's pipelines to NeoForge to compile at startup. The event's parameter type
+     * moved with the render API, so it is found by name.
+     */
+    private static void registerPipelines(final RegisterRenderPipelinesEvent event) {
+        try {
+            Method register = null;
+            for (final Method m : event.getClass().getMethods()) {
+                if (m.getName().equals("registerPipeline") && m.getParameterCount() == 1) {
+                    register = m;
+                }
+            }
+            if (register == null) {
+                throw new NoSuchMethodException("RegisterRenderPipelinesEvent.registerPipeline");
+            }
+            for (final Object pipeline : Versions.CURRENT.gpu().pipelines()) {
+                register.invoke(event, pipeline);
+            }
+        } catch (final ReflectiveOperationException e) {
+            throw new IllegalStateException("Could not register the bridge's render pipelines", e);
+        }
     }
 }

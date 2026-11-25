@@ -1,4 +1,4 @@
-package io.github.pix3lpirat3.mfbridge.common.mixin;
+package io.github.pix3lpirat3.mfbridge.mc26_3.mixin;
 
 import io.github.pix3lpirat3.mfbridge.common.render.retained.RetainedRenderer;
 import net.minecraft.client.renderer.LevelRenderer;

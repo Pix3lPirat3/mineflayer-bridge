@@ -10,8 +10,14 @@ configurations {
     commonResources {
         canBeResolved = true
         canBeConsumed = false
+    }    // Each game version's support classes, packed beside the shared code.
+    versionJava {
+        canBeResolved = true
+        canBeConsumed = false
     }
 }
+
+ext.bridgeVersionModules = [':mc26_1', ':mc26_2', ':mc26_3']
 
 dependencies {
     compileOnly(project(':common')) {
@@ -26,6 +32,13 @@ dependencies {
         compileOnly(project(path))
         commonJava(project(path: path, configuration: 'sharedJava'))
         commonResources(project(path: path, configuration: 'sharedResources'))
+    }
+}
+
+dependencies {
+    bridgeVersionModules.each { path ->
+        versionJava(project(path: path, configuration: 'versionJava'))
+        runtimeOnly(project(path: path, configuration: 'versionJava'))
     }
 }
 
@@ -47,7 +60,34 @@ tasks.named('sourcesJar', Jar) {
 }
 
 tasks.named('jar', Jar) {
+    dependsOn(configurations.versionJava)
+    from({ configurations.versionJava.collect { zipTree(it) } }) {
+        exclude('META-INF/**', 'LICENSE*')
+    }
     from(rootProject.file('licenses')) {
         into('META-INF/licenses')
+    }
+}
+
+ext.bridgeLoaderChecks = { String gluePackage, Map<String, List<String>> targets ->
+    targets.each { game, coordinates ->
+        def name = game.replace('.', '_')
+        def loaderJars = configurations.create("linkLoader${name}") {
+            canBeConsumed = false
+            canBeResolved = true
+        }
+        coordinates.each { dependencies.add(loaderJars.name, it) }
+        def gameModule = project(":mc${name}")
+        def check = tasks.register("checkLoaderLinks${name}", bridge.LinkCheck) {
+            description = "Checks that the ${project.name} glue links on Minecraft ${game}."
+            group = 'verification'
+            classes.from(sourceSets.main.output.classesDirs.asFileTree.matching { include("${gluePackage.replace('.', '/')}/**") })
+            borrowed.from(sourceSets.main.output.classesDirs.asFileTree.matching { exclude("${gluePackage.replace('.', '/')}/**") })
+            target.from(gameModule.configurations.compileClasspath.filter { !it.name.startsWith('common') }, loaderJars)
+            report = layout.buildDirectory.file("linkcheck-${name}.txt")
+        }
+        tasks.named('check') {
+            dependsOn(check)
+        }
     }
 }

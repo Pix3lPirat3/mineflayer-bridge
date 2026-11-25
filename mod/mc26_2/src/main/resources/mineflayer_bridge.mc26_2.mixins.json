@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "io.github.pix3lpirat3.mfbridge.mc26_2.mixin",
+  "plugin": "io.github.pix3lpirat3.mfbridge.common.version.VersionMixins",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "LevelExtractorMixin",
+    "LevelRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

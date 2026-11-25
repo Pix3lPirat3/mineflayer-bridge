@@ -35,21 +35,17 @@ class SurfaceLogicTest {
 
     @Test
     void mouseAndKeyGesturesMapLikeVanillaInventories() {
-        // The game's own numbers for the buttons, as its mouse events carry them: left 1, middle 2, right 3.
-        assertEquals(InputConstants.MOUSE_BUTTON_LEFT, SlotGestures.BUTTON_LEFT);
-        assertEquals(InputConstants.MOUSE_BUTTON_MIDDLE, SlotGestures.BUTTON_MIDDLE);
-        assertEquals(InputConstants.MOUSE_BUTTON_RIGHT, SlotGestures.BUTTON_RIGHT);
-        final int left = InputConstants.MOUSE_BUTTON_LEFT;
-        final int right = InputConstants.MOUSE_BUTTON_RIGHT;
+        final int left = SlotGestures.BUTTON_LEFT;
+        final int right = SlotGestures.BUTTON_RIGHT;
         assertEquals(new SlotGestures.Gesture(SlotClick.LEFT, null), SlotGestures.mouse(left, false, false, false));
         assertEquals(SlotClick.SHIFT_LEFT, SlotGestures.mouse(left, true, false, false).click());
         assertEquals(SlotClick.DOUBLE, SlotGestures.mouse(left, false, true, false).click());
         assertEquals(SlotClick.SHIFT_LEFT, SlotGestures.mouse(left, true, true, false).click(), "shift wins over a double click");
         assertEquals(SlotClick.RIGHT, SlotGestures.mouse(right, false, true, false).click());
         assertEquals(SlotClick.SHIFT_RIGHT, SlotGestures.mouse(right, true, false, false).click());
-        assertEquals(SlotClick.MIDDLE, SlotGestures.mouse(InputConstants.MOUSE_BUTTON_MIDDLE, false, false, false).click());
-        assertEquals(SlotClick.MIDDLE, SlotGestures.mouse(InputConstants.MOUSE_BUTTON_4, false, false, true).click(), "a rebound pick key is a middle click");
-        assertNull(SlotGestures.mouse(InputConstants.MOUSE_BUTTON_5, false, false, false));
+        assertEquals(SlotClick.MIDDLE, SlotGestures.mouse(SlotGestures.BUTTON_MIDDLE, false, false, false).click());
+        assertEquals(SlotClick.MIDDLE, SlotGestures.mouse(-1, false, false, true).click(), "a rebound pick key is a middle click");
+        assertNull(SlotGestures.mouse(-1, false, false, false));
 
         assertEquals(new SlotGestures.Gesture(SlotClick.DROP, null), SlotGestures.key(true, false, -1));
         assertEquals(new SlotGestures.Gesture(SlotClick.DROP_ALL, null), SlotGestures.key(true, true, 3));

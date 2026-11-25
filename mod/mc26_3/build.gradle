@@ -1,0 +1,11 @@
+plugins {
+    id 'bridge-version'
+    id 'net.neoforged.moddev'
+}
+
+description = 'What Minecraft 26.3 needs of its own: its render API, sign sides and outline pass.'
+
+neoForge {
+    neoFormVersion = '26.3-1'
+    accessTransformers.from(rootProject.file('common/src/main/at/accesstransformer.cfg').absolutePath)
+}

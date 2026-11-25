@@ -12,6 +12,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.logic.DisplayText;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.ScrollAccumulator;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.BridgeScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.surface.BotSurfaces;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PickKind;
 import java.util.HashSet;
 import java.util.Objects;
@@ -119,7 +120,7 @@ public final class InputRouter {
             }
             return keybinds.onKey(name, action);
         }
-        final Screen screen = minecraft.gui.screen();
+        final Screen screen = Game.screen();
         final KeyMapping home = homeKey;
         if (home != null && home.matches(event) && surfaces.leaveForHome(screen)) {
             consumed.add(name);
@@ -132,14 +133,14 @@ public final class InputRouter {
             if (picks.kind() == PickKind.ITEM && screen instanceof AbstractContainerScreen<?>) {
                 if (event.isEscape()) {
                     picks.cancel();
-                    minecraft.gui.setScreen(null);
+                    Game.setScreen(null);
                     consumed.add(name);
                     return true;
                 }
                 if (event.isConfirmation()) {
                     picks.keyPressed(event);
                     if (!picks.active()) {
-                        minecraft.gui.setScreen(null);
+                        Game.setScreen(null);
                     }
                     consumed.add(name);
                     return true;
@@ -150,7 +151,7 @@ public final class InputRouter {
             }
             return keybinds.onKey(name, action);
         }
-        if (minecraft.player == null || minecraft.gui.overlay() != null) {
+        if (minecraft.player == null || Game.overlay() != null) {
             return false;
         }
         if (input.key(event, name) == InputStage.Outcome.CONSUMED) {
@@ -181,19 +182,19 @@ public final class InputRouter {
             }
             return keybinds.onKey(name, action);
         }
-        final Screen screen = minecraft.gui.screen();
+        final Screen screen = Game.screen();
         if (screen != null) {
             if (picks.kind() == PickKind.ITEM && screen instanceof AbstractContainerScreen<?> container) {
                 // The item pick answers from the inventory screen and never clicks the real container.
                 final Slot slot = ((AbstractContainerScreenAccessor) container).mfbridge$hoveredSlot();
                 if (slot != null && slot.hasItem()) {
                     picks.pickStack(slot.getItem().copy());
-                    minecraft.gui.setScreen(null);
+                    Game.setScreen(null);
                 }
                 consumed.add(name);
                 return true;
             }
-            if (screen instanceof ChatScreen && minecraft.options.keyAttack.matches(key)) {
+            if (screen instanceof ChatScreen && Game.matches(minecraft.options.keyAttack, key)) {
                 // With the cursor free, a click on a panel title focuses its bot.
                 final String owner = hud.ownerAt(minecraft.mouseHandler.getScaledXPos(minecraft.getWindow()),
                         minecraft.mouseHandler.getScaledYPos(minecraft.getWindow()));
@@ -205,7 +206,7 @@ public final class InputRouter {
             }
             return false;
         }
-        if (minecraft.player == null || minecraft.gui.overlay() != null || !minecraft.mouseHandler.isMouseGrabbed()) {
+        if (minecraft.player == null || Game.overlay() != null || !minecraft.mouseHandler.isMouseGrabbed()) {
             return false;
         }
         if (input.button(key, name) == InputStage.Outcome.CONSUMED) {

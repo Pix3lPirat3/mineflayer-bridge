@@ -1,13 +1,14 @@
 package io.github.pix3lpirat3.mfbridge.common.ext.map;
 
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import net.minecraft.client.Camera;
 import org.joml.Vector3fc;
 import io.github.pix3lpirat3.mfbridge.api.client.ClientBridge;
-import com.mojang.blaze3d.platform.InputConstants;
 import io.github.pix3lpirat3.mfbridge.common.ext.map.wire.MapOrderType;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.ChildScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Vec3d;
+import io.github.pix3lpirat3.mfbridge.common.version.Keys;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -62,7 +63,7 @@ final class WorldSelectScreen extends ChildScreen {
     }
 
     private View view() {
-        final Camera camera = minecraft.gameRenderer.mainCamera();
+        final Camera camera = Game.mainCamera();
         final Vector3fc look = camera.forwardVector();
         final Vec3 forward = new Vec3(look.x(), look.y(), look.z()).normalize();
         Vec3 right = forward.cross(new Vec3(0, 1, 0));
@@ -101,7 +102,7 @@ final class WorldSelectScreen extends ChildScreen {
 
     @Override
     public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
-        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
+        if (event.button() == Keys.MOUSE_BUTTON_LEFT) {
             pressX = event.x();
             pressY = event.y();
             dragX = pressX;
@@ -109,7 +110,7 @@ final class WorldSelectScreen extends ChildScreen {
             boxing = false;
             return true;
         }
-        if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
+        if (event.button() == Keys.MOUSE_BUTTON_RIGHT) {
             order(event.x(), event.y(), event.hasShiftDown());
             return true;
         }
@@ -118,7 +119,7 @@ final class WorldSelectScreen extends ChildScreen {
 
     @Override
     public boolean mouseDragged(final MouseButtonEvent event, final double dx, final double dy) {
-        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && !Double.isNaN(pressX)) {
+        if (event.button() == Keys.MOUSE_BUTTON_LEFT && !Double.isNaN(pressX)) {
             dragX = event.x();
             dragY = event.y();
             boxing |= Math.abs(dragX - pressX) > DRAG_THRESHOLD || Math.abs(dragY - pressY) > DRAG_THRESHOLD;
@@ -129,7 +130,7 @@ final class WorldSelectScreen extends ChildScreen {
 
     @Override
     public boolean mouseReleased(final MouseButtonEvent event) {
-        if (event.button() != InputConstants.MOUSE_BUTTON_LEFT || Double.isNaN(pressX)) {
+        if (event.button() != Keys.MOUSE_BUTTON_LEFT || Double.isNaN(pressX)) {
             return super.mouseReleased(event);
         }
         if (!event.hasShiftDown()) {
@@ -218,7 +219,7 @@ final class WorldSelectScreen extends ChildScreen {
 
     @Override
     public boolean keyPressed(final KeyEvent event) {
-        if (event.key() == InputConstants.KEY_S && !selected.isEmpty()) {
+        if (event.key() == Keys.KEY_S && !selected.isEmpty()) {
             map.order(List.copyOf(selected), MapOrderType.STOP, null, false);
             return true;
         }

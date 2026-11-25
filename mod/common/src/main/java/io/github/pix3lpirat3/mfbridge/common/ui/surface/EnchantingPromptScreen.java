@@ -4,10 +4,10 @@ import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptAnswers;
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotVisual;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.WorldMenuEntry;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
@@ -76,8 +76,8 @@ public final class EnchantingPromptScreen extends MenuSurfaceScreen {
         super.extractBackground(graphics, mouseX, mouseY, a);
         final int hovered = optionAt(mouseX, mouseY);
         for (int i = 0; i < options.size(); i++) {
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, i == hovered ? SLOT_HIGHLIGHTED : SLOT, left + 60, top + 14 + 19 * i, 108, 19);
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, LEVELS[i], left + 61, top + 15 + 19 * i, 16, 16);
+            Game.blitSprite(graphics, i == hovered ? SLOT_HIGHLIGHTED : SLOT, left + 60, top + 14 + 19 * i, 108, 19);
+            Game.blitSprite(graphics, LEVELS[i], left + 61, top + 15 + 19 * i, 16, 16);
         }
     }
 

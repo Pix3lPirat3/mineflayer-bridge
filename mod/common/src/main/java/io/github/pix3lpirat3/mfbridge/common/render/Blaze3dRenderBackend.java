@@ -4,12 +4,15 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import io.github.pix3lpirat3.mfbridge.common.game.Colors;
 import io.github.pix3lpirat3.mfbridge.common.game.RenderFrame26x;
 import io.github.pix3lpirat3.mfbridge.common.render.command.DrawCommand;
+import io.github.pix3lpirat3.mfbridge.common.render.gpu.Gpu;
 import io.github.pix3lpirat3.mfbridge.common.render.command.FrameCommands;
 import io.github.pix3lpirat3.mfbridge.common.render.cull.ShapeBounds;
 import io.github.pix3lpirat3.mfbridge.common.render.cull.ViewVolume;
 import io.github.pix3lpirat3.mfbridge.common.seam.RenderBackend;
 import io.github.pix3lpirat3.mfbridge.common.seam.RenderFrame;
 import io.github.pix3lpirat3.mfbridge.common.seam.Vec3d;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
+import io.github.pix3lpirat3.mfbridge.common.version.Versions;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -63,10 +66,10 @@ public final class Blaze3dRenderBackend implements RenderBackend {
     }
 
     private final ShapeBatch[] batches = {
-        new ShapeBatch(BridgePipelines.LINES_XRAY_TYPE, 0, false, true),
-        new ShapeBatch(BridgePipelines.LINES_TYPE, 1, false, false),
-        new ShapeBatch(BridgePipelines.FILL_XRAY_TYPE, 2, true, true),
-        new ShapeBatch(BridgePipelines.FILL_TYPE, 3, true, false),
+        new ShapeBatch(Versions.CURRENT.gpu().renderType(Gpu.Pipeline.LINES_XRAY), 0, false, true),
+        new ShapeBatch(Versions.CURRENT.gpu().renderType(Gpu.Pipeline.LINES), 1, false, false),
+        new ShapeBatch(Versions.CURRENT.gpu().renderType(Gpu.Pipeline.FILL_XRAY), 2, true, true),
+        new ShapeBatch(Versions.CURRENT.gpu().renderType(Gpu.Pipeline.FILL), 3, true, false),
     };
     private boolean labelsVisible = true;
     private final Map<List<DrawCommand>, PreparedShapes> prepared = new IdentityHashMap<>();
@@ -261,7 +264,7 @@ public final class Blaze3dRenderBackend implements RenderBackend {
         final PoseStack poseStack = frame.poseStack();
         poseStack.pushPose();
         poseStack.translate(pos.x() - frame.cameraX(), pos.y() + yOffset - frame.cameraY(), pos.z() - frame.cameraZ());
-        poseStack.rotate(frame.camera().orientation);
+        Game.rotate(poseStack, frame.camera().orientation);
         final float s = TEXT_SCALE * scale;
         poseStack.scale(s, -s, s);
         frame.collector().submitText(poseStack, -width / 2f, -4f, text, false, mode, LightCoordsUtil.FULL_BRIGHT,

@@ -1,6 +1,5 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.ButtonRows;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.CommandArgs;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FieldEditors;
@@ -8,8 +7,10 @@ import io.github.pix3lpirat3.mfbridge.common.ui.logic.FieldSpec;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FormValues;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.PanelLayout;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.TextWrap;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Suggestion;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Vec3i;
+import io.github.pix3lpirat3.mfbridge.common.version.Keys;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -481,7 +482,7 @@ public final class FormScreen extends ChildScreen {
 
     private void pressExtra(final String id) {
         finished = true;
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
         press.accept(id);
     }
 
@@ -499,7 +500,7 @@ public final class FormScreen extends ChildScreen {
             return;
         }
         finished = true;
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
     }
 
     @Override
@@ -596,7 +597,7 @@ public final class FormScreen extends ChildScreen {
     @Override
     public void onClose() {
         cancel();
-        minecraft.gui.setScreen(null);
+        Game.setScreen(null);
     }
 
     @Override
@@ -614,7 +615,7 @@ public final class FormScreen extends ChildScreen {
         for (final int[] at : extraIcons) {
             switch (extras.get(at[0]).icon()) {
                 case Icon.Item item -> graphics.fakeItem(item.stack(), at[1], at[2]);
-                case Icon.Sprite sprite -> graphics.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, sprite.sprite(), at[1], at[2], 16, 16);
+                case Icon.Sprite sprite -> Game.blitSprite(graphics, sprite.sprite(), at[1], at[2], 16, 16);
                 case null -> {
                 }
             }
@@ -681,7 +682,7 @@ public final class FormScreen extends ChildScreen {
 
     @Override
     public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
-        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && onScrollbar(event.x(), event.y())) {
+        if (event.button() == Keys.MOUSE_BUTTON_LEFT && onScrollbar(event.x(), event.y())) {
             dragging = true;
             scrollTo(scrolling().offsetAt(event.y() - top));
             return true;

@@ -1,6 +1,5 @@
 package io.github.pix3lpirat3.mfbridge.common.spatial;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import io.github.pix3lpirat3.mfbridge.common.render.command.DepthMode;
 import io.github.pix3lpirat3.mfbridge.common.render.command.DrawCommand;
 import io.github.pix3lpirat3.mfbridge.common.seam.Vec3d;
@@ -9,6 +8,7 @@ import io.github.pix3lpirat3.mfbridge.common.spatial.logic.SpatialEdits;
 import io.github.pix3lpirat3.mfbridge.common.spatial.logic.SpatialShapes;
 import io.github.pix3lpirat3.mfbridge.common.ui.UiContext;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.Crosshair;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.RenderEntry;
 import io.github.pix3lpirat3.mfbridge.core.spatial.GizmoMath;
@@ -16,6 +16,7 @@ import io.github.pix3lpirat3.mfbridge.core.spatial.SpatialIndex;
 import io.github.pix3lpirat3.mfbridge.protocol.core.RouteData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Scope;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ZoneData;
+import io.github.pix3lpirat3.mfbridge.common.version.Keys;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -248,23 +249,22 @@ public final class SpatialEditor {
         if (w == null || b == null) {
             return false;
         }
-        final GizmoMath.Nudge nudge = switch (key) {
-            case InputConstants.KEY_UP -> GizmoMath.Nudge.FORWARD;
-            case InputConstants.KEY_DOWN -> GizmoMath.Nudge.BACK;
-            case InputConstants.KEY_LEFT -> GizmoMath.Nudge.LEFT;
-            case InputConstants.KEY_RIGHT -> GizmoMath.Nudge.RIGHT;
-            case InputConstants.KEY_PAGEUP -> GizmoMath.Nudge.UP;
-            case InputConstants.KEY_PAGEDOWN -> GizmoMath.Nudge.DOWN;
-            default -> null;
-        };
+        // Key numbers differ between game versions, so no switch on them.
+        final GizmoMath.Nudge nudge = key == Keys.KEY_UP ? GizmoMath.Nudge.FORWARD
+                : key == Keys.KEY_DOWN ? GizmoMath.Nudge.BACK
+                : key == Keys.KEY_LEFT ? GizmoMath.Nudge.LEFT
+                : key == Keys.KEY_RIGHT ? GizmoMath.Nudge.RIGHT
+                : key == Keys.KEY_PAGEUP ? GizmoMath.Nudge.UP
+                : key == Keys.KEY_PAGEDOWN ? GizmoMath.Nudge.DOWN
+                : null;
         if (nudge != null) {
             if (drag == null) {
-                final float yaw = Minecraft.getInstance().gameRenderer.mainCamera().yRot();
+                final float yaw = Game.mainCamera().yRot();
                 commit(I18n.get("mineflayer_bridge.spatial.op.nudge"), SpatialEdits.nudge(w, active, GizmoMath.nudgeAxis(yaw, nudge), snap().nudge()));
             }
             return true;
         }
-        if (key == InputConstants.KEY_BACKSPACE) {
+        if (key == Keys.KEY_BACKSPACE) {
             if (drag == null && w instanceof RouteData r && active >= 0) {
                 final RouteData next = SpatialEdits.withoutNode(r, active);
                 if (next != r) {
@@ -280,13 +280,13 @@ public final class SpatialEditor {
             }
             return true;
         }
-        if (key == InputConstants.KEY_DELETE) {
+        if (key == Keys.KEY_DELETE) {
             if (drag == null && writes.delete(b)) {
                 deselect();
             }
             return true;
         }
-        if (key == InputConstants.KEY_ESCAPE) {
+        if (key == Keys.KEY_ESCAPE) {
             if (drag != null) {
                 drag = null;
                 working = b.data();
@@ -339,7 +339,7 @@ public final class SpatialEditor {
         }
         final SpatialIndex.Item b = base;
         Object w = working;
-        if (b == null || w == null || Minecraft.getInstance().gui.screen() != null) {
+        if (b == null || w == null || Game.screen() != null) {
             return;
         }
         final Gizmo.Ray ray = ray();

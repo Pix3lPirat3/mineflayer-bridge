@@ -5,12 +5,12 @@ import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotVisual;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.MerchantOffer;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SlotItem;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -114,21 +114,21 @@ public final class MerchantPromptScreen extends MenuSurfaceScreen {
     public void extractBackground(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
         super.extractBackground(graphics, mouseX, mouseY, a);
         if (selected >= 0 && rows.get(selected).offer().disabled()) {
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, OUT_OF_STOCK, left + 83 + 99, top + 35, 28, 21);
+            Game.blitSprite(graphics, OUT_OF_STOCK, left + 83 + 99, top + 35, 28, 21);
         }
         final int hovered = rowAt(mouseX, mouseY);
         for (int i = 0; i < VISIBLE && scroll + i < rows.size(); i++) {
             final int index = scroll + i;
             final Identifier sprite = rows.get(index).offer().disabled() ? BUTTON_DISABLED
                     : index == hovered || index == selected ? BUTTON_HIGHLIGHTED : BUTTON;
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, left + 5, top + 18 + 20 * i, 88, 20);
+            Game.blitSprite(graphics, sprite, left + 5, top + 18 + 20 * i, 88, 20);
         }
         final int extra = rows.size() - VISIBLE;
         if (extra > 0) {
             final int y = top + 18 + Math.min(139 - 27, scroll * (139 - 27) / extra);
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SCROLLER, left + 94, y, 6, 27);
+            Game.blitSprite(graphics, SCROLLER, left + 94, y, 6, 27);
         } else {
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SCROLLER_DISABLED, left + 94, top + 18, 6, 27);
+            Game.blitSprite(graphics, SCROLLER_DISABLED, left + 94, top + 18, 6, 27);
         }
     }
 
@@ -146,7 +146,7 @@ public final class MerchantPromptScreen extends MenuSurfaceScreen {
             if (r.cost2() != null) {
                 r.cost2().draw(graphics, font, left + 40, y, i, now);
             }
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, r.offer().disabled() ? ARROW_OUT_OF_STOCK : ARROW, left + 60, y + 3, 10, 9);
+            Game.blitSprite(graphics, r.offer().disabled() ? ARROW_OUT_OF_STOCK : ARROW, left + 60, y + 3, 10, 9);
             r.result().draw(graphics, font, left + 73, y, i, now);
         }
         if (selected >= 0) {

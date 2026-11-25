@@ -3,6 +3,7 @@ package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotVisual;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.PanelLayout;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.TextWrap;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SlotItem;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -46,7 +47,7 @@ public abstract class PromptScreen extends ChildScreen {
     @Override
     public void tick() {
         if (controller.active() != prompt) {
-            minecraft.gui.setScreen(null);
+            Game.setScreen(null);
         }
     }
 

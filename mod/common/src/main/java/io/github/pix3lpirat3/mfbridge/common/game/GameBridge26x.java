@@ -10,6 +10,7 @@ import io.github.pix3lpirat3.mfbridge.common.seam.Vec3d;
 import io.github.pix3lpirat3.mfbridge.common.seam.WorldRenderListener;
 import io.github.pix3lpirat3.mfbridge.common.ui.hud.BridgeToast;
 import io.github.pix3lpirat3.mfbridge.common.ui.input.Crosshair;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -59,7 +60,7 @@ public final class GameBridge26x implements GameBridge {
         if (minecraft.level == null) {
             return Optional.empty();
         }
-        final Camera camera = minecraft.gameRenderer.mainCamera();
+        final Camera camera = Game.mainCamera();
         final Vec3 pos = camera.position();
         return Optional.of(new CameraState(new Vec3d(pos.x, pos.y, pos.z), camera.yRot(), camera.xRot()));
     }

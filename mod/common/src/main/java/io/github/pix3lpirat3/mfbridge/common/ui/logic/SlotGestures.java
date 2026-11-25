@@ -9,8 +9,8 @@ import org.jspecify.annotations.Nullable;
  */
 public final class SlotGestures {
 
-    // Minecraft's button numbers as MouseButtonEvent gives them (InputConstants.MOUSE_BUTTON_*),
-    // which start at 1; GLFW's start at 0.
+    // The buttons as this class counts them; screens turn the game's own numbers, which changed in
+    // 26.3, into these with Keys.button.
 
     /** The left button. */
     public static final int BUTTON_LEFT = 1;

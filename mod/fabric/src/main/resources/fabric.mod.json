@@ -25,12 +25,15 @@
   },
   "accessWidener": "${mod_id}.classtweaker",
   "mixins": [
-    "${mod_id}.mixins.json"
+    "${mod_id}.mixins.json",
+    "${mod_id}.mc26_1.mixins.json",
+    "${mod_id}.mc26_2.mixins.json",
+    "${mod_id}.mc26_3.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=${fabric_loader_version}",
     "fabric-api": "*",
-    "minecraft": "~${minecraft_version}",
+    "minecraft": "${fabric_minecraft_range}",
     "java": ">=${java_version}"
   },
   "suggests": {

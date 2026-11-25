@@ -5,6 +5,7 @@ import io.github.pix3lpirat3.mfbridge.common.mixin.ToastManagerAccessor;
 import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotItems;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.DisplayText;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.HudPlacement;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.vars.TemplateCache;
 import io.github.pix3lpirat3.mfbridge.core.vars.Templates;
 import io.github.pix3lpirat3.mfbridge.core.vars.Variables;
@@ -34,7 +35,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.toasts.Toast;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
@@ -265,11 +265,11 @@ public final class HudRenderer {
 
     /** Returns the y below the lowest occupied toast slot, or 0 when no toast is shown. */
     private static int toastBottom(final Minecraft minecraft) {
-        return ((ToastManagerAccessor) minecraft.gui.toastManager()).mfbridge$occupiedSlots().length() * Toast.SLOT_HEIGHT;
+        return ((ToastManagerAccessor) Game.toasts()).mfbridge$occupiedSlots().length() * Toast.SLOT_HEIGHT;
     }
 
     private static int vanillaBossBars(final Minecraft minecraft) {
-        return ((BossHealthOverlayAccessor) minecraft.gui.hud.getBossOverlay()).mfbridge$events().size();
+        return ((BossHealthOverlayAccessor) Game.bossOverlay()).mfbridge$events().size();
     }
 
     /**
@@ -309,10 +309,10 @@ public final class HudRenderer {
 
     private static void bossBar(final GuiGraphicsExtractor graphics, final int x, final int y, final int width, final int color,
             final int overlay, final int part) {
-        graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BOSS_COLOR_SPRITES[color][part],
+        Game.blitSprite(graphics, BOSS_COLOR_SPRITES[color][part],
                 BOSS_BAR_WIDTH, BAR_HEIGHT, 0, 0, x, y, width, BAR_HEIGHT);
         if (overlay >= 0) {
-            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BOSS_OVERLAY_SPRITES[overlay][part],
+            Game.blitSprite(graphics, BOSS_OVERLAY_SPRITES[overlay][part],
                     BOSS_BAR_WIDTH, BAR_HEIGHT, 0, 0, x, y, width, BAR_HEIGHT);
         }
     }

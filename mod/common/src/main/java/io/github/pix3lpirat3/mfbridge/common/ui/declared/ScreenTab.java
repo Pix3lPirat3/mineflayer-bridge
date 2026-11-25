@@ -54,7 +54,14 @@ final class ScreenTab implements Tab {
 
     /** Returns how far the column is scrolled, in GUI pixels. */
     double scrollAmount() {
-        return scroll.getScrollAmount();
+        // The layout's one child is its scroll area, in every version; only 26.3 has a getter.
+        final double[] amount = {0d};
+        scroll.visitChildren(e -> {
+            if (e instanceof AbstractScrollArea area) {
+                amount[0] = area.scrollAmount();
+            }
+        });
+        return amount[0];
     }
 
     /** Scrolls the column; call after {@link #doLayout}, which places it. */

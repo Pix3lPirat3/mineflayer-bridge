@@ -8,6 +8,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.logic.FormValues;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.TextWrap;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.BridgeScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiText;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PromptKind;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PromptRequest;
 import java.util.ArrayList;
@@ -117,19 +118,19 @@ public final class BridgeDialogs {
         public void disconnect(final Component message) {
             // The dialog warning screen offers "disconnect"; for a bridge dialog that only closes it.
             listener.cancelled();
-            Minecraft.getInstance().gui.setScreen(null);
+            Game.setScreen(null);
         }
 
         @Override
         public void runCommand(final String command, final @Nullable Screen activeScreen) {
             Constants.LOG.warn("Bridge dialog tried to run a command; ignored");
-            Minecraft.getInstance().gui.setScreen(activeScreen);
+            Game.setScreen(activeScreen);
         }
 
         @Override
         public void openDialog(final Holder<Dialog> dialog, final @Nullable Screen activeScreen) {
             Constants.LOG.warn("Bridge dialog tried to open another dialog; ignored");
-            Minecraft.getInstance().gui.setScreen(activeScreen);
+            Game.setScreen(activeScreen);
         }
 
         @Override

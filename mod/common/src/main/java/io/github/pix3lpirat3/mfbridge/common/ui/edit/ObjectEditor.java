@@ -13,6 +13,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.screen.FormScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.PromptAnswers;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.TextPromptScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.surface.AnvilPromptScreen;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.RenderEntry;
 import io.github.pix3lpirat3.mfbridge.core.input.PromptInput;
@@ -102,9 +103,9 @@ public final class ObjectEditor {
         final Minecraft minecraft = Minecraft.getInstance();
         switch (f.editor()) {
             case TOGGLE, CYCLE -> propose(e, Map.of(f.name(), FieldEditors.next(f)), I18n.get("mineflayer_bridge.edit.change", f.label()));
-            case TEXT -> minecraft.gui.setScreen(new TextPromptScreen(prompt(e, f), answers(e, f)));
-            case ANVIL -> minecraft.gui.setScreen(new AnvilPromptScreen(prompt(e, f), answers(e, f)));
-            case COLOR -> minecraft.gui.setScreen(new ColorPickerScreen(Component.literal(name + ": " + f.label()),
+            case TEXT -> Game.setScreen(new TextPromptScreen(prompt(e, f), answers(e, f)));
+            case ANVIL -> Game.setScreen(new AnvilPromptScreen(prompt(e, f), answers(e, f)));
+            case COLOR -> Game.setScreen(new ColorPickerScreen(Component.literal(name + ": " + f.label()),
                     f.value() instanceof Integer argb ? argb : 0xFFFFFFFF,
                     argb -> propose(e, Map.of(f.name(), argb), I18n.get("mineflayer_bridge.edit.change", f.label()))));
             case NUMBER -> form(e, fields);
@@ -165,7 +166,7 @@ public final class ObjectEditor {
         for (final FieldEditors.Field f : fields) {
             specs.add(spec(f));
         }
-        Minecraft.getInstance().gui.setScreen(new FormScreen(Component.translatable("mineflayer_bridge.edit.edit", name(e)),
+        Game.setScreen(new FormScreen(Component.translatable("mineflayer_bridge.edit.edit", name(e)),
                 Component.literal(e.owner()), specs, Component.translatable("screen.mineflayer_bridge.form.save"), raw -> {
                     final FormValues.Result r = FormValues.validate(I18n::get, specs, raw);
                     if (!r.ok()) {

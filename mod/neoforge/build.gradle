@@ -53,3 +53,8 @@ sourceSets.configureEach {
         }
     }
 }
+
+bridgeLoaderChecks('io.github.pix3lpirat3.mfbridge.neoforge', [
+        '26.1': ['net.neoforged:neoforge:26.1.2.130:universal', 'net.neoforged.fancymodloader:loader:11.0.15', 'org.apache.maven:maven-artifact:3.9.9'],
+        '26.2': ['net.neoforged:neoforge:26.2.0.95:universal', 'net.neoforged.fancymodloader:loader:11.0.16', 'org.apache.maven:maven-artifact:3.9.16'],
+].collectEntries { k, v -> [k, v + ['net.neoforged:bus:8.0.5', "io.airlift:aircompressor:${aircompressor_version}"]] })

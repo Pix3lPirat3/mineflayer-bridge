@@ -8,6 +8,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiText;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenItem;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ScreenRow;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -23,9 +24,9 @@ import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.MultiLineTextWidget;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.components.tabs.MenuTabBar;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
+import net.minecraft.client.gui.components.tabs.TabNavigationBar;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.layouts.LinearLayout;
@@ -34,7 +35,6 @@ import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -69,7 +69,7 @@ public abstract class ScreenView extends ChildScreen {
     /** Set by {@link #init()}, which runs before any other use. */
     private HeaderAndFooterLayout layout;
     private TabManager tabManager;
-    private @Nullable MenuTabBar tabBar;
+    private @Nullable TabNavigationBar tabBar;
     private List<ScreenTab> tabs = List.of();
     private List<String> tabIds = List.of();
     private final Map<String, Double> scrolls = new HashMap<>();
@@ -170,7 +170,7 @@ public abstract class ScreenView extends ChildScreen {
         tabs = built;
         tabIds = ids;
         if (tabs.size() > 1) {
-            final MenuTabBar bar = MenuTabBar.builder(tabManager, width).addTabs(tabs.toArray(Tab[]::new)).build();
+            final TabNavigationBar bar = Game.tabBar(tabManager, width, tabs.toArray(Tab[]::new));
             tabBar = bar;
             addRenderableWidget(bar);
         } else {
@@ -192,7 +192,7 @@ public abstract class ScreenView extends ChildScreen {
             w.setTabOrderGroup(1);
             addRenderableWidget(w);
         });
-        final MenuTabBar bar = tabBar;
+        final TabNavigationBar bar = tabBar;
         if (bar != null) {
             bar.selectTab(Math.max(0, currentTabId == null ? 0 : tabIds.indexOf(currentTabId)), false);
         }
@@ -210,10 +210,10 @@ public abstract class ScreenView extends ChildScreen {
 
     @Override
     protected void repositionElements() {
-        final MenuTabBar bar = tabBar;
+        final TabNavigationBar bar = tabBar;
         final int top;
         if (bar != null) {
-            bar.arrangeElements(width);
+            Game.arrangeTabs(bar, width);
             top = bar.getRectangle().bottom();
             layout.setHeaderHeight(top);
         } else {
@@ -525,20 +525,20 @@ public abstract class ScreenView extends ChildScreen {
 
     @Override
     public boolean keyPressed(final KeyEvent event) {
-        final MenuTabBar bar = tabBar;
+        final TabNavigationBar bar = tabBar;
         return bar != null && bar.keyPressed(event) || super.keyPressed(event);
     }
 
     @Override
     public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
         super.extractRenderState(graphics, mouseX, mouseY, a);
-        graphics.blit(RenderPipelines.GUI_TEXTURED, Screen.FOOTER_SEPARATOR, 0, height - layout.getFooterHeight(), 0.0F, 0.0F, width, 2, 32, 2);
+        Game.blit(graphics, Screen.FOOTER_SEPARATOR, 0, height - layout.getFooterHeight(), 0.0F, 0.0F, width, 2, 32, 2);
     }
 
     @Override
     protected void extractMenuBackground(final GuiGraphicsExtractor graphics) {
         if (tabBar != null) {
-            graphics.blit(RenderPipelines.GUI_TEXTURED, CreateWorldScreen.TAB_HEADER_BACKGROUND, 0, 0, 0.0F, 0.0F, width,
+            Game.blit(graphics, CreateWorldScreen.TAB_HEADER_BACKGROUND, 0, 0, 0.0F, 0.0F, width,
                     layout.getHeaderHeight(), 16, 16);
             extractMenuBackground(graphics, 0, layout.getHeaderHeight(), width, height);
         } else {

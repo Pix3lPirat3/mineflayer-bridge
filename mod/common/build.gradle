@@ -51,6 +51,7 @@ dependencies {
     compileOnly("net.fabricmc:sponge-mixin:${sponge_mixin_version}") {
         transitive = false
     }
+    compileOnly('org.ow2.asm:asm-tree:9.8')
     bridgeSharedModules.each { path ->
         compileOnly(project(path))
         testImplementation(project(path))

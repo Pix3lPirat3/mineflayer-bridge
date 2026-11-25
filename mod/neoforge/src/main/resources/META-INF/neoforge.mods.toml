@@ -16,7 +16,7 @@ logoFile = "assets/${mod_id}/icon.png"
 [[dependencies.${mod_id}]]
 modId = "neoforge"
 type = "required"
-versionRange = "[${neoforge_version},)"
+versionRange = "[${neoforge_min_version},)"
 ordering = "NONE"
 side = "CLIENT"
 
@@ -29,3 +29,12 @@ side = "CLIENT"
 
 [[mixins]]
 config = "${mod_id}.mixins.json"
+
+[[mixins]]
+config = "${mod_id}.mc26_1.mixins.json"
+
+[[mixins]]
+config = "${mod_id}.mc26_2.mixins.json"
+
+[[mixins]]
+config = "${mod_id}.mc26_3.mixins.json"

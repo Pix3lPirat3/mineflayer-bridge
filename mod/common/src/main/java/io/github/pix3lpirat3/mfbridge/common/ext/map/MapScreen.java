@@ -2,11 +2,11 @@ package io.github.pix3lpirat3.mfbridge.common.ext.map;
 
 import io.github.pix3lpirat3.mfbridge.api.client.ClientBridge;
 import io.github.pix3lpirat3.mfbridge.api.client.Place;
-import com.mojang.blaze3d.platform.InputConstants;
 import io.github.pix3lpirat3.mfbridge.common.ext.map.wire.MapOrderType;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.ChildScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Vec3d;
+import io.github.pix3lpirat3.mfbridge.common.version.Keys;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -167,36 +167,31 @@ final class MapScreen extends ChildScreen implements io.github.pix3lpirat3.mfbri
         if (super.mouseClicked(event, doubleClick)) {
             return true;
         }
-        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && legendClick(event.x(), event.y())) {
+        if (event.button() == Keys.MOUSE_BUTTON_LEFT && legendClick(event.x(), event.y())) {
             return true;
         }
-        switch (event.button()) {
-            case InputConstants.MOUSE_BUTTON_LEFT -> {
-                pressX = event.x();
-                pressY = event.y();
-                dragX = pressX;
-                dragY = pressY;
-                boxing = false;
-            }
-            case InputConstants.MOUSE_BUTTON_RIGHT -> {
-                if (event.hasShiftDown() || !contextMenu(event.x(), event.y())) {
-                    order(MapOrderType.MOVE, event.x(), event.y(), event.hasShiftDown());
-                }
-            }
-            default -> {
-            }
+        // Button numbers differ between game versions, so no switch on them.
+        if (event.button() == Keys.MOUSE_BUTTON_LEFT) {
+            pressX = event.x();
+            pressY = event.y();
+            dragX = pressX;
+            dragY = pressY;
+            boxing = false;
+        } else if (event.button() == Keys.MOUSE_BUTTON_RIGHT
+                && (event.hasShiftDown() || !contextMenu(event.x(), event.y()))) {
+            order(MapOrderType.MOVE, event.x(), event.y(), event.hasShiftDown());
         }
         return true;
     }
 
     @Override
     public boolean mouseDragged(final MouseButtonEvent event, final double dx, final double dy) {
-        if (event.button() == InputConstants.MOUSE_BUTTON_MIDDLE) {
+        if (event.button() == Keys.MOUSE_BUTTON_MIDDLE) {
             centerX -= dx / scale();
             centerZ -= dy / scale();
             return true;
         }
-        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && !Double.isNaN(pressX)) {
+        if (event.button() == Keys.MOUSE_BUTTON_LEFT && !Double.isNaN(pressX)) {
             dragX = event.x();
             dragY = event.y();
             boxing |= Math.abs(dragX - pressX) > DRAG_THRESHOLD || Math.abs(dragY - pressY) > DRAG_THRESHOLD;
@@ -207,7 +202,7 @@ final class MapScreen extends ChildScreen implements io.github.pix3lpirat3.mfbri
 
     @Override
     public boolean mouseReleased(final MouseButtonEvent event) {
-        if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && !Double.isNaN(pressX)) {
+        if (event.button() == Keys.MOUSE_BUTTON_LEFT && !Double.isNaN(pressX)) {
             final boolean add = event.hasShiftDown();
             if (!add) {
                 selected.clear();
@@ -344,29 +339,28 @@ final class MapScreen extends ChildScreen implements io.github.pix3lpirat3.mfbri
     @Override
     public boolean keyPressed(final KeyEvent event) {
         final double step = 16 / scale();
-        switch (event.key()) {
-            case InputConstants.KEY_W -> centerZ -= step;
-            case InputConstants.KEY_S -> {
-                if (!selected.isEmpty() && event.hasShiftDown()) {
-                    centerZ += step;
-                } else if (!selected.isEmpty()) {
-                    order(MapOrderType.STOP, 0, 0, false);
-                } else {
-                    centerZ += step;
-                }
+        // Key numbers differ between game versions, so no switch on them.
+        final int key = event.key();
+        if (key == Keys.KEY_W) {
+            centerZ -= step;
+        } else if (key == Keys.KEY_S) {
+            if (!selected.isEmpty() && !event.hasShiftDown()) {
+                order(MapOrderType.STOP, 0, 0, false);
+            } else {
+                centerZ += step;
             }
-            case InputConstants.KEY_A -> centerX -= step;
-            case InputConstants.KEY_D -> centerX += step;
-            case InputConstants.KEY_C -> {
-                final LocalPlayer p = minecraft.player;
-                if (p != null) {
-                    centerX = p.getX();
-                    centerZ = p.getZ();
-                }
+        } else if (key == Keys.KEY_A) {
+            centerX -= step;
+        } else if (key == Keys.KEY_D) {
+            centerX += step;
+        } else if (key == Keys.KEY_C) {
+            final LocalPlayer p = minecraft.player;
+            if (p != null) {
+                centerX = p.getX();
+                centerZ = p.getZ();
             }
-            default -> {
-                return super.keyPressed(event);
-            }
+        } else {
+            return super.keyPressed(event);
         }
         return true;
     }

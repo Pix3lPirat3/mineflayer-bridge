@@ -3,6 +3,7 @@ package io.github.pix3lpirat3.mfbridge.common.ui.devices;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.DisplayText;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.RowScreen;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.remote.DeviceInfo;
 import java.util.List;
@@ -90,30 +91,30 @@ public final class DevicesScreen extends RowScreen {
 
     private void deviceButtons(final BridgeCore c, final DeviceInfo d, final int left, final int y) {
         final int step = BUTTON_WIDTH + 4;
-        addRenderableWidget(Button.builder(Component.translatable("screen.mineflayer_bridge.devices.rename"), b -> minecraft.gui.setScreen(
+        addRenderableWidget(Button.builder(Component.translatable("screen.mineflayer_bridge.devices.rename"), b -> Game.setScreen(
                         new RenameScreen(this, d.name(), label -> {
                             c.devices().rename(d.id(), label);
                             rebuildWidgets();
                         })))
                 .bounds(left, y, BUTTON_WIDTH, ROW_HEIGHT).build());
         addRenderableWidget(Button.builder(Component.translatable("screen.mineflayer_bridge.devices.permissions"),
-                        b -> minecraft.gui.setScreen(new DevicePermissionsScreen(this, core, d.id())))
+                        b -> Game.setScreen(new DevicePermissionsScreen(this, core, d.id())))
                 .bounds(left + step, y, BUTTON_WIDTH, ROW_HEIGHT).build());
         addRenderableWidget(Button.builder(Component.translatable("screen.mineflayer_bridge.devices.quotas"),
-                        b -> minecraft.gui.setScreen(new DeviceQuotasScreen(this, core, d.id())))
+                        b -> Game.setScreen(new DeviceQuotasScreen(this, core, d.id())))
                 .bounds(left + 2 * step, y, BUTTON_WIDTH, ROW_HEIGHT).build());
         addRenderableWidget(Button.builder(Component.translatable("screen.mineflayer_bridge.devices.revoke"), b -> confirmRevoke(c, d))
                 .bounds(left + 3 * step, y, BUTTON_WIDTH, ROW_HEIGHT).build());
     }
 
     private void confirmRevoke(final BridgeCore c, final DeviceInfo d) {
-        minecraft.gui.setScreen(new ConfirmScreen(
+        Game.setScreen(new ConfirmScreen(
                 yes -> {
                     if (yes && core.get() == c) {
                         c.devices().revoke(d.id());
                         status(Component.translatable("screen.mineflayer_bridge.devices.revoked", d.name()), UiColors.WARNING);
                     }
-                    minecraft.gui.setScreen(this);
+                    Game.setScreen(this);
                 },
                 Component.translatable("screen.mineflayer_bridge.devices.revoke.title", d.name()),
                 Component.translatable(d.local()
@@ -126,7 +127,7 @@ public final class DevicesScreen extends RowScreen {
     @Override
     protected void footer(final int y) {
         addRenderableWidget(Button.builder(Component.translatable("screen.mineflayer_bridge.devices.pair"),
-                        b -> minecraft.gui.setScreen(new PairScreen(this, core)))
+                        b -> Game.setScreen(new PairScreen(this, core)))
                 .bounds(width / 2 - 152, y, 150, ROW_HEIGHT).build());
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
                 .bounds(width / 2 + 2, y, 150, ROW_HEIGHT).build());

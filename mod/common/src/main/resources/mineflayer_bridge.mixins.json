@@ -13,8 +13,6 @@
     "CreeperAccessor",
     "EntityTypeAccessor",
     "KeyboardHandlerMixin",
-    "LevelExtractorMixin",
-    "LevelRendererMixin",
     "MinecraftMixin",
     "MouseHandlerMixin",
     "ScreenClickMixin",

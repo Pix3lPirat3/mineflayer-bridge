@@ -14,6 +14,7 @@ import io.github.pix3lpirat3.mfbridge.common.ui.logic.CrewRoster;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.DisplayText;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.TargetMatch;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import io.github.pix3lpirat3.mfbridge.core.Presence;
 import io.github.pix3lpirat3.mfbridge.core.command.TreeNode;
@@ -332,7 +333,7 @@ public final class BridgeHomeScreen extends ScreenView implements io.github.pix3
                 commands ? null : I18n.get("screen.mineflayer_bridge.home.commands.none"), 62, commands,
                 () -> ui.palette().open(owner, p.displayName())));
         buttons.add(button(I18n.get("screen.mineflayer_bridge.home.settings"), null, null, 56, decl.settings().stream().anyMatch(s -> DisplayText.ownedBy(s.key(), owner)),
-                () -> minecraft.gui.setScreen(client.createSettingsScreen(this, owner))));
+                () -> Game.setScreen(client.createSettingsScreen(this, owner))));
         if (!p.connected()) {
             buttons.add(button(I18n.get("screen.mineflayer_bridge.home.forget"), null, I18n.get("screen.mineflayer_bridge.home.forget.tooltip"), 46, true, () -> core.presence().forget(identity)));
         }
@@ -457,13 +458,13 @@ public final class BridgeHomeScreen extends ScreenView implements io.github.pix3
                 I18n.get("screen.mineflayer_bridge.home.tool.devices.tooltip"), TOOL_WIDTH, true, () -> ui.openDevices(this)));
         tools.add(button(I18n.get("screen.mineflayer_bridge.home.tool.pair"), null,
                 I18n.get("screen.mineflayer_bridge.home.tool.pair.tooltip"), TOOL_WIDTH, core != null,
-                () -> minecraft.gui.setScreen(new PairScreen(this, ui::core))));
+                () -> Game.setScreen(new PairScreen(this, ui::core))));
         tools.add(button(I18n.get("screen.mineflayer_bridge.home.settings"), null,
                 I18n.get("screen.mineflayer_bridge.home.tool.settings.tooltip"), TOOL_WIDTH, true,
-                () -> minecraft.gui.setScreen(client.createSettingsScreen(this, null))));
+                () -> Game.setScreen(client.createSettingsScreen(this, null))));
         tools.add(button(I18n.get("screen.mineflayer_bridge.home.tool.extensions"), null,
                 I18n.get("screen.mineflayer_bridge.home.tool.extensions.tooltip"), TOOL_WIDTH, true,
-                () -> minecraft.gui.setScreen(new ExtensionsScreen(this, client.extensions()))));
+                () -> Game.setScreen(new ExtensionsScreen(this, client.extensions()))));
         if (core != null) {
             tools.add(primaryMenu(core));
         }

@@ -17,10 +17,10 @@ import io.github.pix3lpirat3.mfbridge.protocol.core.EffectParticles;
 import io.github.pix3lpirat3.mfbridge.protocol.core.EffectTitle;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ParticleEmitterData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Vec3d;
+import io.github.pix3lpirat3.mfbridge.common.version.Game;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Hud;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.RegistryAccess;
@@ -74,24 +74,19 @@ final class ClientEffects {
                     spawn(level, options, v.at(), v.count(), v.spread(), v.speed());
                 }
             }
-            case EffectBody.Title t -> title(minecraft.gui.hud, t.value());
-            case EffectBody.Actionbar a -> actionBar(minecraft.gui.hud, e.ownerName(), a.value());
+            case EffectBody.Title t -> title(t.value());
+            case EffectBody.Actionbar a -> actionBar(e.ownerName(), a.value());
         }
     }
 
-    private static void title(final Hud hud, final EffectTitle t) {
-        hud.setTimes(t.fadeIn(), t.stay(), t.fadeOut());
-        if (t.subtitle() != null) {
-            hud.setSubtitle(Component.literal(t.subtitle()));
-        }
-        if (t.title() != null) {
-            hud.setTitle(Component.literal(t.title()));
-        }
+    private static void title(final EffectTitle t) {
+        Game.title(t.fadeIn(), t.stay(), t.fadeOut(), t.title() == null ? null : Component.literal(t.title()),
+                t.subtitle() == null ? null : Component.literal(t.subtitle()));
     }
 
     /** Action-bar lines are labelled with the bot's name. */
-    private static void actionBar(final Hud hud, final String owner, final EffectActionBar a) {
-        hud.setOverlayMessage(Component.literal(owner + ": " + a.text()), false);
+    private static void actionBar(final String owner, final EffectActionBar a) {
+        Game.overlayMessage(Component.literal(owner + ": " + a.text()), false);
     }
 
     /** Spawns an emitter's due bursts near the player. */
