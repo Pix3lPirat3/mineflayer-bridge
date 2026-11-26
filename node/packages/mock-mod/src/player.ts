@@ -19,6 +19,8 @@ export class Player {
   uuid: string | undefined;
   /** What the player is doing, sent in `player.context`. */
   state = { alive: true, away: false, windowFocused: true };
+  /** The player's own world, sent in `player.context` while the player is in a world; `lanPort` while it is open to LAN. */
+  singleplayer: { lanPort?: number } | undefined;
   budget: Budget;
   private attachPolicy: AttachPolicy;
   private readonly attachOverrides = new Map<string, boolean>();
@@ -36,6 +38,11 @@ export class Player {
 
   setState(state: Partial<{ alive: boolean; away: boolean; windowFocused: boolean }>): void {
     this.state = { ...this.state, ...state };
+    this.refreshAll();
+  }
+
+  setSingleplayer(singleplayer: { lanPort?: number } | null): void {
+    this.singleplayer = singleplayer ?? undefined;
     this.refreshAll();
   }
 
@@ -131,6 +138,7 @@ export class Player {
       alive: this.state.alive,
       away: this.state.away,
       windowFocused: this.state.windowFocused,
+      ...(this.world === undefined || this.singleplayer === undefined ? {} : { singleplayer: this.singleplayer }),
     };
     const layers: MessagePayloads['interest']['layers'] = [];
     for (const o of this.core.store.map.values()) {

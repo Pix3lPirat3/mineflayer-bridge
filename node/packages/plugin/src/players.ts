@@ -3,7 +3,7 @@ import { BridgeError, type BotIdentity, type Detail, type ExtensionRef, type Mes
 import type { BlobLimits } from './blobs.ts';
 import type { Link } from './link.ts';
 import type { CancelMessage, SessionCore } from './session.ts';
-import type { BridgePlayer, PlayerChange } from './types.ts';
+import type { BridgePlayer, PlayerChange, Singleplayer } from './types.ts';
 
 /**
  * One link of a hub: the connection to one player's mod (a process may connect to several mods).
@@ -50,6 +50,7 @@ export class PlayerImpl implements BridgePlayer {
   alive = true;
   away = false;
   windowFocused = true;
+  singleplayer: Singleplayer | null = null;
   detail: Detail = 'full';
   layers = new Map<string, boolean>();
 
@@ -81,6 +82,7 @@ export class PlayerImpl implements BridgePlayer {
     this.alive = true;
     this.away = false;
     this.windowFocused = true;
+    this.singleplayer = null;
   }
 }
 
@@ -325,11 +327,21 @@ export function playerChanges(p: PlayerImpl, c: MessagePayloads['player.context'
   const focused = c.windowFocused !== false;
   if (!p.inWorld && c.inWorld) out.push('joined');
   else if (p.inWorld && !c.inWorld) out.push('left');
-  else if (c.inWorld && !sameWorld(p.playerWorld, c.world ?? null)) out.push('world');
+  // Opening a singleplayer world to LAN changes how bots reach it: that counts as a new world too.
+  else if (c.inWorld && (!sameWorld(p.playerWorld, c.world ?? null) || !sameSingleplayer(p.singleplayer, singleplayerOf(c)))) out.push('world');
   if (c.inWorld && p.alive !== alive) out.push(alive ? 'respawned' : 'died');
   if (p.away !== away) out.push(away ? 'away' : 'back');
   if (p.windowFocused !== focused) out.push(focused ? 'focus' : 'blur');
   return out;
+}
+
+/** The player's own world from a `player.context`, or null on a server and on the title screen. */
+export function singleplayerOf(c: MessagePayloads['player.context']): Singleplayer | null {
+  return c.inWorld && c.singleplayer !== undefined && c.singleplayer !== null ? { lanPort: c.singleplayer.lanPort ?? null } : null;
+}
+
+function sameSingleplayer(a: Singleplayer | null, b: Singleplayer | null): boolean {
+  return a === null || b === null ? a === b : a.lanPort === b.lanPort;
 }
 
 function sameWorld(a: WorldKey | null, b: WorldKey | null): boolean {

@@ -2,10 +2,11 @@ package io.github.pix3lpirat3.mfbridge.common.ui.input;
 
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.server.IntegratedServer;
 
 /**
- * What the player is doing, for bots: alive, away (no input for a while) and whether the game
- * window has focus. Client thread.
+ * What the player is doing, for bots: alive, away (no input for a while), whether the game
+ * window has focus, and whether they play their own world and on which LAN port. Client thread.
  */
 public final class PlayerPresence {
 
@@ -36,5 +37,8 @@ public final class PlayerPresence {
         final boolean alive = mc.player == null || !mc.player.isDeadOrDying();
         final boolean away = awayMinutes > 0 && System.currentTimeMillis() - lastInputMs >= awayMinutes * 60_000L;
         core.setPlayerState(alive, away, mc.isWindowActive());
+        // Bots that follow the player can join their own world once it is open to LAN.
+        final IntegratedServer integrated = mc.getSingleplayerServer();
+        core.setPlayerSingleplayer(integrated != null, integrated != null && integrated.isPublished() ? integrated.getPort() : 0);
     }
 }

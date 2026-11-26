@@ -15,13 +15,14 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
  * @param alive False while the player's death screen shows. Default {@code true}.
  * @param away No input from the player for the time set in the mod. Default {@code false}.
  * @param windowFocused The game window has focus. Default {@code true}.
+ * @param singleplayer The player's own world, run by their game; absent on a server and on the title screen.
  */
-public record PlayerContext(boolean inWorld, @Nullable WorldKey world, boolean attached, @Nullable String name, @Nullable String uuid, boolean alive, boolean away, boolean windowFocused) {
+public record PlayerContext(boolean inWorld, @Nullable WorldKey world, boolean attached, @Nullable String name, @Nullable String uuid, boolean alive, boolean away, boolean windowFocused, @Nullable Singleplayer singleplayer) {
     /** Wire codec for this record. */
     public static final WireCodec<PlayerContext> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, PlayerContext v) {
-            w.writeArrayHeader(8);
+            w.writeArrayHeader(9);
             w.writeBool(v.inWorld());
             if (v.world() == null) {
                 w.writeNil();
@@ -42,6 +43,11 @@ public record PlayerContext(boolean inWorld, @Nullable WorldKey world, boolean a
             w.writeBool(v.alive());
             w.writeBool(v.away());
             w.writeBool(v.windowFocused());
+            if (v.singleplayer() == null) {
+                w.writeNil();
+            } else {
+                Singleplayer.CODEC.write(w, v.singleplayer());
+            }
         }
 
         @Override
@@ -58,38 +64,44 @@ public record PlayerContext(boolean inWorld, @Nullable WorldKey world, boolean a
             boolean alive = n > 5 && !r.tryReadNil() ? r.readBool() : true;
             boolean away = n > 6 && !r.tryReadNil() ? r.readBool() : false;
             boolean windowFocused = n > 7 && !r.tryReadNil() ? r.readBool() : true;
-            r.skipValues(n - 8);
-            return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused);
+            @Nullable Singleplayer singleplayer = n > 8 && !r.tryReadNil() ? Singleplayer.CODEC.read(r) : null;
+            r.skipValues(n - 9);
+            return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused, singleplayer);
         }
     };
 
     /** Creates a value from the required fields; later fields take null or their schema default. */
     public PlayerContext(boolean inWorld, @Nullable WorldKey world, boolean attached) {
-        this(inWorld, world, attached, null, null, true, false, true);
+        this(inWorld, world, attached, null, null, true, false, true, null);
     }
 
     /** Returns a copy with {@code name} replaced. */
     public PlayerContext withName(@Nullable String name) {
-        return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused);
+        return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused, singleplayer);
     }
 
     /** Returns a copy with {@code uuid} replaced. */
     public PlayerContext withUuid(@Nullable String uuid) {
-        return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused);
+        return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused, singleplayer);
     }
 
     /** Returns a copy with {@code alive} replaced. */
     public PlayerContext withAlive(boolean alive) {
-        return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused);
+        return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused, singleplayer);
     }
 
     /** Returns a copy with {@code away} replaced. */
     public PlayerContext withAway(boolean away) {
-        return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused);
+        return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused, singleplayer);
     }
 
     /** Returns a copy with {@code windowFocused} replaced. */
     public PlayerContext withWindowFocused(boolean windowFocused) {
-        return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused);
+        return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused, singleplayer);
+    }
+
+    /** Returns a copy with {@code singleplayer} replaced. */
+    public PlayerContext withSingleplayer(@Nullable Singleplayer singleplayer) {
+        return new PlayerContext(inWorld, world, attached, name, uuid, alive, away, windowFocused, singleplayer);
     }
 }

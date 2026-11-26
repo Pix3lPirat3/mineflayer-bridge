@@ -406,6 +406,12 @@ public final class ConformanceServer {
                 reply(out, id, new JsonObject(), null);
                 return null;
             }
+            case "setSingleplayer" -> {
+                JsonElement port = cmd.get("lanPort");
+                core.setPlayerSingleplayer(cmd.get("singleplayer").getAsBoolean(), port == null || port.isJsonNull() ? 0 : port.getAsInt());
+                reply(out, id, new JsonObject(), null);
+                return null;
+            }
             case "objects" -> {
                 String prefix = cmd.has("prefix") ? cmd.get("prefix").getAsString() : "";
                 JsonArray list = new JsonArray();

@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { describe, expect, it } from 'vitest';
 import { clickArgs, headTexture, layoutFor, plainText, styledText, windowItem, windowMirror, type BotBridge, type ContainerClick, type WindowApi } from '../src/index.ts';
 import { textReader, type ChatLoader } from '../src/window.ts';
+import { ItemComponents } from '../src/item-components.ts';
 import { ALICE, FakeBot, fixture, load, rejection, sleep, until, type Env } from './helpers.ts';
 
 let e: Env;
@@ -400,5 +401,64 @@ describe('bridge:window', () => {
     inventory.set(9, item('dirt', 1));
     await sleep(30);
     expect(e.mod.views()).toEqual([]);
+  });
+});
+
+describe('item components', () => {
+  const registry = {
+    items: { 1: { name: 'dirt' } },
+    enchantments: { 3: { name: 'blast_protection' } },
+    effects: { 1: { name: 'Slowness' }, 26: { name: 'BadLuck' } },
+    attributesArray: [{ resource: 'minecraft:air_drag_modifier' }, { resource: 'minecraft:armor' }],
+    protocol: { types: { SlotComponentType: ['mapper', { type: 'varint', mappings: { '13': 'enchantments', '16': 'attribute_modifiers' } }] } },
+  };
+  // Components as prismarine-item reads them from a 26.3 slot.
+  const sword = {
+    name: 'diamond_sword',
+    count: 1,
+    enchants: { enchantments: [{ id: 3, level: 2 }] },
+    components: [
+      { type: 'damage', data: 12 },
+      { type: 'unbreakable' },
+      { type: 'enchantments', data: { enchantments: [{ id: 3, level: 2 }] } },
+      { type: 'trim', data: { material: { materialId: 3 }, pattern: { patternId: 5 } } },
+      { type: 'tooltip_display', data: { hideTooltip: false, hiddenComponents: [13, 16] } },
+      { type: 'item_name', data: { type: 'compound', value: { text: { type: 'string', value: 'Hi' }, bold: { type: 'byte', value: 1 } } } },
+      { type: 'attribute_modifiers', data: [{ typeId: 1, name: 'minecraft:x', value: 2.5, operation: 'multiply_base', slot: 'main_hand', display: { type: 'hidden' } }] },
+      { type: 'potion_contents', data: { potionId: 13, customEffects: [{ id: 26, details: { amplifier: 1, duration: 100, ambient: false, showParticles: true, showIcon: true } }] } },
+      { type: 'bundle_contents', data: { contents: [{ itemId: 1, itemCount: 3, components: [], removeComponents: [] }] } },
+      { type: 'custom_data', data: { type: 'compound', value: {} } },
+    ],
+    removedComponents: [{ type: 'food' }],
+  };
+
+  it('carries components in the game saved form, named from the registries', () => {
+    const c = new ItemComponents(registry);
+    expect(windowItem(sword as never, c)).toEqual({
+      id: 'minecraft:diamond_sword',
+      count: 1,
+      components: {
+        'minecraft:damage': 12,
+        'minecraft:unbreakable': {},
+        'minecraft:enchantments': { 'minecraft:blast_protection': 2 },
+        'minecraft:trim': { material: 'minecraft:emerald', pattern: 'minecraft:host' },
+        'minecraft:tooltip_display': { hide_tooltip: false, hidden_components: ['minecraft:enchantments', 'minecraft:attribute_modifiers'] },
+        'minecraft:item_name': { text: 'Hi', bold: 1 },
+        'minecraft:attribute_modifiers': [{ type: 'minecraft:armor', id: 'minecraft:x', amount: 2.5, operation: 'add_multiplied_base', slot: 'mainhand', display: { type: 'hidden' } }],
+        'minecraft:potion_contents': { potion: 'minecraft:swiftness', custom_effects: [{ id: 'minecraft:unluck', amplifier: 1, duration: 100, ambient: false, show_particles: true, show_icon: true }] },
+        'minecraft:bundle_contents': [{ id: 'minecraft:dirt', count: 3 }],
+        '!minecraft:food': {},
+      },
+    });
+  });
+
+  it('names entries as the server sent its registries, and keeps the glint when enchantments cannot be named', () => {
+    const c = new ItemComponents(registry);
+    c.record({ id: 'minecraft:enchantment', entries: [{ key: 'minecraft:sharpness' }] });
+    c.record({ id: 'minecraft:trim_material', entries: [{ key: 'minecraft:gold' }] });
+    expect(c.of({ components: [{ type: 'enchantments', data: { enchantments: [{ id: 0, level: 5 }] } }] })).toEqual({ 'minecraft:enchantments': { 'minecraft:sharpness': 5 } });
+    expect(c.of({ components: [{ type: 'trim', data: { material: { materialId: 3 }, pattern: { patternId: 0 } } }] })).toBeUndefined();
+    const unknown = { name: 'book', count: 1, enchants: { enchantments: [{ id: 9, level: 1 }] }, components: [{ type: 'enchantments', data: { enchantments: [{ id: 9, level: 1 }] } }] };
+    expect(windowItem(unknown as never, c)).toEqual({ id: 'minecraft:book', count: 1, glint: true });
   });
 });

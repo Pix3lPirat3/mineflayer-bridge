@@ -134,6 +134,21 @@ describe.each(targets)('conformance against $name', ({ start, features }) => {
     expect(s).toMatchObject({ kind: 'bot', name: 'Alice', connected: true });
   });
 
+  it('reports the singleplayer world of the player and its LAN port', async () => {
+    const p = () => b.players[0]!;
+    expect(p().singleplayer).toBeNull();
+    await mod.setPlayerContext({ server: 'singleplayer:New World', dimension: 'minecraft:overworld' });
+    await mod.setSingleplayer({});
+    await until(async () => p().singleplayer !== null, 'singleplayer');
+    expect(p().singleplayer).toEqual({ lanPort: null });
+    await mod.setPlayerContext({ server: 'localhost:52468', dimension: 'minecraft:overworld' });
+    await mod.setSingleplayer({ lanPort: 52468 });
+    await until(async () => p().singleplayer?.lanPort === 52468, 'LAN port');
+    expect(p().playerWorld?.server).toBe('localhost:52468');
+    await mod.setSingleplayer(null);
+    await until(async () => p().singleplayer === null, 'a server');
+  });
+
   it('stores declared objects with the same data', async () => {
     const layer = b.layer('plan');
     layer.box('crate', [1, 64, 2], 2, { color: '#f59e0b' });

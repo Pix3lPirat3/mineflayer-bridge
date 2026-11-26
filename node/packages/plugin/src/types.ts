@@ -316,6 +316,12 @@ export interface BridgePlayer {
   readonly away: boolean;
   /** That player's game window has focus. */
   readonly windowFocused: boolean;
+  /**
+   * That player's own singleplayer world, run by their game, or `null` on a server and on the title
+   * screen. Bots can join it only once it is open to LAN: then `playerWorld.server` is
+   * `localhost:<lanPort>`; before that it is `singleplayer:<save folder>`.
+   */
+  readonly singleplayer: Singleplayer | null;
   /** Level of detail that player's mod asks for. */
   readonly detail: Detail;
   /** Capabilities that player's mod advertised. */
@@ -914,9 +920,15 @@ export interface BridgeEvents {
   world: [world: WorldKey, previous: WorldKey | undefined];
 }
 
+/** A linked player's own singleplayer world; see {@link BridgePlayer.singleplayer}. */
+export interface Singleplayer {
+  /** The port it is open to LAN on, which bots on the player's machine join at `localhost:<lanPort>`; `null` while it is not open. */
+  readonly lanPort: number | null;
+}
+
 /**
  * What changed about a linked player, for the `player` event: `joined` and `left` a world, `world`
- * (another dimension or server), `died` and `respawned`, `away` and `back` (input after being away),
+ * (another dimension or server, or their singleplayer world opened to LAN), `died` and `respawned`, `away` and `back` (input after being away),
  * `focus` and `blur` of the game window.
  */
 export type PlayerChange = 'joined' | 'left' | 'world' | 'died' | 'respawned' | 'away' | 'back' | 'focus' | 'blur';

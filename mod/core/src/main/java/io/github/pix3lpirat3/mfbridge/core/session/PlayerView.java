@@ -21,6 +21,7 @@ import io.github.pix3lpirat3.mfbridge.protocol.core.Detail;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Interest;
 import io.github.pix3lpirat3.mfbridge.protocol.core.ObjectTraits;
 import io.github.pix3lpirat3.mfbridge.protocol.core.PlayerContext;
+import io.github.pix3lpirat3.mfbridge.protocol.core.Singleplayer;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Scope;
 import io.github.pix3lpirat3.mfbridge.protocol.core.SessionKind;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Vec3d;
@@ -53,6 +54,7 @@ final class PlayerView implements Sight, PlayerControls {
     private boolean playerAlive = true;
     private boolean playerAway;
     private boolean playerWindowFocused = true;
+    private @Nullable Singleplayer playerSingleplayer;
     private boolean allInterestDirty;
 
     private final BridgeClock clock;
@@ -192,6 +194,17 @@ final class PlayerView implements Sight, PlayerControls {
     }
 
     @Override
+    public void setSingleplayer(boolean singleplayer, int lanPort) {
+        Integer port = lanPort > 0 ? lanPort : null;
+        Singleplayer sp = playerSingleplayer;
+        if (singleplayer ? sp != null && Objects.equals(sp.lanPort(), port) : sp == null) {
+            return;
+        }
+        playerSingleplayer = singleplayer ? new Singleplayer(port) : null;
+        allInterestDirty = true;
+    }
+
+    @Override
     public void setProfile(@Nullable String name, @Nullable String uuid) {
         if (Objects.equals(name, playerName) && Objects.equals(uuid, playerUuid)) {
             return;
@@ -257,7 +270,7 @@ final class PlayerView implements Sight, PlayerControls {
                 boolean matched = worldMatched(s);
                 boolean att = attached(s, matched);
                 PlayerContext pc = new PlayerContext(playerWorld != null, playerWorld, att, playerName, playerUuid, playerAlive,
-                        playerAway, playerWindowFocused);
+                        playerAway, playerWindowFocused, playerWorld == null ? null : playerSingleplayer);
                 if (!pc.equals(s.lastContext)) {
                     s.lastContext = pc;
                     outbox.sendLatest(s, CoreMessages.PLAYER_CONTEXT, pc);

@@ -78,6 +78,26 @@ describe('player events', () => {
     expect(seen).toEqual(['died', 'respawned', 'away', 'back', 'blur', 'world', 'left']);
     expect(b.players[0]!.inWorld).toBe(false);
   });
+
+  it('tells a singleplayer world, and its LAN port once it is opened, as a world change', async () => {
+    const b = await bot();
+    const seen: PlayerChange[] = [];
+    b.on('player', (change) => void seen.push(change));
+    expect(b.players[0]!.singleplayer).toBeNull();
+    e.mod.setPlayerContext({ server: 'singleplayer:New World', dimension: 'minecraft:overworld' });
+    e.mod.setPlayerSingleplayer({});
+    await until(() => b.players[0]!.singleplayer !== null);
+    expect(b.players[0]!.singleplayer).toEqual({ lanPort: null });
+    const changes = seen.length;
+    // The port can come a tick before or after the world key; either one is a change.
+    e.mod.setPlayerSingleplayer({ lanPort: 52468 });
+    await until(() => seen.length > changes);
+    expect(seen.at(-1)).toBe('world');
+    expect(b.players[0]!.singleplayer).toEqual({ lanPort: 52468 });
+    e.mod.setPlayerContext(null);
+    await until(() => seen.includes('left'));
+    expect(b.players[0]!.singleplayer).toBeNull();
+  });
 });
 
 describe('bridge:ping', () => {

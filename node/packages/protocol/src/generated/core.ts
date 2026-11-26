@@ -409,6 +409,25 @@ export const WorldKeyCodec: Codec<WorldKey> = {
   },
 };
 
+/** Struct `Singleplayer`. */
+export interface Singleplayer {
+  /** The port the world is open to LAN on; bots on this machine join it at localhost:<lanPort>. */
+  lanPort?: number | undefined;
+}
+/** Wire codec for {@link Singleplayer}. */
+export const SingleplayerCodec: Codec<Singleplayer> = {
+  write(w, v) {
+    w.arrayHeader(1);
+    if (v.lanPort === undefined || v.lanPort === null) w.nil(); else w.uint(v.lanPort);
+  },
+  read(r) {
+    const n = r.arrayHeader();
+    const lanPort = n > 0 && !r.tryNil() ? r.uint() : undefined;
+    for (let i = 1; i < n; i++) r.skip();
+    return { lanPort };
+  },
+};
+
 /** Struct `BotIdentity`. */
 export interface BotIdentity {
   username: string;
@@ -4472,11 +4491,13 @@ export interface PlayerContext {
   away?: boolean | undefined;
   /** The game window has focus. Default `true`. */
   windowFocused?: boolean | undefined;
+  /** The player's own world, run by their game; absent on a server and on the title screen. */
+  singleplayer?: Singleplayer | undefined;
 }
 /** Wire codec for {@link PlayerContext}. */
 export const PlayerContextCodec: Codec<PlayerContext> = {
   write(w, v) {
-    w.arrayHeader(8);
+    w.arrayHeader(9);
     w.bool(v.inWorld);
     if (v.world === undefined || v.world === null) w.nil(); else WorldKeyCodec.write(w, v.world);
     w.bool(v.attached);
@@ -4485,6 +4506,7 @@ export const PlayerContextCodec: Codec<PlayerContext> = {
     w.bool(v.alive ?? true);
     w.bool(v.away ?? false);
     w.bool(v.windowFocused ?? true);
+    if (v.singleplayer === undefined || v.singleplayer === null) w.nil(); else SingleplayerCodec.write(w, v.singleplayer);
   },
   read(r) {
     const n = r.arrayHeader();
@@ -4497,8 +4519,9 @@ export const PlayerContextCodec: Codec<PlayerContext> = {
     const alive = n > 5 && !r.tryNil() ? r.bool() : true;
     const away = n > 6 && !r.tryNil() ? r.bool() : false;
     const windowFocused = n > 7 && !r.tryNil() ? r.bool() : true;
-    for (let i = 8; i < n; i++) r.skip();
-    return { inWorld, world, attached, name, uuid, alive, away, windowFocused };
+    const singleplayer = n > 8 && !r.tryNil() ? SingleplayerCodec.read(r) : undefined;
+    for (let i = 9; i < n; i++) r.skip();
+    return { inWorld, world, attached, name, uuid, alive, away, windowFocused, singleplayer };
   },
 };
 

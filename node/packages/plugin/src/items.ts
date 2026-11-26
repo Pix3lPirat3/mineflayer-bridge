@@ -166,7 +166,7 @@ export function fromSlotItem(s: SlotItem): ContainerItem {
   else if (s.lore !== undefined) out.lore = [...s.lore];
   if (s.glint === true) out.glint = true;
   if (s.customModel !== undefined) out.customModel = s.customModel;
-  if (s.components !== undefined) out.components = s.components;
+  if (s.components !== undefined) out.components = s.components as Record<string, unknown>;
   if (s.countText !== undefined) out.countText = s.countText;
   if (s.bar !== undefined) out.bar = s.bar;
   if (s.barColor !== undefined) out.barColor = s.barColor;

@@ -88,6 +88,8 @@ export interface ModDriver {
   /** A private directory for the plugin's credentials and stores. */
   readonly dir: string;
   setPlayerContext(world: WorldKey | null): Promise<void>;
+  /** The player's own singleplayer world: `{}` while it is not open to LAN, `{ lanPort }` once it is, `null` on a server. */
+  setSingleplayer(singleplayer: { lanPort?: number } | null): Promise<void>;
   objects(prefix: string): Promise<DriverObject[]>;
   sessions(): Promise<{ owner: string; kind: string; name: string; connected: boolean }[]>;
   invokeAction(key: string, target: Target): Promise<DriverResult>;
@@ -152,6 +154,7 @@ export async function mockDriver(options: DriverOptions = {}): Promise<ModDriver
     endpointFile,
     dir,
     setPlayerContext: async (world) => mod.setPlayerContext(world),
+    setSingleplayer: async (singleplayer) => mod.setPlayerSingleplayer(singleplayer),
     objects: async (prefix) =>
       mod.objects(prefix).map((o) => ({ key: o.key, kind: o.kind, rev: o.rev, scope: o.scope, layer: o.layer, data: o.raw })),
     sessions: async () => mod.sessions().map((s) => ({ owner: s.owner, kind: s.kind, name: s.name, connected: s.connected })),
@@ -243,6 +246,9 @@ export async function javaDriver(options: DriverOptions = {}): Promise<ModDriver
     dir,
     setPlayerContext: async (world) => {
       await call('setPlayerContext', { world });
+    },
+    setSingleplayer: async (singleplayer) => {
+      await call('setSingleplayer', { singleplayer: singleplayer !== null, lanPort: singleplayer?.lanPort ?? null });
     },
     objects: async (prefix) =>
       ((await call('objects', { prefix })).objects as { key: string; kind: string; rev: number; scope: string; layer?: string; data?: string }[]).map((o) => ({

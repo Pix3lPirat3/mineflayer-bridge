@@ -266,6 +266,15 @@ export class MockMod {
     this.core.player.setState(state);
   }
 
+  /**
+   * Sets whether the player plays their own singleplayer world, sent in `player.context` while they
+   * are in a world: `{}` while it is not open to LAN, `{ lanPort }` once it is, `null` on a server.
+   * The world key's server, set with {@link setPlayerContext}, is the caller's to match.
+   */
+  setPlayerSingleplayer(singleplayer: { lanPort?: number } | null): void {
+    this.core.player.setSingleplayer(singleplayer);
+  }
+
   /** Sets the player's profile name, sent in `player.context`. */
   setPlayerName(name: string | undefined): void {
     this.core.player.setName(name);

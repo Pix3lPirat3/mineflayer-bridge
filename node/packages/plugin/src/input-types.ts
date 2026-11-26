@@ -1134,8 +1134,14 @@ export interface ItemPresentation {
   readonly glint?: boolean;
   /** Custom item model id. */
   readonly customModel?: string;
-  /** Data components passed through to the client as is. Must be MessagePack-encodable. */
-  readonly components?: unknown;
+  /**
+   * Data components in the game's saved form, keyed by id, as `/give` and item JSON write them:
+   * `{ 'minecraft:damage': 10, 'minecraft:enchantments': { 'minecraft:sharpness': 5 } }`. A key
+   * `!minecraft:food` removes one the item has by default. The game draws the item with them, its
+   * durability bar, glint and tooltip lines included. One the player's game cannot read is left
+   * out; the other fields of the item win over them.
+   */
+  readonly components?: Readonly<Record<string, unknown>>;
   /** A durability-style bar from 0 (empty) to 1 (full), used as a progress indicator. */
   readonly bar?: number;
   /** Colour of {@link bar}. Default: vanilla's durability colour. */

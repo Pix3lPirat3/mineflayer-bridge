@@ -28,6 +28,9 @@ structs:
     backend: string?
     dimension: string
 
+  Singleplayer:
+    lanPort: u32?             # the port the world is open to LAN on; bots on this machine join it at localhost:<lanPort>
+
   BotIdentity:
     username: string
     uuid: string?
@@ -1020,6 +1023,7 @@ messages:
       alive: bool = true        # false while the player's death screen shows
       away: bool = false        # no input from the player for the time set in the mod
       windowFocused: bool = true  # the game window has focus
+      singleplayer: Singleplayer?  # the player's own world, run by their game; absent on a server and on the title screen
 
   interest:
     id: 0x17

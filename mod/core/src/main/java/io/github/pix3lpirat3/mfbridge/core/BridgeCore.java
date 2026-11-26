@@ -243,6 +243,19 @@ public final class BridgeCore implements AutoCloseable {
     }
 
     /**
+     * Reports whether the player's world runs in their own game and the port it is open to LAN on;
+     * sessions receive it in {@code player.context} on the next tick when it changed, so bots that
+     * follow the player can join it.
+     *
+     * @param singleplayer the player is in their own singleplayer world
+     * @param lanPort the port it is open to LAN on, or 0 while it is not
+     */
+    @ClientThread
+    public void setPlayerSingleplayer(boolean singleplayer, int lanPort) {
+        player.setSingleplayer(singleplayer, lanPort);
+    }
+
+    /**
      * Reports the player's profile name and id; sessions receive them in {@code player.context} on
      * the next tick, so bots know who gives orders.
      *

@@ -47,7 +47,7 @@ import type {
 import { guard, InputRouter, OpenTracker, refusalOf, type InputHost, type Refusable, type SessionInputEvents } from './input.ts';
 import { dependencyIds, missingCapabilities, orderForLoad, supportsSpec, validateOptions, type LoadedExtension } from './extensions.ts';
 import type { Link } from './link.ts';
-import { CoreSet, currentOrigin, PlayerImpl, playerChanges, runForEveryone, type HubLink } from './players.ts';
+import { CoreSet, currentOrigin, PlayerImpl, playerChanges, runForEveryone, singleplayerOf, type HubLink } from './players.ts';
 import type { BlobLimits } from './blobs.ts';
 import type { Volume, VolumeOptions } from './retained-types.ts';
 import { createQueries, type QueryApi } from './queries.ts';
@@ -490,6 +490,7 @@ export abstract class SessionImpl implements BridgeSession, ScopeHost {
         p.alive = c.alive !== false;
         p.away = c.away === true;
         p.windowFocused = c.windowFocused !== false;
+        p.singleplayer = singleplayerOf(c);
         this.combine();
         this.refreshVisibility();
         for (const change of changes) as(() => this.events.emit('player', change, p));

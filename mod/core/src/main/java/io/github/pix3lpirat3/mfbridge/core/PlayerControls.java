@@ -17,6 +17,14 @@ public interface PlayerControls {
     void setState(boolean alive, boolean away, boolean windowFocused);
 
     /**
+     * Sets whether the player's world runs in their own game, and the port it is open to LAN on.
+     *
+     * @param singleplayer the player is in their own singleplayer world
+     * @param lanPort the port it is open to LAN on, or 0 while it is not
+     */
+    void setSingleplayer(boolean singleplayer, int lanPort);
+
+    /**
      * Sets the player's profile name and id, so bots know who gives orders. Null when unknown.
      *
      * @param uuid the profile id as a dashed lowercase UUID

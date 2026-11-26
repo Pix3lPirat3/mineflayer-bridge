@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { BridgeError } from '@mineflayer-bridge/protocol';
 import { defineExtension } from './extensions.ts';
 import { itemId } from './ext-util.ts';
+import { ItemComponents, untagged } from './item-components.ts';
 import type { ChatContent, ChatSpanInput, ContainerClick, ContainerEvent, ContainerItem, ContainerLayout, ContainerView, MineflayerItemLike } from './input-types.ts';
 import type { EmitterLike, InventoryLike } from './types.ts';
 
@@ -35,8 +36,10 @@ export interface WindowItemLike extends Omit<MineflayerItemLike, 'customName'> {
   readonly customLore?: unknown;
   /** Enchantments; an item with any gets the glint. */
   readonly enchants?: unknown;
-  /** Data components (prismarine-item on 1.20.5+): a `profile` one gives a head its skin. */
+  /** Data components (prismarine-item on 1.20.5+), shown as the game shows them; a `profile` one gives a head its skin. */
   readonly components?: unknown;
+  /** Components the item's defaults lose (prismarine-item on 1.20.5+). */
+  readonly removedComponents?: unknown;
   /** Item NBT on older versions: `SkullOwner` gives a head its skin. */
   readonly nbt?: unknown;
 }
@@ -49,8 +52,10 @@ export interface WindowBotLike {
   clickWindow?(slot: number, mouseButton: number, mode: number): Promise<void>;
   /** Closes a window (mineflayer `bot.closeWindow`). */
   closeWindow?(window: never): void;
-  /** The bot's minecraft-data registry, used to read text components when prismarine-chat is installed. */
+  /** The bot's minecraft-data registry, used to read text components when prismarine-chat is installed, and to name the entries item components refer to by number. */
   readonly registry?: unknown;
+  /** The protocol client; its `registry_data` packets name the server's enchantments and trims. */
+  readonly _client?: EmitterLike;
 }
 
 /** Public API of `bridge:window`, from `bot.bridge.get(windowMirror)`. */
@@ -107,19 +112,6 @@ export function layoutFor(size: number, type = ''): ContainerLayout {
   if (/hopper/.test(type) && size === 5) return 'hopper';
   if (/3x3|dispenser|dropper/.test(type) && size === 9) return 'dispenser';
   return `chest:${Math.min(6, Math.max(1, Math.ceil(size / 9)))}`;
-}
-
-/** NBT tags as prismarine-nbt holds them (`{ type, value }`) reduced to their values. */
-function untagged(v: unknown, depth = 0): unknown {
-  if (depth > 32 || typeof v !== 'object' || v === null) return v;
-  if (Array.isArray(v)) return v.map((x) => untagged(x, depth + 1));
-  const o = v as Record<string, unknown>;
-  const keys = Object.keys(o);
-  if (typeof o['type'] === 'string' && 'value' in o && keys.every((k) => k === 'type' || k === 'value' || k === 'name')) {
-    // A list tag nests its element type: { type: 'list', value: { type, value: [...] } }.
-    return untagged(o['value'], depth + 1);
-  }
-  return Object.fromEntries(keys.map((k) => [k, untagged(o[k], depth + 1)]));
 }
 
 function flatten(v: unknown, depth = 0): string {
@@ -432,29 +424,42 @@ export function headTexture(item: WindowItemLike): string | undefined {
 /**
  * A mineflayer item as a container view shows it: id, count, the custom name and lore with their
  * colours and styles (empty lore lines are kept: servers use them as spacers), a head's skin, and
- * the glint for an enchanted item. `null` for an empty slot.
+ * its data components, so the game draws it as its own: durability bar, glint, trims, dye and
+ * potion colours, bundle fullness and the vanilla tooltip lines. Without `components` (or when an
+ * item's enchantments cannot be named) an enchanted item still gets the glint. `null` for an empty slot.
  */
-export function windowItem(item: WindowItemLike | null | undefined): ContainerItem | null {
+export function windowItem(item: WindowItemLike | null | undefined, components?: ItemComponents): ContainerItem | null {
   if (item === null || item === undefined) return null;
   const name = styledText(item.customName, NAME_BASE);
   const lore = Array.isArray(item.customLore) ? item.customLore.map((l) => styledText(l, LORE_BASE) ?? ['']) : [];
   const texture = item.name === 'player_head' ? headTexture(item) : undefined;
   const blank = name === undefined || name.every((p) => (typeof p === 'string' ? p : p.text) === '');
+  const saved = components?.of(item);
+  const enchanted = Array.isArray(item.enchants) ? item.enchants.length > 0 : isEnchanted(item.enchants);
+  const glint = enchanted && saved?.['minecraft:enchantments'] === undefined && saved?.['minecraft:enchantment_glint_override'] === undefined;
   return {
     id: itemId(item.name),
     count: item.count,
     ...(blank ? {} : { name: content(name) }),
     ...(lore.length === 0 ? {} : { lore: lore.map(content) }),
     ...(texture === undefined ? {} : { headTexture: texture }),
-    ...(Array.isArray(item.enchants) && item.enchants.length > 0 ? { glint: true } : {}),
+    ...(glint ? { glint: true } : {}),
+    ...(saved === undefined ? {} : { components: saved }),
   };
+}
+
+/** prismarine-item's `enchants` on 1.20.5+ is the component itself: `{ enchantments: [...] }`. */
+function isEnchanted(v: unknown): boolean {
+  const list = typeof v === 'object' && v !== null ? (v as { enchantments?: unknown }).enchantments : undefined;
+  return Array.isArray(list) && list.length > 0;
 }
 
 /**
  * `bridge:window`: shows a window of the bot in the player's game as a container view. `open()`
  * mirrors the window the bot has open (a chest, a hopper, a server's selector menu), or with
  * `'inventory'`, or when nothing is open, `bot.inventory`. The view is kept live through the
- * window's `updateSlot` events and shows item names and lore as text.
+ * window's `updateSlot` events and shows items as the game would: names and lore, durability,
+ * enchantments, trims, colours and the vanilla tooltip (see {@link windowItem}).
  *
  * - The player's clicks are the bot's clicks: each gesture becomes `bot.clickWindow` with the
  *   button and mode vanilla sends for it (see {@link clickArgs}), so a selector clicked here is
@@ -482,7 +487,7 @@ export function windowItem(item: WindowItemLike | null | undefined): ContainerIt
  */
 export const windowMirror = defineExtension({
   id: 'bridge:window',
-  version: '1.0.0',
+  version: '1.1.0',
   options: {
     title: { type: 'string' },
     action: { type: 'boolean', default: true },
@@ -497,6 +502,9 @@ export const windowMirror = defineExtension({
     const inventory = bot.inventory as WindowLike | undefined;
     if (inventory === undefined) throw new BridgeError('unsupported', 'bridge:window needs bot.inventory');
     const text = textReader(bot.registry);
+    const components = new ItemComponents(bot.registry);
+    // Enchantments and trims are numbered as the server sent its registries; a server switch sends them again.
+    if (bot._client !== undefined) ctx.on(bot._client, 'registry_data', (packet: unknown) => components.record(packet));
 
     /** The window the view mirrors, with the remover of its slot listener. */
     let attached: { window: WindowLike; off: () => void } | undefined;
@@ -510,7 +518,7 @@ export const windowMirror = defineExtension({
     /** How many of the window's slots the view shows: the whole inventory, or a container's own slots. */
     const shown = (w: WindowLike): number => (isInventory(w) ? INVENTORY_SLOTS : Math.min(MAX_SLOTS, Math.max(0, w.inventoryStart ?? w.slots.length - PLAYER_SLOTS)));
     const layoutOf = (w: WindowLike): ContainerLayout => (isInventory(w) ? 'player_inventory' : layoutFor(shown(w), String(w.type ?? '')));
-    const slotsOf = (w: WindowLike): (ContainerItem | null)[] => Array.from({ length: shown(w) }, (_, i) => windowItem(w.slots[i]));
+    const slotsOf = (w: WindowLike): (ContainerItem | null)[] => Array.from({ length: shown(w) }, (_, i) => windowItem(w.slots[i], components));
 
     const stackAt = (slot: number): MineflayerItemLike | undefined => inventory.slots[slot] ?? undefined;
     const tossStack = async (slot: number): Promise<boolean> => {
@@ -579,7 +587,7 @@ export const windowMirror = defineExtension({
     const attach = (w: WindowLike): void => {
       detach();
       const off = ctx.on(w, 'updateSlot', (slot: number, _old: unknown, item: WindowItemLike | null | undefined) => {
-        if (Number.isInteger(slot) && slot >= 0 && slot < Math.min(shown(w), view.size)) view.setSlot(slot, windowItem(item));
+        if (Number.isInteger(slot) && slot >= 0 && slot < Math.min(shown(w), view.size)) view.setSlot(slot, windowItem(item, components));
       });
       attached = { window: w, off };
       view.update({ title: titleOf(w), layout: layoutOf(w) });

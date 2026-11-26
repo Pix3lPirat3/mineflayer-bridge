@@ -25,7 +25,7 @@ import net.minecraft.world.item.component.TooltipDisplay;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Builds client-only display stacks for bot slot items: name and
+ * Builds client-only display stacks for bot slot items: data components, name and
  * lore (plain or as styled spans), glint, custom model, player head skin and colour. The stacks are
  * never put into a real menu or sent anywhere. Counts, bars and animation frames are drawn by {@link
  * SlotVisual}.
@@ -72,8 +72,9 @@ public final class SlotItems {
     }
 
     /**
-     * Converts a slot item. Unknown item ids show as a barrier so the slot stays visible; {@code
-     * components} are not applied. A {@code head} turns the item into a player head with that skin.
+     * Converts a slot item. Unknown item ids show as a barrier so the slot stays visible. The item's
+     * {@code components} are applied first (see {@link ItemComponents}), then its own fields, which
+     * win over them. A {@code head} turns the item into a player head with that skin.
      *
      * @param item the bot's item
      * @return a new stack, with the count clamped to 1 to 99
@@ -84,6 +85,9 @@ public final class SlotItems {
         final String texture = item.headTexture();
         final Item type = head != null || texture != null ? Items.PLAYER_HEAD : known == null ? Items.BARRIER : known;
         final ItemStack stack = new ItemStack(type, Math.clamp(Integer.toUnsignedLong(item.count()), 1, MAX_COUNT));
+        if (type == known) {
+            ItemComponents.apply(stack, item.components());
+        }
         final Component name = name(item);
         if (name != null) {
             stack.set(DataComponents.CUSTOM_NAME, name);
