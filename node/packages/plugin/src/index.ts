@@ -18,6 +18,7 @@ export {
   type TextStyle,
   type WindowTarget,
 } from './window.ts';
+export { ItemComponents } from './item-components.ts';
 export {
   MOVE_CLASSES,
   moveClass,
