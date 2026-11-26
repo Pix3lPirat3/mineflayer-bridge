@@ -178,6 +178,7 @@ structs:
     text: string
     display: string?
     tooltip: string?
+    kind: string?            # option (a key such as range=), value or keyword (until, then); the mod colours the text by it
 
   FormField:
     id: string
@@ -1465,6 +1466,7 @@ messages:
     delivery: reliable
     fields:
       suggestions: list<Suggestion>
+      usage: list<ChatSpan>?   # the command's usage as styled text, shown above the chat box while completing
 
   sample.request:
     id: 0x83

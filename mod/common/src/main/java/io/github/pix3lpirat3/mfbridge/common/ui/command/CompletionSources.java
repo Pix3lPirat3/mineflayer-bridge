@@ -133,7 +133,7 @@ public final class CompletionSources {
             }
             final long metres = Math.round(n.distance());
             final String tooltip = name.equals(typeName) ? type : type + "\n" + name;
-            out.add(new Suggestion(id, I18n.get("mineflayer_bridge.suggest.distance", name, metres), tooltip));
+            out.add(new Suggestion(id, I18n.get("mineflayer_bridge.suggest.distance", name, metres), tooltip, null));
         }
         return out;
     }
@@ -152,7 +152,7 @@ public final class CompletionSources {
                 final int v = q.component() == 1 ? cross.y() : cross.z();
                 final String text = Integer.toString(v);
                 if (text.startsWith(typed)) {
-                    out.add(new Suggestion(text, null, I18n.get("mineflayer_bridge.suggest.crosshair")));
+                    out.add(new Suggestion(text, null, I18n.get("mineflayer_bridge.suggest.crosshair"), null));
                 }
             }
             return out;
@@ -162,7 +162,7 @@ public final class CompletionSources {
             final String text = cross.x() + " " + cross.y() + " " + cross.z();
             if (text.startsWith(typed)) {
                 final String what = level == null ? "block" : Crosshair.blockId(level.getBlockState(new BlockPos(cross.x(), cross.y(), cross.z())));
-                out.add(new Suggestion(text, null, I18n.get("mineflayer_bridge.suggest.crosshair.block", what)));
+                out.add(new Suggestion(text, null, I18n.get("mineflayer_bridge.suggest.crosshair.block", what), null));
             }
         }
         final TargetSpec filter = q.spec().filter();
@@ -199,7 +199,7 @@ public final class CompletionSources {
             final String text = p.getX() + " " + p.getY() + " " + p.getZ();
             if (text.startsWith(typed)) {
                 final long metres = Math.round(Math.sqrt(p.distToCenterSqr(from.x(), from.y(), from.z())));
-                out.add(new Suggestion(text, I18n.get("mineflayer_bridge.suggest.distance", Crosshair.blockId(level.getBlockState(p)), metres), null));
+                out.add(new Suggestion(text, I18n.get("mineflayer_bridge.suggest.distance", Crosshair.blockId(level.getBlockState(p)), metres), null, null));
             }
         }
         return out;
@@ -271,7 +271,7 @@ public final class CompletionSources {
         final List<Suggestion> out = new ArrayList<>();
         for (final Presence p : core.presence().all()) {
             if (p.connected() && starts(p.displayName(), q.input()) && out.size() < limit(q)) {
-                out.add(new Suggestion(p.displayName(), null, I18n.get(core.attach().isAttached(p.identity()) ? "mineflayer_bridge.suggest.attached" : "mineflayer_bridge.suggest.detached")));
+                out.add(new Suggestion(p.displayName(), null, I18n.get(core.attach().isAttached(p.identity()) ? "mineflayer_bridge.suggest.attached" : "mineflayer_bridge.suggest.detached"), null));
             }
         }
         return out;
@@ -303,7 +303,7 @@ public final class CompletionSources {
             if (!starts(e.key(), q.input()) && !starts(name, q.input()) && !starts(e.localId(), q.input())) {
                 continue;
             }
-            out.add(new Suggestion(e.key(), name, mine ? bot.name() : owner));
+            out.add(new Suggestion(e.key(), name, mine ? bot.name() : owner, null));
         }
         return out;
     }

@@ -1,6 +1,6 @@
 {
   "name": "mineflayer-bridge-examples",
-  "version": "0.1.0-alpha.30",
+  "version": "0.1.0-alpha.31",
   "private": true,
   "description": "Runnable examples for mineflayer-bridge. Each script explains in its header how to run it.",
   "license": "PolyForm-Noncommercial-1.0.0",

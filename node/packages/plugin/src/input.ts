@@ -211,7 +211,7 @@ export interface Route {
   readonly accepts: 'action.invoked' | 'command.invoked' | 'keybind.event' | 'tool.event' | 'settings.values' | 'container' | 'screen' | 'element.event' | 'intercept.event';
   handle(payload: unknown, type: InboundInput): void;
   /** Answers `command.complete` for a `command.invoked` route; never rejects. */
-  complete?(payload: MessagePayloads['command.complete']): Promise<Suggestion[]>;
+  complete?(payload: MessagePayloads['command.complete']): Promise<MessagePayloads['command.suggestions']>;
   activate?(): void;
   deactivate?(): void;
 }
@@ -318,12 +318,12 @@ export class InputRouter {
    * Answers `command.complete` through `reply`. A command this session does not route answers an
    * empty list, so the mod's field never waits for its 300 ms deadline.
    */
-  complete(payload: MessagePayloads['command.complete'], reply: (suggestions: Suggestion[]) => void): void {
+  complete(payload: MessagePayloads['command.complete'], reply: (answer: MessagePayloads['command.suggestions']) => void): void {
     const key = this.relative(payload.command);
     const route = key === undefined ? undefined : this.routes.get(key);
     if (route?.complete === undefined) {
       this.log.debug('no completion handler', { key: payload.command });
-      reply([]);
+      reply({ suggestions: [] });
       return;
     }
     void route.complete(payload).then(reply);

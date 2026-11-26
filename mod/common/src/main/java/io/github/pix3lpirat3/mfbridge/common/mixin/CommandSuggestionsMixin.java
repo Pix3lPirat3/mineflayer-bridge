@@ -105,7 +105,17 @@ abstract class CommandSuggestionsMixin {
         commandUsagePosition = 0;
         pendingSuggestions = future;
         future.thenRun(() -> {
-            if (pendingSuggestions == future && allowSuggestions && minecraft.options.autoSuggestions().get()) {
+            if (pendingSuggestions != future) {
+                return;
+            }
+            // The bot's usage line takes the slot while the line parses; a parse error keeps it.
+            final Component usage = error == null ? chat.usage() : null;
+            if (usage != null) {
+                commandUsage.clear();
+                commandUsage.add(usage.getVisualOrderText());
+                recomputeUsageBoxWidth();
+            }
+            if (allowSuggestions && minecraft.options.autoSuggestions().get()) {
                 hide();
                 showSuggestions(false);
             }

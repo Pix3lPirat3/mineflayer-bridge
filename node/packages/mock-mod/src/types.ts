@@ -267,6 +267,8 @@ export interface MockCompletion {
   readonly dynamic: 'answered' | 'cached' | 'timeout' | 'failed' | undefined;
   /** Why an earlier word stops completion, e.g. `count: expected an integer, got x`. */
   readonly error: string | undefined;
+  /** The usage line the bot's `dynamic` completion sent, shown above the chat box. */
+  readonly usage?: readonly ChatSpan[];
 }
 
 /** Quotas the mock enforces: objects per device, the rest per session. */

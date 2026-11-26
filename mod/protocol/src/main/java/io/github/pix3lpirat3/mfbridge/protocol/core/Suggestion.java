@@ -7,13 +7,17 @@ import io.github.pix3lpirat3.mfbridge.protocol.wire.WireException;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireReader;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
 
-/** Struct {@code Suggestion}. */
-public record Suggestion(String text, @Nullable String display, @Nullable String tooltip) {
+/**
+ * Struct {@code Suggestion}.
+ *
+ * @param kind Option (a key such as range=), value or keyword (until, then); the mod colours the text by it.
+ */
+public record Suggestion(String text, @Nullable String display, @Nullable String tooltip, @Nullable String kind) {
     /** Wire codec for this record. */
     public static final WireCodec<Suggestion> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, Suggestion v) {
-            w.writeArrayHeader(3);
+            w.writeArrayHeader(4);
             w.writeString(v.text());
             if (v.display() == null) {
                 w.writeNil();
@@ -24,6 +28,11 @@ public record Suggestion(String text, @Nullable String display, @Nullable String
                 w.writeNil();
             } else {
                 w.writeString(v.tooltip());
+            }
+            if (v.kind() == null) {
+                w.writeNil();
+            } else {
+                w.writeString(v.kind());
             }
         }
 
@@ -36,23 +45,29 @@ public record Suggestion(String text, @Nullable String display, @Nullable String
             String text = r.readString();
             @Nullable String display = n > 1 && !r.tryReadNil() ? r.readString() : null;
             @Nullable String tooltip = n > 2 && !r.tryReadNil() ? r.readString() : null;
-            r.skipValues(n - 3);
-            return new Suggestion(text, display, tooltip);
+            @Nullable String kind = n > 3 && !r.tryReadNil() ? r.readString() : null;
+            r.skipValues(n - 4);
+            return new Suggestion(text, display, tooltip, kind);
         }
     };
 
     /** Creates a value from the required fields; later fields take null or their schema default. */
     public Suggestion(String text) {
-        this(text, null, null);
+        this(text, null, null, null);
     }
 
     /** Returns a copy with {@code display} replaced. */
     public Suggestion withDisplay(@Nullable String display) {
-        return new Suggestion(text, display, tooltip);
+        return new Suggestion(text, display, tooltip, kind);
     }
 
     /** Returns a copy with {@code tooltip} replaced. */
     public Suggestion withTooltip(@Nullable String tooltip) {
-        return new Suggestion(text, display, tooltip);
+        return new Suggestion(text, display, tooltip, kind);
+    }
+
+    /** Returns a copy with {@code kind} replaced. */
+    public Suggestion withKind(@Nullable String kind) {
+        return new Suggestion(text, display, tooltip, kind);
     }
 }

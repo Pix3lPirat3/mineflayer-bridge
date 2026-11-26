@@ -2,6 +2,7 @@ package io.github.pix3lpirat3.mfbridge.core.command;
 
 import io.github.pix3lpirat3.mfbridge.api.thread.ClientThread;
 import io.github.pix3lpirat3.mfbridge.core.input.InvocationResult;
+import io.github.pix3lpirat3.mfbridge.protocol.core.ChatSpan;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Suggestion;
 import java.util.List;
 import java.util.Map;
@@ -127,6 +128,20 @@ public interface CommandControls {
 
     /** Drops every cached completion answer; the client calls it when a chat or command screen closes. */
     void forgetCompletions();
+
+    /**
+     * The usage line the bot sent with the answer to the latest {@link #completeDynamic} call, for
+     * the line above the chat box; null when it sent none or no answer has come yet.
+     *
+     * @return the usage as styled spans, or null
+     */
+    default @Nullable List<ChatSpan> usage() {
+        return null;
+    }
+
+    /** Forgets the usage line, before a line is completed anew: a line with no dynamic argument has none. */
+    default void clearUsage() {
+    }
 
     /**
      * Asks for suggestions outside any order.

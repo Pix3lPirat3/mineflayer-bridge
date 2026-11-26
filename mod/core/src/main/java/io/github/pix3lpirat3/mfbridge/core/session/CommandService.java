@@ -20,6 +20,7 @@ import io.github.pix3lpirat3.mfbridge.protocol.core.CommandComplete;
 import io.github.pix3lpirat3.mfbridge.protocol.core.CommandData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.CoreMessages;
 import io.github.pix3lpirat3.mfbridge.protocol.core.CrewGroup;
+import io.github.pix3lpirat3.mfbridge.protocol.core.ChatSpan;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Suggestion;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Vec3d;
 import java.util.ArrayList;
@@ -43,7 +44,10 @@ final class CommandService implements CommandControls {
     private static final int CACHE_ENTRIES = 256;
 
     /** A cached answer for revision {@code rev}, received at {@code atMs}. */
-    private record Cached(long rev, long atMs, List<Suggestion> suggestions) {}
+    private record Cached(long rev, long atMs, List<Suggestion> suggestions, @Nullable List<ChatSpan> usage) {}
+
+    /** The usage line of the latest answer, read while the chat box draws. */
+    private @Nullable List<ChatSpan> usage;
 
     /** A request waiting out its debounce. */
     private record Waiting(String slot, String prefixKey, String input, long rev, CommandComplete message,
@@ -334,6 +338,7 @@ final class CommandService implements CommandControls {
         if (hit != null && hit.rev() != rev) {
             invalidate(commandKey);
         } else if (hit != null && host.nowMs() - hit.atMs() < CACHE_FRESH_MS) {
+            usage = hit.usage();
             return CompletableFuture.completedFuture(hit.suggestions());
         }
         Waiting previous = waiting.remove(slot);
@@ -384,9 +389,11 @@ final class CommandService implements CommandControls {
                         return;
                     }
                     List<Suggestion> list = List.copyOf(answer.suggestions());
+                    List<ChatSpan> spans = answer.usage() == null || answer.usage().isEmpty() ? null : List.copyOf(answer.usage());
+                    usage = spans;
                     StoredObject now = interactions.declaration(w.message().command(), CommandData.class);
                     if (now != null && now.state().rev() == w.rev()) {
-                        cache.put(w.prefixKey() + w.input(), new Cached(w.rev(), host.nowMs(), list));
+                        cache.put(w.prefixKey() + w.input(), new Cached(w.rev(), host.nowMs(), list, spans));
                     }
                     w.future().complete(list);
                 });
@@ -395,11 +402,13 @@ final class CommandService implements CommandControls {
     /** The answer cached for the longest shorter prefix of the input, filtered by the input. */
     private List<Suggestion> fallback(Waiting w) {
         String input = w.input();
+        usage = null;
         for (int len = input.length(); len >= 0; len--) {
             Cached c = cache.get(w.prefixKey() + input.substring(0, len));
             if (c == null || c.rev() != w.rev()) {
                 continue;
             }
+            usage = c.usage();
             String lower = input.toLowerCase(Locale.ROOT);
             List<Suggestion> out = new ArrayList<>();
             for (Suggestion s : c.suggestions()) {
@@ -417,6 +426,17 @@ final class CommandService implements CommandControls {
     @Override
     public void forgetCompletions() {
         cache.clear();
+        usage = null;
+    }
+
+    @Override
+    public @Nullable List<ChatSpan> usage() {
+        return usage;
+    }
+
+    @Override
+    public void clearUsage() {
+        usage = null;
     }
 
     private void invalidate(String commandKey) {

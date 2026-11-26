@@ -11,6 +11,7 @@ import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import io.github.pix3lpirat3.mfbridge.common.ui.BridgeUi;
+import io.github.pix3lpirat3.mfbridge.common.ui.container.SlotItems;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.BridgeStatus;
 import io.github.pix3lpirat3.mfbridge.common.ui.screen.UiColors;
 import io.github.pix3lpirat3.mfbridge.core.BridgeCore;
@@ -23,6 +24,7 @@ import io.github.pix3lpirat3.mfbridge.core.command.Completion;
 import io.github.pix3lpirat3.mfbridge.core.command.ParseResult;
 import io.github.pix3lpirat3.mfbridge.core.decl.CommandDecl;
 import io.github.pix3lpirat3.mfbridge.core.input.InvocationResult;
+import io.github.pix3lpirat3.mfbridge.protocol.core.ChatSpan;
 import io.github.pix3lpirat3.mfbridge.protocol.core.CommandData;
 import io.github.pix3lpirat3.mfbridge.protocol.core.Suggestion;
 import java.util.ArrayList;
@@ -30,6 +32,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
@@ -231,6 +234,32 @@ public final class BridgeCommands {
             }
         }
         return b.build();
+    }
+
+    /**
+     * The colour of a suggestion's text by its kind: options aqua, keywords grey.
+     *
+     * @param s the suggestion
+     * @param value the colour of a plain value
+     * @return the colour as ARGB
+     */
+    public static int kindArgb(final Suggestion s, final int value) {
+        final String kind = s.kind();
+        if ("option".equals(kind)) {
+            return 0xFF55FFFF;
+        }
+        return "keyword".equals(kind) ? 0xFFAAAAAA : value;
+    }
+
+    /**
+     * The usage line a bot sent with its latest completion answer, grey where its spans set no colour.
+     *
+     * @param core the core
+     * @return the line, or null when the bot sent none
+     */
+    public static @Nullable Component usage(final BridgeCore core) {
+        final List<ChatSpan> spans = core.commands().usage();
+        return spans == null ? null : Component.empty().withStyle(ChatFormatting.GRAY).append(SlotItems.spans(spans));
     }
 
     /**

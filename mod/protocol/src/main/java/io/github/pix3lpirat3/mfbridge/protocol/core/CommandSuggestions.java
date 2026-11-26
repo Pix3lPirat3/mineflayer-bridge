@@ -2,20 +2,30 @@
 package io.github.pix3lpirat3.mfbridge.protocol.core;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireCodec;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireCodecs;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireException;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireReader;
 import io.github.pix3lpirat3.mfbridge.protocol.wire.WireWriter;
 
-/** Payload of message {@code command.suggestions} (id 0x76), sent by node with reliable delivery. */
-public record CommandSuggestions(List<Suggestion> suggestions) {
+/**
+ * Payload of message {@code command.suggestions} (id 0x76), sent by node with reliable delivery.
+ *
+ * @param usage The command's usage as styled text, shown above the chat box while completing.
+ */
+public record CommandSuggestions(List<Suggestion> suggestions, @Nullable List<ChatSpan> usage) {
     /** Wire codec for this record. */
     public static final WireCodec<CommandSuggestions> CODEC = new WireCodec<>() {
         @Override
         public void write(WireWriter w, CommandSuggestions v) {
-            w.writeArrayHeader(1);
+            w.writeArrayHeader(2);
             WireCodecs.list(Suggestion.CODEC).write(w, v.suggestions());
+            if (v.usage() == null) {
+                w.writeNil();
+            } else {
+                WireCodecs.list(ChatSpan.CODEC).write(w, v.usage());
+            }
         }
 
         @Override
@@ -25,8 +35,19 @@ public record CommandSuggestions(List<Suggestion> suggestions) {
                 throw WireException.invalid("command.suggestions: expected at least 1 fields, got " + n);
             }
             List<Suggestion> suggestions = WireCodecs.list(Suggestion.CODEC).read(r);
-            r.skipValues(n - 1);
-            return new CommandSuggestions(suggestions);
+            @Nullable List<ChatSpan> usage = n > 1 && !r.tryReadNil() ? WireCodecs.list(ChatSpan.CODEC).read(r) : null;
+            r.skipValues(n - 2);
+            return new CommandSuggestions(suggestions, usage);
         }
     };
+
+    /** Creates a value from the required fields; later fields take null or their schema default. */
+    public CommandSuggestions(List<Suggestion> suggestions) {
+        this(suggestions, null);
+    }
+
+    /** Returns a copy with {@code usage} replaced. */
+    public CommandSuggestions withUsage(@Nullable List<ChatSpan> usage) {
+        return new CommandSuggestions(suggestions, usage);
+    }
 }

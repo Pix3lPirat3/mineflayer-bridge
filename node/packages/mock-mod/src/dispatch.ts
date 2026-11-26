@@ -23,7 +23,7 @@ export function dispatchSessionMessage(core: ModCore, s: Session, type: MessageN
     case 'error':
       return core.chat.onCompletionResponse(s, header, undefined);
     case 'command.suggestions':
-      return core.chat.onCompletionResponse(s, header, p('command.suggestions').suggestions);
+      return core.chat.onCompletionResponse(s, header, p('command.suggestions'));
     case 'session.close':
       return core.closeSession(s, p('session.close').reason, false);
     case 'world.report':

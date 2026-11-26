@@ -158,6 +158,7 @@ public final class ChatBridgeClient {
             return null;
         }
         final String typed = value.substring(0, Math.min(cursor, value.length()));
+        core.commands().clearUsage();
         final CompletableFuture<Completion> completion = core.chat().complete(typed, typed.length());
         if (completion == null) {
             return null;
@@ -174,6 +175,16 @@ public final class ChatBridgeClient {
             }
             return b.build();
         });
+    }
+
+    /**
+     * The usage line the bot sent with its latest completion answer, for the line above the chat box.
+     *
+     * @return the line, or null when there is none
+     */
+    public @Nullable Component usage() {
+        final BridgeCore core = ui.core();
+        return core == null ? null : BridgeCommands.usage(core);
     }
 
     /**

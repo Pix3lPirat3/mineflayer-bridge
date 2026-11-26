@@ -1,4 +1,4 @@
-import { BridgeError, Flags, Messages, type EnvelopeHeader, type MessagePayloads, type Suggestion, type Target } from '@mineflayer-bridge/protocol';
+import { BridgeError, Flags, Messages, type EnvelopeHeader, type ChatSpan, type MessagePayloads, type Suggestion, type Target } from '@mineflayer-bridge/protocol';
 import { filterSuggestions, isSpace, matchNode, normalizeId, parseLine, planCompletion, rootNode, strip, tokenize, type CompletionPlan, type Origin, type SelectorHook } from './commands.ts';
 import type { ModCore } from './core.ts';
 import { Pending } from './pending.ts';
@@ -67,8 +67,8 @@ function middle(kind: string, data: unknown): V3 | undefined {
   return { x: (lo.x + hi.x) / 2, y: (lo.y + hi.y) / 2, z: (lo.z + hi.z) / 2 };
 }
 
-type CompletionAnswer ={ status: 'answered' | 'failed' | 'timeout'; suggestions: Suggestion[] };
-type ArgSuggestions = { suggestions: Suggestion[]; source: string | undefined; dynamic: MockCompletion['dynamic'] };
+type CompletionAnswer = { status: 'answered' | 'failed' | 'timeout'; suggestions: Suggestion[]; usage?: ChatSpan[] };
+type ArgSuggestions = { suggestions: Suggestion[]; source: string | undefined; dynamic: MockCompletion['dynamic']; usage?: ChatSpan[] };
 
 /** Commands, context actions and the chat bridge: invocations, parsing, completion and printed lines. */
 export class ChatCommands {
@@ -79,7 +79,7 @@ export class ChatCommands {
   /** `command.complete` requests awaiting `command.suggestions`, by envelope request id. */
   private readonly completions = new Pending<CompletionAnswer>();
   /** Dynamic answers by owner, command revision, path, argument, earlier arguments and input prefix, with when they came. */
-  private readonly completionCache = new Map<string, { atMs: number; suggestions: Suggestion[] }>();
+  private readonly completionCache = new Map<string, { atMs: number; suggestions: Suggestion[]; usage?: ChatSpan[] }>();
 
   constructor(private readonly core: ModCore) {}
 
@@ -246,7 +246,7 @@ export class ChatCommands {
       case 'arg': {
         const set = owner(plan.root.name)!;
         const r = await this.argSuggestions(set.session, keyOf(plan.root.name), plan, set.bots);
-        return { start: plan.start, suggestions: [...plan.words, ...r.suggestions], source: r.source, dynamic: r.dynamic, error: undefined };
+        return { start: plan.start, suggestions: [...plan.words, ...r.suggestions], source: r.source, dynamic: r.dynamic, error: undefined, ...(r.usage === undefined ? {} : { usage: r.usage }) };
       }
     }
   }
@@ -398,11 +398,12 @@ export class ChatCommands {
     this.invocations.answer(p.invocation, s.owner, { ok: p.ok, message: p.message, ...(p.quiet === true ? { quiet: true as const } : {}) });
   }
 
-  /** Settles a pending `command.complete`; `suggestions` is `undefined` for an error response. */
-  onCompletionResponse(s: Session, header: EnvelopeHeader, suggestions: Suggestion[] | undefined): void {
+  /** Settles a pending `command.complete`; `answer` is `undefined` for an error response. */
+  onCompletionResponse(s: Session, header: EnvelopeHeader, answer: MessagePayloads['command.suggestions'] | undefined): void {
     if (header.req === undefined || (header.flags & Flags.RESPONSE) === 0) return;
     // Answers after the deadline are dropped.
-    this.completions.answer(header.req, s.owner, { status: suggestions === undefined ? 'failed' : 'answered', suggestions: suggestions ?? [] });
+    const usage = answer?.usage ?? undefined;
+    this.completions.answer(header.req, s.owner, { status: answer === undefined ? 'failed' : 'answered', suggestions: answer?.suggestions ?? [], ...(usage === undefined ? {} : { usage }) });
   }
 
   clear(): void {
@@ -568,10 +569,10 @@ export class ChatCommands {
         const cacheKey = JSON.stringify([s.owner, key, rev, plan.path, a.name, plan.args, plan.input, bots]);
         const hit = this.completionCache.get(cacheKey);
         const freshMs = this.core.opts.completionCacheMs ?? COMPLETION_CACHE_MS;
-        if (hit !== undefined && this.core.clock.now() - hit.atMs < freshMs) return { suggestions: hit.suggestions.slice(0, limit), source, dynamic: 'cached' };
+        if (hit !== undefined && this.core.clock.now() - hit.atMs < freshMs) return { suggestions: hit.suggestions.slice(0, limit), source, dynamic: 'cached', ...(hit.usage === undefined ? {} : { usage: hit.usage }) };
         const r = await this.requestCompletion(s, { command: key, path: plan.path, arg: a.name, input: plan.input, args: plan.args, ...(bots.length === 0 ? {} : { bots: [...bots] }) });
-        if (r.status === 'answered') this.completionCache.set(cacheKey, { atMs: this.core.clock.now(), suggestions: r.suggestions });
-        return { suggestions: r.suggestions.slice(0, limit), source, dynamic: r.status };
+        if (r.status === 'answered') this.completionCache.set(cacheKey, { atMs: this.core.clock.now(), suggestions: r.suggestions, ...(r.usage === undefined ? {} : { usage: r.usage }) });
+        return { suggestions: r.suggestions.slice(0, limit), source, dynamic: r.status, ...(r.usage === undefined ? {} : { usage: r.usage }) };
       }
       default:
         return done(this.core.opts.completionStubs?.[source] ?? []);

@@ -553,10 +553,28 @@ export interface CommandSuggestion {
   display?: string;
   /** Tooltip shown next to the suggestion. */
   tooltip?: string;
+  /** What the suggestion is, which the mod colours it by. Unset is a plain value. */
+  kind?: SuggestionKind;
 }
+
+/**
+ * What a suggestion is: `value` for the argument itself, `option` for a key such as `range=`,
+ * `keyword` for a word of the command's own such as `until` or `then`.
+ */
+export type SuggestionKind = 'value' | 'option' | 'keyword';
 
 /** A suggestion as returned by a completion function: a bare string is the text to insert. */
 export type SuggestionLike = string | CommandSuggestion;
+
+/**
+ * A completion function's answer with more than the suggestions: `usage` is the command's usage as
+ * styled text, which the mod shows above the chat box while the player completes, such as
+ * `cave [range=<8..128>] [until <cond>]` with the slot being completed highlighted.
+ */
+export interface CompletionResult {
+  readonly suggestions: readonly SuggestionLike[];
+  readonly usage?: ChatContent;
+}
 
 /** Passed to a dynamic completion function. */
 export interface CompletionContext {
@@ -577,11 +595,12 @@ export interface CompletionContext {
 
 /**
  * Answers `command.complete` for one argument (the `dynamic` source). `input` is what the player
- * typed for the argument so far. At most 50 suggestions are sent; the rest are dropped. A throw, a
+ * typed for the argument so far. It returns the suggestions, or a {@link CompletionResult} that also
+ * carries a usage line. At most 50 suggestions are sent; the rest are dropped. A throw, a
  * rejection or a malformed suggestion answers an empty list and is reported through the session's
  * `error` event. The mod gives up after 300 ms and drops later answers, so this should be fast.
  */
-export type CompletionFunction = (input: string, ctx: CompletionContext) => readonly SuggestionLike[] | Promise<readonly SuggestionLike[]>;
+export type CompletionFunction = (input: string, ctx: CompletionContext) => readonly SuggestionLike[] | CompletionResult | Promise<readonly SuggestionLike[] | CompletionResult>;
 
 /** One command argument. The mod parses it and completes it as the player types. */
 export interface CommandArgDef {

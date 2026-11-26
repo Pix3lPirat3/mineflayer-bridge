@@ -1225,14 +1225,17 @@ export interface Suggestion {
   text: string;
   display?: string | undefined;
   tooltip?: string | undefined;
+  /** Option (a key such as range=), value or keyword (until, then); the mod colours the text by it. */
+  kind?: string | undefined;
 }
 /** Wire codec for {@link Suggestion}. */
 export const SuggestionCodec: Codec<Suggestion> = {
   write(w, v) {
-    w.arrayHeader(3);
+    w.arrayHeader(4);
     w.str(v.text);
     if (v.display === undefined || v.display === null) w.nil(); else w.str(v.display);
     if (v.tooltip === undefined || v.tooltip === null) w.nil(); else w.str(v.tooltip);
+    if (v.kind === undefined || v.kind === null) w.nil(); else w.str(v.kind);
   },
   read(r) {
     const n = r.arrayHeader();
@@ -1240,8 +1243,9 @@ export const SuggestionCodec: Codec<Suggestion> = {
     const text = r.str();
     const display = n > 1 && !r.tryNil() ? r.str() : undefined;
     const tooltip = n > 2 && !r.tryNil() ? r.str() : undefined;
-    for (let i = 3; i < n; i++) r.skip();
-    return { text, display, tooltip };
+    const kind = n > 3 && !r.tryNil() ? r.str() : undefined;
+    for (let i = 4; i < n; i++) r.skip();
+    return { text, display, tooltip, kind };
   },
 };
 
@@ -5799,19 +5803,23 @@ export const CommandCompleteCodec: Codec<CommandComplete> = {
 /** Payload of message `command.suggestions` (id 0x76), sent by node with reliable delivery. */
 export interface CommandSuggestions {
   suggestions: Suggestion[];
+  /** The command's usage as styled text, shown above the chat box while completing. */
+  usage?: ChatSpan[] | undefined;
 }
 /** Wire codec for {@link CommandSuggestions}. */
 export const CommandSuggestionsCodec: Codec<CommandSuggestions> = {
   write(w, v) {
-    w.arrayHeader(1);
+    w.arrayHeader(2);
     writeList(w, v.suggestions, (x) => SuggestionCodec.write(w, x));
+    if (v.usage === undefined || v.usage === null) w.nil(); else writeList(w, v.usage, (x) => ChatSpanCodec.write(w, x));
   },
   read(r) {
     const n = r.arrayHeader();
     if (n < 1) throw new WireError('invalid_message', 'command.suggestions: expected at least 1 fields, got ' + n);
     const suggestions = readList(r, () => SuggestionCodec.read(r));
-    for (let i = 1; i < n; i++) r.skip();
-    return { suggestions };
+    const usage = n > 1 && !r.tryNil() ? readList(r, () => ChatSpanCodec.read(r)) : undefined;
+    for (let i = 2; i < n; i++) r.skip();
+    return { suggestions, usage };
   },
 };
 

@@ -312,7 +312,7 @@ class CommandEngineTest {
         List<Object[]> calls = new ArrayList<>();
         CommandEngine e = new CommandEngine(Map.of(), (key, path, arg, input, args, bots) -> {
             calls.add(new Object[] {key, path, arg, input, args});
-            return CompletableFuture.completedFuture(List.of(new Suggestion("red", "Red team", "5 players")));
+            return CompletableFuture.completedFuture(List.of(new Suggestion("red", "Red team", "5 players", null)));
         });
         Completion c = complete(e, "set safe r");
         assertEquals(List.of("red"), texts(c));

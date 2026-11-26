@@ -401,7 +401,7 @@ public final class CommandEngine {
             List<Suggestion> out = new ArrayList<>();
             for (Addressee a : book) {
                 if (matches(a.name(), current.text())) {
-                    out.add(new Suggestion(Tokenizer.quote(a.name()), null, tooltip(a)));
+                    out.add(new Suggestion(Tokenizer.quote(a.name()), null, tooltip(a), null));
                 }
             }
             return CompletableFuture.completedFuture(new Completion(current.start(), cursor, out));
@@ -534,7 +534,7 @@ public final class CommandEngine {
                 return entryValues(bot, command, path, arg, last.text(), 0, args, ctx).thenApply(list -> {
                     List<Suggestion> out = new ArrayList<>(list.size());
                     for (Suggestion s : list) {
-                        out.add(new Suggestion(head + s.text(), s.display() != null ? s.display() : s.text(), s.tooltip()));
+                        out.add(new Suggestion(head + s.text(), s.display() != null ? s.display() : s.text(), s.tooltip(), s.kind()));
                     }
                     return out;
                 });
@@ -644,13 +644,13 @@ public final class CommandEngine {
         for (String v : values) {
             if (matches(v, input)) {
                 out.add(new Suggestion(v.indexOf(' ') >= 0 && arg.type() != ArgType.CHOICE ? v : quoted(arg, v), null,
-                        Selector.looksLike(v) ? selectorHelp(v) : null));
+                        Selector.looksLike(v) ? selectorHelp(v) : null, null));
             }
         }
         Object def = arg.defaultValue();
         if (out.isEmpty() && input.isEmpty() && def != null) {
             String text = def instanceof Number n ? ArgValues.plain(n.doubleValue()) : String.valueOf(def);
-            out.add(new Suggestion(quoted(arg, text), null, "Default"));
+            out.add(new Suggestion(quoted(arg, text), null, "Default", null));
         }
         return out;
     }
@@ -681,7 +681,7 @@ public final class CommandEngine {
                     }
                 }
             }
-            out.add(new Suggestion(input + "]", null, "Close the selector"));
+            out.add(new Suggestion(input + "]", null, "Close the selector", null));
             return;
         }
         for (String key : Selector.OPTIONS) {
@@ -704,11 +704,11 @@ public final class CommandEngine {
         String tooltip = node.description() == null ? (usage.isEmpty() ? null : usage)
                 : usage.isEmpty() ? node.description() : node.description() + "\n" + usage;
         if (matches(node.name(), typed)) {
-            out.add(new Suggestion(node.name(), null, tooltip));
+            out.add(new Suggestion(node.name(), null, tooltip, null));
         }
         for (String alias : node.aliases()) {
             if (showAliases && matches(alias, typed) && !typed.isEmpty()) {
-                out.add(new Suggestion(alias, alias + " (" + node.name() + ")", tooltip));
+                out.add(new Suggestion(alias, alias + " (" + node.name() + ")", tooltip, null));
             }
         }
     }

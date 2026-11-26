@@ -1,5 +1,7 @@
 import { BridgeError, type ArgType, type CommandArg, type CommandNode, type CompletionSpec, type KindPayloads, type MessagePayloads, type Suggestion, type TargetSpec } from '@mineflayer-bridge/protocol';
 import type {
+  ChatContent,
+  ChatSpanInput,
   CommandArgDef,
   CommandDefinition,
   CommandNodeDefinition,
@@ -10,6 +12,7 @@ import type {
   InvocationContext,
   InvocationReturn,
 } from './input-types.ts';
+import { contentParts, styledSpan } from './chat.ts';
 import { word } from './check.ts';
 import { asBridgeError } from './util.ts';
 
@@ -265,6 +268,11 @@ function toSuggestion(label: string, v: unknown): Suggestion {
     if (typeof f !== 'string') invalid(`${label}: suggestion ${k} must be a string`);
     s[k] = f;
   }
+  const kind = o['kind'];
+  if (kind !== undefined) {
+    if (kind !== 'value' && kind !== 'option' && kind !== 'keyword') invalid(`${label}: suggestion kind must be value, option or keyword`);
+    s.kind = kind;
+  }
   return s;
 }
 
@@ -273,19 +281,26 @@ function toSuggestion(label: string, v: unknown): Suggestion {
  * argument answers an empty list, and an error of the completion function answers an empty list
  * after `report` received it. At most {@link MAX_SUGGESTIONS} suggestions are returned.
  */
-export async function completeArgument(root: CompiledNode, key: string, p: MessagePayloads['command.complete'], report: (e: BridgeError) => void): Promise<Suggestion[]> {
+export async function completeArgument(root: CompiledNode, key: string, p: MessagePayloads['command.complete'], report: (e: BridgeError) => void): Promise<MessagePayloads['command.suggestions']> {
   const found = resolvePath(root, p.path);
-  if (typeof found === 'string') return [];
+  if (typeof found === 'string') return { suggestions: [] };
   const { node, path } = found;
   const fn = node.completers.get(p.arg);
-  if (fn === undefined) return [];
+  if (fn === undefined) return { suggestions: [] };
   const label = `completion of ${node.label} ${p.arg}`;
   try {
     const out: unknown = await fn(p.input, { args: { ...p.args }, path, arg: p.arg, key, ...(p.bots === undefined || p.bots === null ? {} : { bots: [...p.bots] }) });
-    if (!Array.isArray(out)) invalid(`${label} must return a list of suggestions`);
-    return out.slice(0, MAX_SUGGESTIONS).map((v: unknown) => toSuggestion(label, v));
+    const result = Array.isArray(out) ? { suggestions: out } : (out as { suggestions?: unknown; usage?: unknown } | null);
+    if (typeof result !== 'object' || result === null || !Array.isArray(result.suggestions)) invalid(`${label} must return a list of suggestions or { suggestions, usage }`);
+    const suggestions = (result.suggestions as unknown[]).slice(0, MAX_SUGGESTIONS).map((v: unknown) => toSuggestion(label, v));
+    if (result.usage === undefined) return { suggestions };
+    const usage = contentParts(result.usage as ChatContent).map((s) => {
+      if (typeof s === 'object' && s !== null && (s as ChatSpanInput).click !== undefined) invalid(`${label}: usage spans cannot have a click`);
+      return styledSpan(s);
+    });
+    return usage.length === 0 ? { suggestions } : { suggestions, usage };
   } catch (e) {
     report(asBridgeError(e));
-    return [];
+    return { suggestions: [] };
   }
 }

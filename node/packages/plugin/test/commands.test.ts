@@ -290,8 +290,15 @@ describe('completion', () => {
       args: [{ name: 'what', type: 'string', complete: async () => [{ text: 'a', display: 'Apple', tooltip: 'fruit' }, 'b'] }],
       run: () => undefined,
     });
-    await until(() => e.mod.commands().length === 2);
+    b.commands.register('cave', {
+      args: [{ name: 'opts', type: 'string', complete: () => ({ suggestions: [{ text: 'range=', kind: 'option' }, { text: 'until', kind: 'keyword' }], usage: ['cave ', { text: '[range=<8..128>]', color: '#ffff55' }] }) }],
+      run: () => undefined,
+    });
+    await until(() => e.mod.commands().length === 3);
 
+    const cave = await e.mod.complete('alice', 'cave ');
+    expect(cave.suggestions).toEqual([{ text: 'range=', kind: 'option' }, { text: 'until', kind: 'keyword' }]);
+    expect(cave.usage).toMatchObject([{ text: 'cave ' }, { text: '[range=<8..128>]', color: 0xffffff55 }]);
     const r = await e.mod.complete('alice', 'mine give Steve dia');
     expect(r).toMatchObject({ start: 16, source: 'dynamic', dynamic: 'answered' });
     expect(r.suggestions).toHaveLength(50);

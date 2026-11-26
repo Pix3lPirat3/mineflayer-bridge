@@ -536,7 +536,7 @@ export abstract class SessionImpl implements BridgeSession, ScopeHost {
       sample: (p) => {
         if (this.isPrimary(l)) this.sampleHub.receive(p);
       },
-      complete: (p, reply) => as(() => this.router.complete(p, (suggestions) => reply({ suggestions }))),
+      complete: (p, reply) => as(() => this.router.complete(p, reply)),
     };
   }
 

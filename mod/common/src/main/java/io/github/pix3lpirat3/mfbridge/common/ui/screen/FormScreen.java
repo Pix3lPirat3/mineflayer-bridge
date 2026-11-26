@@ -1,5 +1,6 @@
 package io.github.pix3lpirat3.mfbridge.common.ui.screen;
 
+import io.github.pix3lpirat3.mfbridge.common.ui.command.BridgeCommands;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.ButtonRows;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.CommandArgs;
 import io.github.pix3lpirat3.mfbridge.common.ui.logic.FieldEditors;
@@ -672,7 +673,7 @@ public final class FormScreen extends ChildScreen {
             }
             final String display = s.display();
             final String label = display == null ? s.text() : display + "  " + s.text();
-            graphics.text(font, font.plainSubstrByWidth(label, box.getWidth() - 4), x + 2, rowY + 2, index == highlighted ? SUGGESTION_ARGB : LABEL_ARGB);
+            graphics.text(font, font.plainSubstrByWidth(label, box.getWidth() - 4), x + 2, rowY + 2, index == highlighted ? SUGGESTION_ARGB : BridgeCommands.kindArgb(s, LABEL_ARGB));
             final String tooltip = s.tooltip();
             if (tooltip != null && mouseX >= x && mouseX < x + box.getWidth() && mouseY >= rowY && mouseY < rowY + SUGGESTION_ROW) {
                 graphics.setTooltipForNextFrame(Component.literal(tooltip), mouseX, mouseY);
